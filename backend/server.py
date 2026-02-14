@@ -30,8 +30,7 @@ logger = logging.getLogger(__name__)
 
 NOOP_JS = "/* unauthorized or inactive */\n/* noop */"
 
-JS_HEADERS = {
-    "Content-Type": "application/javascript; charset=utf-8",
+JS_CACHE_HEADERS = {
     "Cache-Control": "public, max-age=60",
     "Vary": "Origin, Referer",
 }
