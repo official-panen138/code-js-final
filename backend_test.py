@@ -125,6 +125,87 @@ class JSHostAPITester:
             self.log_test("Categories List (5 seeded)", False, f"Status {status}, Response: {data}")
             return False
     
+    def test_categories_all(self) -> bool:
+        """Test GET /api/categories/all with project counts"""
+        success, status, data = self.make_request('GET', '/categories/all')
+        
+        if success and 'categories' in data:
+            categories = data['categories']
+            has_project_count = all('project_count' in cat for cat in categories)
+            website_cat = next((cat for cat in categories if cat['name'] == 'Website'), None)
+            
+            if has_project_count and website_cat:
+                self.log_test("Categories All (with project counts)", True)
+                print(f"    Website category has {website_cat['project_count']} projects")
+                return True
+        
+        self.log_test("Categories All (with project counts)", False, f"Status {status}, Response: {data}")
+        return False
+    
+    def test_category_create(self) -> bool:
+        """Test POST /api/categories"""
+        test_name = f"Test Category {datetime.now().strftime('%H%M%S')}"
+        success, status, data = self.make_request('POST', '/categories', {
+            'name': test_name,
+            'description': 'Test category for API testing'
+        })
+        
+        if success and 'category' in data:
+            self.created_category_id = data['category']['id']
+            self.log_test("Category Create", True)
+            print(f"    Created category ID: {self.created_category_id}")
+            return True
+        else:
+            self.log_test("Category Create", False, f"Status {status}, Response: {data}")
+            return False
+    
+    def test_category_update(self) -> bool:
+        """Test PATCH /api/categories/{id}"""
+        if not hasattr(self, 'created_category_id') or not self.created_category_id:
+            self.log_test("Category Update", False, "No created category ID available")
+            return False
+            
+        updated_name = f"Updated Category {datetime.now().strftime('%H%M%S')}"
+        success, status, data = self.make_request('PATCH', f'/categories/{self.created_category_id}', {
+            'name': updated_name,
+            'description': 'Updated description'
+        })
+        
+        if success and 'category' in data and data['category']['name'] == updated_name:
+            self.log_test("Category Update", True)
+            return True
+        else:
+            self.log_test("Category Update", False, f"Status {status}, Response: {data}")
+            return False
+    
+    def test_category_delete_unused(self) -> bool:
+        """Test DELETE /api/categories/{id} for unused category"""
+        if not hasattr(self, 'created_category_id') or not self.created_category_id:
+            self.log_test("Category Delete (unused)", False, "No created category ID available")
+            return False
+            
+        success, status, data = self.make_request('DELETE', f'/categories/{self.created_category_id}', expected_status=200)
+        
+        if success:
+            self.log_test("Category Delete (unused)", True)
+            return True
+        else:
+            self.log_test("Category Delete (unused)", False, f"Status {status}, Response: {data}")
+            return False
+    
+    def test_category_delete_in_use(self) -> bool:
+        """Test DELETE /api/categories/{id} for in-use category (should fail with 400)"""
+        # Try to delete Website category which should have projects
+        success, status, data = self.make_request('DELETE', '/categories/1', expected_status=400)
+        
+        if status == 400:
+            self.log_test("Category Delete (in-use, should fail)", True)
+            print(f"    Expected 400 error: {data.get('detail', 'No detail')}")
+            return True
+        else:
+            self.log_test("Category Delete (in-use, should fail)", False, f"Expected 400, got {status}")
+            return False
+    
     def test_project_create(self) -> bool:
         """Test creating a project"""
         success, status, data = self.make_request('POST', '/projects', {
