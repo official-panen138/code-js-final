@@ -582,10 +582,17 @@ function EmbedTab({ project, scripts, getEmbedUrl, copied, copyToClipboard }) {
 
 
 /* ─── Analytics Tab ─── */
-function AnalyticsTab({ logs, logStats }) {
+const CHART_COLORS = ['#16A34A', '#DC2626', '#2563EB', '#F59E0B', '#8B5CF6'];
+
+function AnalyticsTab({ logs, logStats, analytics }) {
+  const pieData = logStats ? [
+    { name: 'Allowed', value: logStats.allowed },
+    { name: 'Denied', value: logStats.denied },
+  ].filter(d => d.value > 0) : [];
+
   return (
     <div className="space-y-6" data-testid="analytics-section">
-      {/* Stats */}
+      {/* Summary Stats */}
       {logStats && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Card className="border bg-white shadow-sm">
@@ -610,6 +617,86 @@ function AnalyticsTab({ logs, logStats }) {
             </CardContent>
           </Card>
         </div>
+      )}
+
+      {/* Charts Row */}
+      {logStats && logStats.total > 0 && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Pie Chart - Allowed vs Denied */}
+          {pieData.length > 0 && (
+            <Card className="border bg-white shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-base font-medium" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
+                  Request Distribution
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={220}>
+                  <PieChart>
+                    <Pie data={pieData} cx="50%" cy="50%" innerRadius={50} outerRadius={85} paddingAngle={3} dataKey="value">
+                      {pieData.map((entry, idx) => (
+                        <Cell key={idx} fill={CHART_COLORS[idx]} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      contentStyle={{ borderRadius: '8px', border: '1px solid #E2E8F0', fontSize: '13px' }}
+                      formatter={(value, name) => [`${value} requests`, name]}
+                    />
+                    <Legend wrapperStyle={{ fontSize: '13px' }} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Bar Chart - Daily Requests */}
+          {analytics?.daily?.length > 0 && (
+            <Card className="border bg-white shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-base font-medium" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
+                  Daily Requests
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={220}>
+                  <BarChart data={analytics.daily}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
+                    <XAxis dataKey="date" tick={{ fontSize: 11 }} tickLine={false} />
+                    <YAxis tick={{ fontSize: 11 }} tickLine={false} allowDecimals={false} />
+                    <Tooltip contentStyle={{ borderRadius: '8px', border: '1px solid #E2E8F0', fontSize: '13px' }} />
+                    <Bar dataKey="allowed" stackId="a" fill="#16A34A" radius={[0, 0, 0, 0]} name="Allowed" />
+                    <Bar dataKey="denied" stackId="a" fill="#DC2626" radius={[4, 4, 0, 0]} name="Denied" />
+                    <Legend wrapperStyle={{ fontSize: '13px' }} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
+
+      {/* Top Domains */}
+      {analytics?.top_domains?.length > 0 && (
+        <Card className="border bg-white shadow-sm">
+          <CardHeader>
+            <CardTitle className="text-base font-medium" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
+              Top Domains
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={Math.max(180, analytics.top_domains.length * 36)}>
+              <BarChart data={analytics.top_domains} layout="vertical">
+                <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
+                <XAxis type="number" tick={{ fontSize: 11 }} tickLine={false} allowDecimals={false} />
+                <YAxis type="category" dataKey="domain" tick={{ fontSize: 11, fontFamily: 'JetBrains Mono, monospace' }} width={150} tickLine={false} />
+                <Tooltip contentStyle={{ borderRadius: '8px', border: '1px solid #E2E8F0', fontSize: '13px' }} />
+                <Bar dataKey="allowed" stackId="a" fill="#16A34A" name="Allowed" />
+                <Bar dataKey="denied" stackId="a" fill="#DC2626" name="Denied" />
+                <Legend wrapperStyle={{ fontSize: '13px' }} />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
       )}
 
       {/* Logs table */}
@@ -660,5 +747,100 @@ function AnalyticsTab({ logs, logStats }) {
         )}
       </div>
     </div>
+  );
+}
+
+
+/* ─── Domain Tester ─── */
+function DomainTester({ projectId }) {
+  const [testDomain, setTestDomain] = useState('');
+  const [result, setResult] = useState(null);
+  const [testing, setTesting] = useState(false);
+
+  const handleTest = async () => {
+    if (!testDomain.trim()) {
+      toast.error('Enter a domain to test');
+      return;
+    }
+    setTesting(true);
+    setResult(null);
+    try {
+      const res = await domainTestAPI.test(projectId, testDomain.trim());
+      setResult(res.data);
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Test failed');
+    } finally {
+      setTesting(false);
+    }
+  };
+
+  return (
+    <Card className="border border-border bg-white shadow-sm" data-testid="domain-tester">
+      <CardHeader>
+        <CardTitle className="text-base font-medium flex items-center gap-2" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
+          <Search className="w-4 h-4 text-[#2563EB]" />
+          Domain Tester
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <p className="text-sm text-muted-foreground">
+          Test if a domain would be allowed by this project's current whitelist.
+        </p>
+        <div className="flex gap-3">
+          <Input
+            placeholder="e.g. sub.example.com or https://mysite.com/page"
+            value={testDomain}
+            onChange={(e) => { setTestDomain(e.target.value); setResult(null); }}
+            onKeyDown={(e) => e.key === 'Enter' && handleTest()}
+            className="max-w-md"
+            data-testid="domain-tester-input"
+          />
+          <Button
+            onClick={handleTest}
+            disabled={testing}
+            className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white"
+            data-testid="domain-tester-btn"
+          >
+            {testing ? 'Testing...' : 'Test'}
+          </Button>
+        </div>
+        {result && (
+          <div
+            className={`flex items-start gap-3 p-4 rounded-lg border ${
+              result.allowed
+                ? 'bg-green-50 border-green-200'
+                : 'bg-red-50 border-red-200'
+            }`}
+            data-testid="domain-tester-result"
+          >
+            {result.allowed ? (
+              <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+            ) : (
+              <XCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+            )}
+            <div className="space-y-1">
+              <p className={`text-sm font-medium ${result.allowed ? 'text-green-800' : 'text-red-800'}`}>
+                {result.allowed ? 'Allowed' : 'Denied'}
+              </p>
+              <p className="text-xs text-slate-600">
+                Normalized: <code className="bg-white/60 px-1 rounded" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
+                  {result.normalized_domain}
+                </code>
+              </p>
+              {result.matched_pattern && (
+                <p className="text-xs text-slate-600">
+                  Matched pattern: <code className="bg-white/60 px-1 rounded" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
+                    {result.matched_pattern}
+                  </code>
+                </p>
+              )}
+              <p className="text-xs text-slate-500">
+                {result.active_patterns_count} active pattern{result.active_patterns_count !== 1 ? 's' : ''} checked
+              </p>
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
