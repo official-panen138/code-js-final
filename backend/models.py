@@ -1,0 +1,91 @@
+from sqlalchemy import Column, Integer, String, Text, Boolean, Enum, ForeignKey, DateTime, UniqueConstraint
+from sqlalchemy.orm import relationship
+from sqlalchemy import func
+from database import Base
+
+
+class User(Base):
+    __tablename__ = 'users'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    email = Column(String(255), unique=True, nullable=False, index=True)
+    password_hash = Column(String(255), nullable=False)
+    role = Column(Enum('user', 'admin', name='user_role'), default='user', nullable=False)
+    is_active = Column(Boolean, default=True, nullable=False)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+
+    projects = relationship('Project', back_populates='user', cascade='all, delete-orphan')
+
+
+class Category(Base):
+    __tablename__ = 'categories'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String(100), unique=True, nullable=False)
+    description = Column(Text, nullable=True)
+    is_active = Column(Boolean, default=True, nullable=False)
+
+    projects = relationship('Project', back_populates='category')
+
+
+class Project(Base):
+    __tablename__ = 'projects'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
+    category_id = Column(Integer, ForeignKey('categories.id'), nullable=False)
+    name = Column(String(255), nullable=False)
+    slug = Column(String(255), unique=True, nullable=False, index=True)
+    status = Column(Enum('active', 'paused', name='project_status'), default='active', nullable=False)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+
+    user = relationship('User', back_populates='projects')
+    category = relationship('Category', back_populates='projects')
+    whitelists = relationship('ProjectWhitelist', back_populates='project', cascade='all, delete-orphan')
+    scripts = relationship('Script', back_populates='project', cascade='all, delete-orphan')
+    access_logs = relationship('AccessLog', back_populates='project', cascade='all, delete-orphan')
+
+
+class ProjectWhitelist(Base):
+    __tablename__ = 'project_whitelists'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    project_id = Column(Integer, ForeignKey('projects.id', ondelete='CASCADE'), nullable=False, index=True)
+    domain_pattern = Column(String(255), nullable=False)
+    is_active = Column(Boolean, default=True, nullable=False)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+
+    project = relationship('Project', back_populates='whitelists')
+
+
+class Script(Base):
+    __tablename__ = 'scripts'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    project_id = Column(Integer, ForeignKey('projects.id', ondelete='CASCADE'), nullable=False, index=True)
+    name = Column(String(255), nullable=False)
+    slug = Column(String(255), nullable=False)
+    js_code = Column(Text, nullable=False)
+    status = Column(Enum('active', 'disabled', name='script_status'), default='active', nullable=False)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+
+    project = relationship('Project', back_populates='scripts')
+
+    __table_args__ = (
+        UniqueConstraint('project_id', 'slug', name='uq_project_script_slug'),
+    )
+
+
+class AccessLog(Base):
+    __tablename__ = 'access_logs'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    project_id = Column(Integer, ForeignKey('projects.id', ondelete='CASCADE'), nullable=False, index=True)
+    script_id = Column(Integer, ForeignKey('scripts.id', ondelete='SET NULL'), nullable=True)
+    ref_domain = Column(String(255), nullable=True)
+    allowed = Column(Boolean, nullable=False)
+    ip = Column(String(45), nullable=True)
+    user_agent = Column(Text, nullable=True)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+
+    project = relationship('Project', back_populates='access_logs')
