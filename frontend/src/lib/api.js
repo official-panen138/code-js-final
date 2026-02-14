@@ -40,6 +40,10 @@ export const authAPI = {
 // Categories
 export const categoryAPI = {
   list: () => api.get('/categories'),
+  listAll: () => api.get('/categories/all'),
+  create: (data) => api.post('/categories', data),
+  update: (id, data) => api.patch(`/categories/${id}`, data),
+  delete: (id) => api.delete(`/categories/${id}`),
 };
 
 // Projects
