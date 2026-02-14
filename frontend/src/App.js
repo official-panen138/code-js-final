@@ -7,6 +7,7 @@ import RegisterPage from "./pages/RegisterPage";
 import DashboardPage from "./pages/DashboardPage";
 import ProjectsPage from "./pages/ProjectsPage";
 import ProjectDetailPage from "./pages/ProjectDetailPage";
+import SettingsPage from "./pages/SettingsPage";
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth();
