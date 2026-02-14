@@ -198,6 +198,87 @@ async def list_categories(db: AsyncSession = Depends(get_db)):
     return {"categories": [category_to_dict(c) for c in categories]}
 
 
+@api_router.get("/categories/all")
+async def list_all_categories(db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
+    """List all categories with project counts (for settings/admin)."""
+    result = await db.execute(select(Category).order_by(Category.name))
+    categories = result.scalars().all()
+
+    cat_list = []
+    for c in categories:
+        # Count projects using this category
+        count_result = await db.execute(select(func.count(Project.id)).where(Project.category_id == c.id))
+        project_count = count_result.scalar() or 0
+        d = category_to_dict(c)
+        d["project_count"] = project_count
+        cat_list.append(d)
+
+    return {"categories": cat_list}
+
+
+@api_router.post("/categories")
+async def create_category(data: CategoryCreate, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
+    if not data.name or not data.name.strip():
+        raise HTTPException(status_code=400, detail="Category name is required")
+
+    # Check duplicate
+    result = await db.execute(select(Category).where(Category.name == data.name.strip()))
+    if result.scalar_one_or_none():
+        raise HTTPException(status_code=400, detail="Category name already exists")
+
+    cat = Category(name=data.name.strip(), description=data.description)
+    db.add(cat)
+    await db.commit()
+    await db.refresh(cat)
+    return {"category": category_to_dict(cat)}
+
+
+@api_router.patch("/categories/{category_id}")
+async def update_category(category_id: int, data: CategoryUpdate, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
+    result = await db.execute(select(Category).where(Category.id == category_id))
+    cat = result.scalar_one_or_none()
+    if not cat:
+        raise HTTPException(status_code=404, detail="Category not found")
+
+    if data.name is not None:
+        name = data.name.strip()
+        if not name:
+            raise HTTPException(status_code=400, detail="Category name cannot be empty")
+        # Check duplicate (exclude current)
+        dup = await db.execute(select(Category).where(and_(Category.name == name, Category.id != category_id)))
+        if dup.scalar_one_or_none():
+            raise HTTPException(status_code=400, detail="Category name already exists")
+        cat.name = name
+
+    if data.description is not None:
+        cat.description = data.description
+
+    if data.is_active is not None:
+        cat.is_active = data.is_active
+
+    await db.commit()
+    await db.refresh(cat)
+    return {"category": category_to_dict(cat)}
+
+
+@api_router.delete("/categories/{category_id}")
+async def delete_category(category_id: int, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
+    result = await db.execute(select(Category).where(Category.id == category_id))
+    cat = result.scalar_one_or_none()
+    if not cat:
+        raise HTTPException(status_code=404, detail="Category not found")
+
+    # Check if category is used by any project
+    count_result = await db.execute(select(func.count(Project.id)).where(Project.category_id == category_id))
+    project_count = count_result.scalar() or 0
+    if project_count > 0:
+        raise HTTPException(status_code=400, detail=f"Cannot delete: category is used by {project_count} project(s)")
+
+    await db.delete(cat)
+    await db.commit()
+    return {"message": "Category deleted"}
+
+
 # ─── Project Routes ───
 @api_router.post("/projects")
 async def create_project(data: ProjectCreate, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
