@@ -1,6 +1,6 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Code2, LayoutDashboard, FolderKanban, LogOut, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Code2, LayoutDashboard, FolderKanban, LogOut, ChevronLeft, ChevronRight, Settings } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Separator } from '../components/ui/separator';
 import { useState } from 'react';
