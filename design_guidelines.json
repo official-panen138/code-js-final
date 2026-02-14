@@ -121,39 +121,40 @@
       "contrast_ratio": "Ensure 4.5:1 for normal text",
       "focus_states": "visible focus:ring-2 focus:ring-offset-2 focus:ring-primary",
       "aria_labels": "Required for all icon-only buttons"
-    }
-  },
-  "instructions_to_main_agent": {
-    "workflow": [
-      "1. Setup Tailwind config with the specified colors and fonts.",
-      "2. Create the layout components (Sidebar, Header, MainWrapper).",
-      "3. Implement the Dashboard view using the Bento Grid strategy.",
-      "4. Build the Project Detail view with the Tabs component.",
-      "5. Ensure the Code Editor uses a monospaced font and dark background for contrast.",
-      "6. Use 'lucide-react' for all icons."
-    ],
-    "file_structure_notes": {
-      "components": "Use /app/frontend/src/components/ui/ for shadcn components. CUSTOMIZE them to match the 'flat border' style.",
-      "pages": "Place pages in /app/frontend/src/pages/."
     },
-    "critical_reminders": [
-      "DO NOT use gradients for backgrounds. Use white or flat light grey.",
-      "Use 1px borders to define hierarchy, not shadows.",
-      "Ensure the embed URL generation is prominent and easy to copy.",
-      "Validate domain inputs with instant visual feedback."
+    "instructions_to_main_agent": {
+      "workflow": [
+        "1. Setup Tailwind config with the specified colors and fonts.",
+        "2. Create the layout components (Sidebar, Header, MainWrapper).",
+        "3. Implement the Dashboard view using the Bento Grid strategy.",
+        "4. Build the Project Detail view with the Tabs component.",
+        "5. Ensure the Code Editor uses a monospaced font and dark background for contrast.",
+        "6. Use 'lucide-react' for all icons."
+      ],
+      "file_structure_notes": {
+        "components": "Use /app/frontend/src/components/ui/ for shadcn components. CUSTOMIZE them to match the 'flat border' style.",
+        "pages": "Place pages in /app/frontend/src/pages/.",
+        "extensions": "Use .js or .jsx for all React files. Do NOT use .tsx or .ts. This is a JavaScript project."
+      },
+      "critical_reminders": [
+        "DO NOT use gradients for backgrounds. Use white or flat light grey.",
+        "Use 1px borders to define hierarchy, not shadows.",
+        "Ensure the embed URL generation is prominent and easy to copy.",
+        "Validate domain inputs with instant visual feedback."
+      ]
+    },
+    "UNIVERSAL_GUIDELINES": [
+      "Dark colors look good when used independently without gradients. DO NOT use dark colors as gradients",
+      "Don't make generic centered layouts, simplistic gradients, and uniform styling.",
+      "Create depth through layered design elements with z-index hierarchy",
+      "Use glass-morphism effects with backdrop filters (12-24px blur) only on sticky headers.",
+      "You MUST NOT apply universal transition. Eg: transition: all.",
+      "You MUST NOT center align the app container, ie do not add .App { text-align: center; }.",
+      "Always use modern button styles (rounded-md, not full pill).",
+      "NEVER: use AI assistant Emoji characters like 🤖🧠 etc.",
+      "Every interaction needs micro-animations - hover states, transitions.",
+      "Use 2-3x more spacing than feels comfortable.",
+      "All interactive and key informational elements MUST include a data-testid attribute."
     ]
-  },
-  "UNIVERSAL_GUIDELINES": [
-    "Dark colors look good when used independently without gradients. DO NOT use dark colors as gradients",
-    "Don't make generic centered layouts, simplistic gradients, and uniform styling.",
-    "Create depth through layered design elements with z-index hierarchy",
-    "Use glass-morphism effects with backdrop filters (12-24px blur) only on sticky headers.",
-    "You MUST NOT apply universal transition. Eg: transition: all.",
-    "You MUST NOT center align the app container, ie do not add .App { text-align: center; }.",
-    "Always use modern button styles (rounded-md, not full pill).",
-    "NEVER: use AI assistant Emoji characters like 🤖🧠 etc.",
-    "Every interaction needs micro-animations - hover states, transitions.",
-    "Use 2-3x more spacing than feels comfortable.",
-    "All interactive and key informational elements MUST include a data-testid attribute."
-  ]
+  }
 }
