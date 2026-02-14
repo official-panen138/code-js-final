@@ -494,6 +494,87 @@ async def get_access_logs(project_id: int, limit: int = 50, db: AsyncSession = D
     }
 
 
+# ─── Analytics ───
+@api_router.get("/projects/{project_id}/analytics")
+async def get_analytics(project_id: int, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
+    await get_user_project(db, project_id, current_user['user_id'])
+
+    # Overall stats
+    total = await db.execute(select(func.count(AccessLog.id)).where(AccessLog.project_id == project_id))
+    allowed = await db.execute(select(func.count(AccessLog.id)).where(and_(AccessLog.project_id == project_id, AccessLog.allowed == True)))
+    total_val = total.scalar() or 0
+    allowed_val = allowed.scalar() or 0
+
+    # Requests by day
+    daily_result = await db.execute(
+        select(
+            func.date(AccessLog.created_at).label('date'),
+            func.count(AccessLog.id).label('total'),
+            func.sum(case((AccessLog.allowed == True, 1), else_=0)).label('allowed'),
+            func.sum(case((AccessLog.allowed == False, 1), else_=0)).label('denied'),
+        )
+        .where(AccessLog.project_id == project_id)
+        .group_by(func.date(AccessLog.created_at))
+        .order_by(func.date(AccessLog.created_at))
+        .limit(30)
+    )
+    daily_data = [{"date": str(row.date), "total": row.total, "allowed": int(row.allowed or 0), "denied": int(row.denied or 0)} for row in daily_result]
+
+    # Top domains
+    domain_result = await db.execute(
+        select(
+            AccessLog.ref_domain,
+            func.count(AccessLog.id).label('count'),
+            func.sum(case((AccessLog.allowed == True, 1), else_=0)).label('allowed'),
+            func.sum(case((AccessLog.allowed == False, 1), else_=0)).label('denied'),
+        )
+        .where(and_(AccessLog.project_id == project_id, AccessLog.ref_domain != None, AccessLog.ref_domain != ''))
+        .group_by(AccessLog.ref_domain)
+        .order_by(desc(func.count(AccessLog.id)))
+        .limit(10)
+    )
+    domain_data = [{"domain": row.ref_domain, "count": row.count, "allowed": int(row.allowed or 0), "denied": int(row.denied or 0)} for row in domain_result]
+
+    return {
+        "summary": {"total": total_val, "allowed": allowed_val, "denied": total_val - allowed_val},
+        "daily": daily_data,
+        "top_domains": domain_data,
+    }
+
+
+# ─── Domain Tester ───
+@api_router.post("/projects/{project_id}/test-domain")
+async def test_domain(project_id: int, data: DomainTestRequest, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
+    project = await get_user_project(db, project_id, current_user['user_id'])
+
+    normalized = normalize_domain(data.domain)
+    active_patterns = [w.domain_pattern for w in project.whitelists if w.is_active]
+
+    allowed = is_domain_allowed(normalized, active_patterns)
+
+    # Find which pattern matched
+    matched_pattern = None
+    if allowed:
+        exact = {p for p in active_patterns if not p.startswith('*.')}
+        wildcards = [p for p in active_patterns if p.startswith('*.')]
+        if normalized in exact:
+            matched_pattern = normalized
+        else:
+            for p in wildcards:
+                suffix = p[2:]
+                if normalized.endswith('.' + suffix) and normalized != suffix:
+                    matched_pattern = p
+                    break
+
+    return {
+        "domain": data.domain,
+        "normalized_domain": normalized,
+        "allowed": allowed,
+        "matched_pattern": matched_pattern,
+        "active_patterns_count": len(active_patterns),
+    }
+
+
 # ─── Public JS Delivery ───
 @api_router.get("/js/{project_slug}/{script_file}")
 async def deliver_js(project_slug: str, script_file: str, request: Request, db: AsyncSession = Depends(get_db)):
