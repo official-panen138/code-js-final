@@ -360,6 +360,65 @@ class JSHostAPITester:
         self.log_test("Domain Validation (Invalid Patterns Rejected)", all_rejected)
         return all_rejected
     
+    def test_domain_tester_endpoint(self) -> bool:
+        """Test new domain tester endpoint"""
+        if not self.project_id:
+            self.log_test("Domain Tester Endpoint", False, "No project ID available")
+            return False
+            
+        # Test allowed domain (should match our test-api.example.com whitelist entry)
+        success, status, data = self.make_request('POST', f'/projects/{self.project_id}/test-domain', {
+            'domain': 'test-api.example.com'
+        })
+        
+        if success and 'allowed' in data and 'normalized_domain' in data:
+            allowed_correct = data['allowed'] == True
+            normalized_correct = data['normalized_domain'] == 'test-api.example.com'
+            
+            # Test denied domain
+            success2, status2, data2 = self.make_request('POST', f'/projects/{self.project_id}/test-domain', {
+                'domain': 'https://denied.com/path'
+            })
+            
+            if success2 and 'allowed' in data2 and 'normalized_domain' in data2:
+                denied_correct = data2['allowed'] == False
+                normalized_denied = data2['normalized_domain'] == 'denied.com'
+                
+                all_tests_passed = allowed_correct and normalized_correct and denied_correct and normalized_denied
+                self.log_test("Domain Tester Endpoint", all_tests_passed)
+                return all_tests_passed
+            else:
+                self.log_test("Domain Tester Endpoint", False, f"Second test failed: Status {status2}, Response: {data2}")
+                return False
+        else:
+            self.log_test("Domain Tester Endpoint", False, f"Status {status}, Response: {data}")
+            return False
+    
+    def test_analytics_endpoint(self) -> bool:
+        """Test new analytics endpoint"""
+        if not self.project_id:
+            self.log_test("Analytics Endpoint", False, "No project ID available")
+            return False
+            
+        success, status, data = self.make_request('GET', f'/projects/{self.project_id}/analytics')
+        
+        if success and 'summary' in data and 'daily' in data and 'top_domains' in data:
+            # Check summary structure
+            summary = data['summary']
+            required_fields = ['total', 'allowed', 'denied']
+            has_summary_fields = all(field in summary for field in required_fields)
+            
+            # Check data types
+            daily_is_list = isinstance(data['daily'], list)
+            top_domains_is_list = isinstance(data['top_domains'], list)
+            
+            all_correct = has_summary_fields and daily_is_list and top_domains_is_list
+            self.log_test("Analytics Endpoint", all_correct)
+            return all_correct
+        else:
+            self.log_test("Analytics Endpoint", False, f"Status {status}, Response: {data}")
+            return False
+    
     def run_all_tests(self) -> Dict[str, Any]:
         """Run all API tests"""
         print(f"🧪 Starting JavaScript Hosting Platform API Tests")
