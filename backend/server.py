@@ -75,6 +75,15 @@ class ScriptUpdate(BaseModel):
 class DomainTestRequest(BaseModel):
     domain: str
 
+class CategoryCreate(BaseModel):
+    name: str
+    description: Optional[str] = None
+
+class CategoryUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    is_active: Optional[bool] = None
+
 
 # ─── Helpers ───
 def user_to_dict(u: User) -> dict:
