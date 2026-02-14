@@ -140,6 +140,9 @@ export default function ProjectDetailPage() {
           {/* Whitelist Tab */}
           <TabsContent value="whitelist">
             <WhitelistTab projectId={projectId} whitelists={whitelists} onRefresh={loadProject} />
+            <div className="mt-6">
+              <DomainTester projectId={projectId} />
+            </div>
           </TabsContent>
 
           {/* Embed Tab */}
