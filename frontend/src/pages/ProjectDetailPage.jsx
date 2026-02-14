@@ -28,22 +28,25 @@ export default function ProjectDetailPage() {
   const [whitelists, setWhitelists] = useState([]);
   const [logs, setLogs] = useState([]);
   const [logStats, setLogStats] = useState(null);
+  const [analytics, setAnalytics] = useState(null);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(null);
 
   const loadProject = useCallback(async () => {
     try {
-      const [projRes, scriptRes, whiteRes, logRes] = await Promise.all([
+      const [projRes, scriptRes, whiteRes, logRes, analyticsRes] = await Promise.all([
         projectAPI.get(projectId),
         scriptAPI.list(projectId),
         whitelistAPI.list(projectId),
         logsAPI.list(projectId),
+        analyticsAPI.get(projectId),
       ]);
       setProject(projRes.data.project);
       setScripts(scriptRes.data.scripts);
       setWhitelists(whiteRes.data.whitelists);
       setLogs(logRes.data.logs);
       setLogStats(logRes.data.stats);
+      setAnalytics(analyticsRes.data);
     } catch (err) {
       toast.error('Failed to load project');
       navigate('/projects');
