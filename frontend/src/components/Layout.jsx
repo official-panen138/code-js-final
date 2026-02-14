@@ -18,6 +18,7 @@ function Sidebar() {
   const links = [
     { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { to: '/projects', icon: FolderKanban, label: 'Projects' },
+    { to: '/settings', icon: Settings, label: 'Settings' },
   ];
 
   return (
