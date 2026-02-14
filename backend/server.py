@@ -72,6 +72,9 @@ class ScriptUpdate(BaseModel):
     js_code: Optional[str] = None
     status: Optional[str] = None
 
+class DomainTestRequest(BaseModel):
+    domain: str
+
 
 # ─── Helpers ───
 def user_to_dict(u: User) -> dict:
