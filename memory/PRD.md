@@ -36,6 +36,12 @@ Build a platform that allows users to create projects, add JavaScript scripts, c
 - [x] Embed URL generation and copy-to-clipboard
 - [x] Project/script status toggles
 - [x] Analytics tab with access logs
+- [x] Unit tests: 45 tests for domain validator, normalizer, matcher (all passing)
+- [x] Integration tests: 22 tests for delivery endpoint, domain validation API, domain tester (all passing)
+- [x] Alembic database migrations (initial schema)
+- [x] README with setup & run instructions
+- [x] Analytics charts with recharts (pie chart, bar chart, top domains)
+- [x] Domain Tester tool in UI (test any domain against project whitelist)
 
 ## Prioritized Backlog
 ### P0 (Critical)
