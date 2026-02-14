@@ -1,0 +1,159 @@
+{
+  "design_system": {
+    "identity": {
+      "name": "E1 - The Anti-AI Designer",
+      "tone": "Technical, Precise, Invisible, High-Performance",
+      "archetype": "Swiss & High-Contrast (Archetype 4)",
+      "theme_mode": "light",
+      "primary_vibe": "The 'Invisible Workshop' - Tools that feel like an extension of the mind."
+    },
+    "typography": {
+      "font_family": {
+        "headings": "Plus Jakarta Sans, sans-serif",
+        "body": "Inter, sans-serif",
+        "code": "JetBrains Mono, monospace"
+      },
+      "scale": {
+        "hero": "text-5xl md:text-7xl font-bold tracking-tight leading-[1.1]",
+        "h1": "text-4xl font-semibold tracking-tight",
+        "h2": "text-3xl font-medium tracking-tight",
+        "h3": "text-2xl font-medium",
+        "body_lg": "text-lg leading-relaxed text-slate-600",
+        "body": "text-base leading-relaxed text-slate-600",
+        "caption": "text-sm text-slate-500 font-medium",
+        "mono_sm": "text-xs font-mono text-slate-500"
+      },
+      "rules": "Headings must use tight tracking. ALL CAPS for labels (tracking-widest). Numbers and Data in Mono."
+    },
+    "colors": {
+      "palette": {
+        "background": "#FFFFFF",
+        "foreground": "#0F172A",
+        "primary": "#0F172A",
+        "primary_foreground": "#FFFFFF",
+        "secondary": "#F1F5F9",
+        "secondary_foreground": "#0F172A",
+        "muted": "#F8FAFC",
+        "muted_foreground": "#64748B",
+        "accent": "#F1F5F9",
+        "accent_foreground": "#0F172A",
+        "destructive": "#EF4444",
+        "border": "#E2E8F0",
+        "input": "#E2E8F0",
+        "ring": "#0F172A",
+        "brand_accent": "#2563EB"
+      },
+      "semantic": {
+        "success": "#16A34A",
+        "warning": "#F59E0B",
+        "error": "#DC2626",
+        "info": "#3B82F6",
+        "code_bg": "#0F172A",
+        "code_text": "#E2E8F0"
+      },
+      "gradients": {
+        "subtle_glow": "radial-gradient(circle at 50% 50%, rgba(37,99,235,0.1) 0%, rgba(255,255,255,0) 50%)"
+      }
+    },
+    "layout": {
+      "spacing_scale": {
+        "section_gap": "py-24 md:py-32",
+        "element_gap": "gap-6 md:gap-12",
+        "container_padding": "px-6 md:px-12"
+      },
+      "containers": {
+        "max_width": "max-w-7xl mx-auto",
+        "dashboard_main": "flex-1 p-8 overflow-y-auto"
+      },
+      "grids": {
+        "dashboard": "grid grid-cols-1 md:grid-cols-12 gap-6",
+        "landing_features": "grid grid-cols-1 md:grid-cols-3 gap-8"
+      },
+      "border_radius": {
+        "default": "rounded-md",
+        "card": "rounded-lg",
+        "button": "rounded-md"
+      }
+    },
+    "components": {
+      "buttons": {
+        "primary": "bg-primary text-primary-foreground hover:bg-primary/90 shadow-none rounded-md px-6 py-2.5 font-medium transition-all active:scale-95",
+        "secondary": "bg-white border border-input hover:bg-accent hover:text-accent-foreground shadow-sm rounded-md px-6 py-2.5 font-medium transition-all active:scale-95",
+        "ghost": "hover:bg-accent hover:text-accent-foreground rounded-md px-4 py-2"
+      },
+      "cards": {
+        "style": "bg-white border border-border shadow-sm hover:shadow-md transition-shadow duration-200 rounded-lg",
+        "dashboard_metric": "p-6 flex flex-col justify-between h-full"
+      },
+      "inputs": {
+        "style": "flex h-10 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+      },
+      "tables": {
+        "header": "bg-muted/50 text-muted-foreground font-medium text-xs uppercase tracking-wider",
+        "row": "hover:bg-muted/50 transition-colors border-b border-border/50"
+      }
+    },
+    "visual_enhancers": {
+      "shadows": {
+        "soft": "0 4px 20px -2px rgba(0, 0, 0, 0.05)",
+        "hover": "0 10px 25px -5px rgba(0, 0, 0, 0.1)"
+      },
+      "glassmorphism": {
+        "header": "bg-white/80 backdrop-blur-md border-b border-white/20"
+      },
+      "micro_interactions": {
+        "hover_lift": "hover:-translate-y-1 transition-transform duration-300",
+        "active_press": "active:scale-95 transition-transform duration-100"
+      }
+    },
+    "assets": {
+      "images": {
+        "landing_hero_bg": "https://images.unsplash.com/photo-1765046255517-412341954c4c?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA3MDR8MHwxfHNlYXJjaHwyfHxhYnN0cmFjdCUyMG1pbmltYWwlMjB0ZWNobm9sb2d5JTIwZ2VvbWV0cmljJTIwc2hhcGVzJTIwd2hpdGUlMjBiYWNrZ3JvdW5kfGVufDB8fHx8MTc3MTA4MjA4NHww&ixlib=rb-4.1.0&q=85",
+        "feature_network": "https://images.unsplash.com/photo-1764437358284-4721473936f8?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA3MDR8MHwxfHNlYXJjaHwxfHxhYnN0cmFjdCUyMG1pbmltYWwlMjB0ZWNobm9sb2d5JTIwZ2VvbWV0cmljJTIwc2hhcGVzJTIwd2hpdGUlMjBiYWNrZ3JvdW5kfGVufDB8fHx8MTc3MTA4MjA4NHww&ixlib=rb-4.1.0&q=85",
+        "about_desk": "https://images.unsplash.com/photo-1760278042167-2e42c883e087?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA5NTJ8MHwxfHNlYXJjaHwzfHxzb2Z0d2FyZSUyMGRldmVsb3BlciUyMHdvcmtpbmclMjBjbGVhbiUyMGRlc2slMjBzZXR1cHxlbnwwfHx8fDE3NzEwODIwODV8MA&ixlib=rb-4.1.0&q=85"
+      },
+      "icons": {
+        "library": "lucide-react",
+        "style": "stroke-width=1.5"
+      }
+    },
+    "accessibility": {
+      "contrast_ratio": "Ensure 4.5:1 for normal text",
+      "focus_states": "visible focus:ring-2 focus:ring-offset-2 focus:ring-primary",
+      "aria_labels": "Required for all icon-only buttons"
+    }
+  },
+  "instructions_to_main_agent": {
+    "workflow": [
+      "1. Setup Tailwind config with the specified colors and fonts.",
+      "2. Create the layout components (Sidebar, Header, MainWrapper).",
+      "3. Implement the Dashboard view using the Bento Grid strategy.",
+      "4. Build the Project Detail view with the Tabs component.",
+      "5. Ensure the Code Editor uses a monospaced font and dark background for contrast.",
+      "6. Use 'lucide-react' for all icons."
+    ],
+    "file_structure_notes": {
+      "components": "Use /app/frontend/src/components/ui/ for shadcn components. CUSTOMIZE them to match the 'flat border' style.",
+      "pages": "Place pages in /app/frontend/src/pages/."
+    },
+    "critical_reminders": [
+      "DO NOT use gradients for backgrounds. Use white or flat light grey.",
+      "Use 1px borders to define hierarchy, not shadows.",
+      "Ensure the embed URL generation is prominent and easy to copy.",
+      "Validate domain inputs with instant visual feedback."
+    ]
+  },
+  "UNIVERSAL_GUIDELINES": [
+    "Dark colors look good when used independently without gradients. DO NOT use dark colors as gradients",
+    "Don't make generic centered layouts, simplistic gradients, and uniform styling.",
+    "Create depth through layered design elements with z-index hierarchy",
+    "Use glass-morphism effects with backdrop filters (12-24px blur) only on sticky headers.",
+    "You MUST NOT apply universal transition. Eg: transition: all.",
+    "You MUST NOT center align the app container, ie do not add .App { text-align: center; }.",
+    "Always use modern button styles (rounded-md, not full pill).",
+    "NEVER: use AI assistant Emoji characters like 🤖🧠 etc.",
+    "Every interaction needs micro-animations - hover states, transitions.",
+    "Use 2-3x more spacing than feels comfortable.",
+    "All interactive and key informational elements MUST include a data-testid attribute."
+  ]
+}
