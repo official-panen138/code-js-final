@@ -13,9 +13,10 @@ import { Switch } from '../components/ui/switch';
 import { Separator } from '../components/ui/separator';
 import {
   ArrowLeft, Copy, Check, Plus, Trash2, Pencil, FileCode, Globe,
-  Shield, Activity, ExternalLink, AlertCircle, CheckCircle, XCircle
+  Shield, Activity, ExternalLink, AlertCircle, CheckCircle, XCircle, Search
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
