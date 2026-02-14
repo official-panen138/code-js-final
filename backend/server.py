@@ -497,7 +497,7 @@ async def deliver_js(project_slug: str, script_file: str, request: Request, db: 
     """Public JS delivery endpoint. Returns noop for any unauthorized request (always 200)."""
 
     def noop_response():
-        return Response(content=NOOP_JS, media_type="application/javascript; charset=utf-8", headers=JS_HEADERS)
+        return Response(content=NOOP_JS, media_type="application/javascript; charset=utf-8", headers=JS_CACHE_HEADERS)
 
     # Must end with .js
     if not script_file.endswith('.js'):
