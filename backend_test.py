@@ -460,6 +460,10 @@ class JSHostAPITester:
         self.test_whitelist_list()
         self.test_domain_validation()
         
+        # NEW: Domain Tester
+        print("\n🔍 Domain Tester Tests")
+        self.test_domain_tester_endpoint()
+        
         # Scripts
         print("\n📜 Script CRUD Tests")
         self.test_script_create()
@@ -469,6 +473,10 @@ class JSHostAPITester:
         # Dashboard
         print("\n📊 Dashboard Tests")
         self.test_dashboard_stats()
+        
+        # NEW: Analytics
+        print("\n📈 Analytics Tests")
+        self.test_analytics_endpoint()
         
         # JS Delivery
         print("\n🚀 JS Delivery Tests")
