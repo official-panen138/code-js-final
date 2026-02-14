@@ -21,6 +21,7 @@ class JSHostAPITester:
         self.project_id = None
         self.script_id = None
         self.whitelist_id = None
+        self.created_category_id = None
         
     def log_test(self, test_name: str, success: bool, details: str = ""):
         """Log test result"""
