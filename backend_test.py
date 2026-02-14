@@ -527,6 +527,11 @@ class JSHostAPITester:
         # Categories
         print("\n📂 Categories Tests")
         self.test_categories_list()
+        self.test_categories_all()
+        self.test_category_create()
+        self.test_category_update()
+        self.test_category_delete_unused()
+        self.test_category_delete_in_use()
         
         # Projects
         print("\n📋 Project CRUD Tests")
