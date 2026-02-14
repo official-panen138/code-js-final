@@ -78,4 +78,14 @@ export const logsAPI = {
   list: (projectId, limit = 50) => api.get(`/projects/${projectId}/logs?limit=${limit}`),
 };
 
+// Analytics
+export const analyticsAPI = {
+  get: (projectId) => api.get(`/projects/${projectId}/analytics`),
+};
+
+// Domain Tester
+export const domainTestAPI = {
+  test: (projectId, domain) => api.post(`/projects/${projectId}/test-domain`, { domain }),
+};
+
 export default api;
