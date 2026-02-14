@@ -550,7 +550,7 @@ async def deliver_js(project_slug: str, script_file: str, request: Request, db: 
     # Match domain
     if is_domain_allowed(domain, active_patterns):
         await _log_access(db, project.id, script.id, request, True, domain)
-        return Response(content=script.js_code, media_type="application/javascript; charset=utf-8", headers=JS_HEADERS)
+        return Response(content=script.js_code, media_type="application/javascript; charset=utf-8", headers=JS_CACHE_HEADERS)
     else:
         await _log_access(db, project.id, script.id, request, False, domain)
         return noop_response()
