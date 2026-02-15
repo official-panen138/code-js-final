@@ -106,6 +106,14 @@ Build a platform that allows users to create projects, add JavaScript scripts, c
   - `get_user_campaign(db, campaign_id, user_id, is_admin)` - Gets campaign with ownership check
 - [x] **Backend Testing**: 22/22 tests passed (100% coverage)
 
+### Phase 9 - User Name Field (Feb 15, 2026)
+- [x] **User Name**: Added optional name field to users
+  - Database: Added `name` VARCHAR(100) column to users table
+  - Registration: Users can optionally provide their name during signup
+  - User Management: Admin can set/edit user names when creating/editing users
+  - UI: User list shows name prominently with email below
+  - API: Name included in all user-related responses
+
 ## Database Schema
 
 ### Tables
