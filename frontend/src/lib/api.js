@@ -89,9 +89,9 @@ export const analyticsAPI = {
   getBlacklistedDomains: (projectId) => api.get(`/projects/${projectId}/blacklisted-domains`),
 };
 
-// Domain Tester
+// Domain Tester (per Script)
 export const domainTestAPI = {
-  test: (projectId, domain) => api.post(`/projects/${projectId}/test-domain`, { domain }),
+  test: (projectId, scriptId, domain) => api.post(`/projects/${projectId}/scripts/${scriptId}/test-domain`, { domain }),
 };
 
 // Custom Domains
