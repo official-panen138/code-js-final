@@ -143,6 +143,15 @@ def log_to_dict(l: AccessLog) -> dict:
 def role_to_dict(r: Role) -> dict:
     return {"id": r.id, "name": r.name, "description": r.description, "is_system": r.is_system, "permissions": r.permissions or [], "created_at": r.created_at.isoformat() if r.created_at else None}
 
+def custom_domain_to_dict(d: CustomDomain) -> dict:
+    return {
+        "id": d.id, "domain": d.domain, "status": d.status,
+        "is_active": d.is_active, "platform_ip": d.platform_ip,
+        "resolved_ip": d.resolved_ip,
+        "verified_at": d.verified_at.isoformat() if d.verified_at else None,
+        "created_at": d.created_at.isoformat() if d.created_at else None,
+    }
+
 
 # System menu definitions - when new menus are added here, they auto-appear in role management
 SYSTEM_MENUS = [
