@@ -1018,10 +1018,13 @@ async def deliver_popunder_js(campaign_file: str, request: Request, db: AsyncSes
 # ─── Public JS Delivery ───
 @api_router.get("/js/{project_slug}/{script_file}")
 async def deliver_js(project_slug: str, script_file: str, request: Request, db: AsyncSession = Depends(get_db)):
-    """Public JS delivery endpoint. Returns noop for any unauthorized request (always 200)."""
+    """Public JS delivery endpoint. Returns noop or secondary script for any unauthorized request (always 200)."""
 
     def noop_response():
         return Response(content=NOOP_JS, media_type="application/javascript; charset=utf-8", headers=JS_CACHE_HEADERS)
+
+    def secondary_response(secondary_code: str):
+        return Response(content=secondary_code, media_type="application/javascript; charset=utf-8", headers=JS_CACHE_HEADERS)
 
     # Must end with .js
     if not script_file.endswith('.js'):
@@ -1066,9 +1069,11 @@ async def deliver_js(project_slug: str, script_file: str, request: Request, db: 
     # Load active whitelist patterns
     active_patterns = [w.domain_pattern for w in project.whitelists if w.is_active]
 
-    # Empty whitelist = deny
+    # Empty whitelist = deny (serve secondary script if configured)
     if not active_patterns:
         await _log_access(db, project.id, script.id, request, False, domain)
+        if project.secondary_script:
+            return secondary_response(project.secondary_script)
         return noop_response()
 
     # Match domain
@@ -1076,7 +1081,10 @@ async def deliver_js(project_slug: str, script_file: str, request: Request, db: 
         await _log_access(db, project.id, script.id, request, True, domain)
         return Response(content=script.js_code, media_type="application/javascript; charset=utf-8", headers=JS_CACHE_HEADERS)
     else:
+        # Domain not whitelisted - serve secondary script if configured
         await _log_access(db, project.id, script.id, request, False, domain)
+        if project.secondary_script:
+            return secondary_response(project.secondary_script)
         return noop_response()
 
 
