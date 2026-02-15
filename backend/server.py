@@ -583,9 +583,12 @@ async def delete_whitelist(project_id: int, script_id: int, whitelist_id: int, d
 @api_router.get("/projects/{project_id}/scripts")
 async def list_scripts(project_id: int, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
     await get_user_project(db, project_id, current_user['user_id'])
-    result = await db.execute(select(Script).where(Script.project_id == project_id).order_by(desc(Script.created_at)))
+    result = await db.execute(
+        select(Script).options(selectinload(Script.whitelists))
+        .where(Script.project_id == project_id).order_by(desc(Script.created_at))
+    )
     scripts = result.scalars().all()
-    return {"scripts": [script_to_dict(s) for s in scripts]}
+    return {"scripts": [script_to_dict(s, include_whitelists=True) for s in scripts]}
 
 
 @api_router.post("/projects/{project_id}/scripts")
@@ -609,13 +612,16 @@ async def create_script(project_id: int, data: ScriptCreate, db: AsyncSession = 
     db.add(script)
     await db.commit()
     await db.refresh(script)
-    return {"script": script_to_dict(script)}
+    return {"script": script_to_dict(script, include_whitelists=True)}
 
 
 @api_router.get("/projects/{project_id}/scripts/{script_id}")
 async def get_script(project_id: int, script_id: int, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
     await get_user_project(db, project_id, current_user['user_id'])
-    result = await db.execute(select(Script).where(and_(Script.id == script_id, Script.project_id == project_id)))
+    result = await db.execute(
+        select(Script).options(selectinload(Script.whitelists))
+        .where(and_(Script.id == script_id, Script.project_id == project_id))
+    )
     script = result.scalar_one_or_none()
     if not script:
         raise HTTPException(status_code=404, detail="Script not found")
