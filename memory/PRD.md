@@ -91,6 +91,21 @@ Build a platform that allows users to create projects, add JavaScript scripts, c
   - Works in both Analytics tab and Script modal
   - API params: page, per_page with proper offset/limit
 
+### Phase 8 - Ownership & Visibility Rules (Feb 15, 2026)
+- [x] **Project Ownership**: Projects are scoped to the creating user
+  - Regular users can only see/access/modify their own projects
+  - Admin users can see and manage ALL projects
+  - 404 returned for unauthorized access attempts (no info leak)
+- [x] **Popunder Campaign Ownership**: Campaigns are scoped to the creating user
+  - Regular users can only see/access/modify their own campaigns
+  - Admin users can see and manage ALL campaigns
+  - Same 404 pattern for unauthorized access
+- [x] **Helper Functions**: 
+  - `is_user_admin(db, user_id)` - Checks if user has admin role
+  - `get_user_project(db, project_id, user_id, is_admin)` - Gets project with ownership check
+  - `get_user_campaign(db, campaign_id, user_id, is_admin)` - Gets campaign with ownership check
+- [x] **Backend Testing**: 22/22 tests passed (100% coverage)
+
 ## Database Schema
 
 ### Tables
