@@ -919,6 +919,30 @@ async def list_users(db: AsyncSession = Depends(get_db), current_user: dict = De
     }
 
 
+@api_router.post("/users")
+async def create_user(data: UserCreate, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
+    if not data.email or not data.email.strip():
+        raise HTTPException(status_code=400, detail="Email is required")
+    if not data.password or len(data.password) < 6:
+        raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
+
+    email = data.email.lower().strip()
+    result = await db.execute(select(User).where(User.email == email))
+    if result.scalar_one_or_none():
+        raise HTTPException(status_code=400, detail="Email already registered")
+
+    role_name = (data.role or 'user').strip().lower()
+    role_check = await db.execute(select(Role).where(Role.name == role_name))
+    if not role_check.scalar_one_or_none():
+        raise HTTPException(status_code=400, detail=f"Role '{role_name}' does not exist")
+
+    user = User(email=email, password_hash=hash_password(data.password), role=role_name)
+    db.add(user)
+    await db.commit()
+    await db.refresh(user)
+    return {"user": user_to_dict(user)}
+
+
 @api_router.patch("/users/{user_id}")
 async def update_user(user_id: int, data: UserUpdate, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
     result = await db.execute(select(User).where(User.id == user_id))
