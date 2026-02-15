@@ -2158,12 +2158,23 @@ async def delete_custom_domain(domain_id: int, db: AsyncSession = Depends(get_db
 # ─── Standalone Popunder Campaign Routes ───
 @api_router.get("/popunders")
 async def list_popunder_campaigns(db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
-    """List all popunder campaigns for the current user."""
-    result = await db.execute(
-        select(PopunderCampaign)
-        .where(PopunderCampaign.user_id == current_user['user_id'])
-        .order_by(desc(PopunderCampaign.created_at))
-    )
+    """List all popunder campaigns for the current user. Admins can see all campaigns."""
+    user_id = current_user['user_id']
+    is_admin = await is_user_admin(db, user_id)
+    
+    if is_admin:
+        # Admin can see all campaigns
+        result = await db.execute(
+            select(PopunderCampaign)
+            .order_by(desc(PopunderCampaign.created_at))
+        )
+    else:
+        # Regular users only see their own campaigns
+        result = await db.execute(
+            select(PopunderCampaign)
+            .where(PopunderCampaign.user_id == user_id)
+            .order_by(desc(PopunderCampaign.created_at))
+        )
     campaigns = result.scalars().all()
     return {"popunders": [popunder_campaign_to_dict(c) for c in campaigns]}
 
@@ -2199,14 +2210,18 @@ async def create_popunder_campaign(data: PopunderCampaignCreate, db: AsyncSessio
 @api_router.get("/popunders/{campaign_id}")
 async def get_popunder_campaign(campaign_id: int, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
     """Get a specific popunder campaign."""
-    campaign = await get_user_campaign(db, campaign_id, current_user['user_id'])
+    user_id = current_user['user_id']
+    is_admin = await is_user_admin(db, user_id)
+    campaign = await get_user_campaign(db, campaign_id, user_id, is_admin)
     return {"popunder": popunder_campaign_to_dict(campaign)}
 
 
 @api_router.patch("/popunders/{campaign_id}")
 async def update_popunder_campaign(campaign_id: int, data: PopunderCampaignUpdate, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
     """Update a popunder campaign."""
-    campaign = await get_user_campaign(db, campaign_id, current_user['user_id'])
+    user_id = current_user['user_id']
+    is_admin = await is_user_admin(db, user_id)
+    campaign = await get_user_campaign(db, campaign_id, user_id, is_admin)
 
     if data.name is not None:
         name = data.name.strip()
