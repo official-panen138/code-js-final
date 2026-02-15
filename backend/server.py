@@ -84,6 +84,20 @@ class CategoryUpdate(BaseModel):
     description: Optional[str] = None
     is_active: Optional[bool] = None
 
+class UserUpdate(BaseModel):
+    role: Optional[str] = None
+    is_active: Optional[bool] = None
+
+class RoleCreate(BaseModel):
+    name: str
+    description: Optional[str] = None
+    permissions: Optional[List[str]] = []
+
+class RoleUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    permissions: Optional[List[str]] = None
+
 
 # ─── Helpers ───
 def user_to_dict(u: User) -> dict:
