@@ -251,6 +251,15 @@ SYSTEM_MENUS = [
 ]
 
 
+async def is_user_admin(db: AsyncSession, user_id: int) -> bool:
+    """Check if the user has admin role."""
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+    if not user:
+        return False
+    return user.role == 'admin'
+
+
 async def generate_unique_slug(db: AsyncSession, name: str) -> str:
     """Generate a unique numeric slug for projects."""
     import random
