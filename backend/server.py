@@ -437,7 +437,7 @@ async def create_project(data: ProjectCreate, db: AsyncSession = Depends(get_db)
     await db.refresh(project)
 
     result = await db.execute(
-        select(Project).options(selectinload(Project.category), selectinload(Project.whitelists), selectinload(Project.scripts))
+        select(Project).options(selectinload(Project.category), selectinload(Project.scripts).selectinload(Script.whitelists))
         .where(Project.id == project.id)
     )
     project = result.scalar_one()
@@ -483,7 +483,7 @@ async def update_project(project_id: int, data: ProjectUpdate, db: AsyncSession 
     await db.refresh(project)
 
     result = await db.execute(
-        select(Project).options(selectinload(Project.category), selectinload(Project.whitelists), selectinload(Project.scripts))
+        select(Project).options(selectinload(Project.category), selectinload(Project.scripts).selectinload(Script.whitelists))
         .where(Project.id == project.id)
     )
     project = result.scalar_one()
