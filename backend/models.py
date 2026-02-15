@@ -148,4 +148,22 @@ class PopunderCampaign(Base):
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)
 
     user = relationship('User', back_populates='popunder_campaigns')
+    analytics = relationship('CampaignAnalytics', back_populates='campaign', cascade='all, delete-orphan')
 
+
+class CampaignAnalytics(Base):
+    """Tracks impressions and clicks for popunder campaigns"""
+    __tablename__ = 'campaign_analytics'
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    campaign_id = Column(Integer, ForeignKey('popunder_campaigns.id', ondelete='CASCADE'), nullable=False, index=True)
+    event_type = Column(String(20), nullable=False)  # 'impression' or 'click'
+    referer_url = Column(String(2048), nullable=True)
+    target_url = Column(String(2048), nullable=True)
+    user_agent = Column(String(512), nullable=True)
+    ip_hash = Column(String(64), nullable=True)  # Hashed for privacy
+    country_code = Column(String(10), nullable=True)
+    device_type = Column(String(20), nullable=True)  # desktop, mobile, tablet
+    created_at = Column(DateTime, server_default=func.now(), nullable=False, index=True)
+    
+    campaign = relationship('PopunderCampaign', back_populates='analytics')
