@@ -1192,9 +1192,24 @@ function AnalyticsTab({ logs, logStats, analytics, projectId, onRefresh }) {
 
       {/* Logs table */}
       <div>
-        <h2 className="text-xl font-medium tracking-tight mb-4" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
-          Access Logs
-        </h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-medium tracking-tight" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
+            Access Logs
+          </h2>
+          {logs.length > 0 && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="text-destructive border-destructive/30 hover:bg-destructive/10"
+              onClick={handleClearLogs}
+              disabled={clearingLogs}
+              data-testid="clear-logs-btn"
+            >
+              <Trash2 className="w-4 h-4 mr-1" />
+              {clearingLogs ? 'Clearing...' : 'Clear Logs'}
+            </Button>
+          )}
+        </div>
         {logs.length === 0 ? (
           <Card className="border border-dashed bg-white">
             <CardContent className="p-10 text-center">
