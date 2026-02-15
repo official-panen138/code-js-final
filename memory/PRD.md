@@ -117,7 +117,7 @@ Build a platform that allows users to create projects, add JavaScript scripts, c
 ## Database Schema
 
 ### Tables
-- **users**: id, email, password_hash, role, is_active
+- **users**: id, name, email, password_hash, role, is_active
 - **roles**: id, name, permissions (JSON)
 - **categories**: id, name, description
 - **projects**: id, user_id, category_id, name, slug, status
