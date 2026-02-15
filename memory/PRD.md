@@ -157,6 +157,15 @@ Build a platform that allows users to create projects, add JavaScript scripts, c
   - Loads the actual popunder script for real testing
   - Beautiful dark UI matching the platform design
 
+### Phase 13 - Project Category Filter (Feb 15, 2026)
+- [x] **Category Filter Dropdown**: Filter projects by category on Projects page
+  - Dropdown shows all categories with project count badges (e.g., "Website (3)")
+  - "All Categories" option shows total project count
+  - Works in combination with search text filter
+  - Clear filter button (X) appears when category is selected
+  - "Clear all filters" link when no results match
+- [x] **Responsive Layout**: Search and filter side-by-side on desktop, stacked on mobile
+
 ## Database Schema
 
 ### Tables
