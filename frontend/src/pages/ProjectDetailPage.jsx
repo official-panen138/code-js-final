@@ -1322,7 +1322,7 @@ function AnalyticsTab({ logs, logStats, analytics, projectId, onRefresh }) {
         </Card>
       )}
 
-      {/* Full Referrer URL Details - NEW: Shows exact pages that accessed scripts */}
+      {/* Full Referrer URL Details - Shows exact pages that accessed scripts */}
       {analytics?.referer_url_details?.length > 0 && (
         <Card className="border bg-white shadow-sm">
           <CardHeader>
@@ -1339,7 +1339,7 @@ function AnalyticsTab({ logs, logStats, analytics, projectId, onRefresh }) {
                 <thead>
                   <tr className="border-b border-border bg-slate-50/80">
                     <th className="text-left px-4 py-3 table-header">Source URL</th>
-                    <th className="text-left px-4 py-3 table-header">Script</th>
+                    <th className="text-left px-4 py-3 table-header">Link Script</th>
                     <th className="text-left px-4 py-3 table-header">Status</th>
                     <th className="text-left px-4 py-3 table-header">Requests</th>
                     <th className="text-left px-4 py-3 table-header">Last Access</th>
@@ -1347,32 +1347,38 @@ function AnalyticsTab({ logs, logStats, analytics, projectId, onRefresh }) {
                 </thead>
                 <tbody>
                   {analytics.referer_url_details.map((item, idx) => (
-                    <tr key={idx} className={`border-b border-border/50 transition-colors ${item.status === 'allowed' ? 'hover:bg-green-50/30' : 'hover:bg-red-50/30'}`}>
-                      <td className="px-4 py-3 max-w-xs">
-                        <div className="flex flex-col">
-                          <code className="text-xs font-mono text-blue-700 break-all" style={{ fontFamily: 'JetBrains Mono, monospace' }} title={item.referer_url}>
-                            {item.referer_url.length > 60 ? item.referer_url.substring(0, 60) + '...' : item.referer_url}
-                          </code>
-                          <span className="text-xs text-slate-400 mt-0.5">{item.domain}</span>
-                        </div>
+                    <tr key={idx} className={`border-b border-border/50 transition-colors ${item.status === 'allowed' ? 'bg-green-50/50' : 'bg-red-50/50'}`}>
+                      <td className="px-4 py-3">
+                        <a 
+                          href={item.referer_url} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-sm text-blue-600 hover:text-blue-800 underline font-mono"
+                          style={{ fontFamily: 'JetBrains Mono, monospace' }}
+                        >
+                          {item.referer_url}
+                        </a>
                       </td>
                       <td className="px-4 py-3">
-                        <div className="flex flex-col">
-                          <span className="text-xs font-medium text-slate-700">{item.script_name}</span>
-                          <code className="text-xs font-mono text-slate-500 mt-0.5" style={{ fontFamily: 'JetBrains Mono, monospace' }}>{item.script_url}</code>
-                        </div>
+                        <a 
+                          href={`${window.location.origin}${item.script_url}`} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-sm text-blue-600 hover:text-blue-800 underline font-mono"
+                          style={{ fontFamily: 'JetBrains Mono, monospace' }}
+                        >
+                          {`${window.location.origin}${item.script_url}`}
+                        </a>
                       </td>
                       <td className="px-4 py-3">
-                        <Badge className={item.status === 'allowed' ? 'status-active' : 'status-disabled'}>
+                        <span className={`px-2 py-1 rounded text-xs font-medium ${item.status === 'allowed' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
                           {item.status === 'allowed' ? 'Allowed' : 'Denied'}
-                        </Badge>
-                      </td>
-                      <td className="px-4 py-3 font-mono text-xs" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
-                        <span className={item.status === 'allowed' ? 'text-green-700' : 'text-red-700'}>
-                          {item.request_count}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-xs text-muted-foreground">
+                      <td className="px-4 py-3 font-mono text-sm" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
+                        {item.request_count}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-muted-foreground">
                         {item.last_access ? new Date(item.last_access).toLocaleString() : '—'}
                       </td>
                     </tr>
