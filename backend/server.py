@@ -1183,6 +1183,69 @@ async def clear_script_logs(project_id: int, script_id: int, db: AsyncSession = 
     return {"message": f"Access logs cleared for script '{script.name}'"}
 
 
+# ─── Get Individual Script Logs (with IDs for deletion) ───
+@api_router.get("/projects/{project_id}/scripts/{script_id}/logs")
+async def get_script_logs(project_id: int, script_id: int, limit: int = 100, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
+    """Get individual access log entries for a specific script with IDs for per-row deletion."""
+    project = await get_user_project(db, project_id, current_user['user_id'])
+    
+    # Verify script belongs to project
+    result = await db.execute(
+        select(Script).where(and_(Script.id == script_id, Script.project_id == project_id))
+    )
+    script = result.scalar_one_or_none()
+    if not script:
+        raise HTTPException(status_code=404, detail="Script not found")
+    
+    script_url = f"/api/js/{project.slug}/{script.slug}.js"
+    
+    # Get individual log entries
+    result = await db.execute(
+        select(AccessLog)
+        .where(AccessLog.script_id == script_id)
+        .order_by(desc(AccessLog.created_at))
+        .limit(limit)
+    )
+    logs = result.scalars().all()
+    
+    log_entries = []
+    for log in logs:
+        log_entries.append({
+            "id": log.id,
+            "referer_url": log.referer_url if log.referer_url else (log.ref_domain if log.ref_domain else "Direct/Unknown"),
+            "script_url": script_url,
+            "status": "allowed" if log.allowed else "denied",
+            "requests": 1,
+            "last_access": log.created_at.isoformat() if log.created_at else None,
+        })
+    
+    # Summary stats
+    total_result = await db.execute(
+        select(func.count(AccessLog.id)).where(AccessLog.script_id == script_id)
+    )
+    total_val = total_result.scalar() or 0
+    
+    allowed_result = await db.execute(
+        select(func.count(AccessLog.id)).where(and_(AccessLog.script_id == script_id, AccessLog.allowed == True))
+    )
+    allowed_val = allowed_result.scalar() or 0
+    
+    return {
+        "script": {
+            "id": script.id,
+            "name": script.name,
+            "slug": script.slug,
+            "url": script_url,
+        },
+        "logs": log_entries,
+        "summary": {
+            "total": total_val,
+            "allowed": allowed_val,
+            "denied": total_val - allowed_val
+        }
+    }
+
+
 # ─── Delete Individual Log Entry ───
 @api_router.delete("/projects/{project_id}/logs/{log_id}")
 async def delete_single_log(project_id: int, log_id: int, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
