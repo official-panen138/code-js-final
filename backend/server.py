@@ -1496,8 +1496,8 @@ SEED_CATEGORIES = [
 ]
 
 SEED_ROLES = [
-    {"name": "admin", "description": "Full access to all features", "is_system": True, "permissions": ["dashboard", "projects", "settings", "user_management", "custom_domains"]},
-    {"name": "user", "description": "Standard user with project access", "is_system": True, "permissions": ["dashboard", "projects"]},
+    {"name": "admin", "description": "Full access to all features", "is_system": True, "permissions": ["dashboard", "projects", "popunders", "settings", "user_management", "custom_domains"]},
+    {"name": "user", "description": "Standard user with project access", "is_system": True, "permissions": ["dashboard", "projects", "popunders"]},
 ]
 
 
