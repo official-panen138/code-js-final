@@ -900,24 +900,12 @@ async def deliver_popunder_js(campaign_file: str, request: Request, db: AsyncSes
     # Build configuration from campaign settings
     settings = campaign.settings or {}
     
-    # Parse URL list (newline separated)
-    url_list_str = settings.get("url_list", "")
-    urls = [u.strip() for u in url_list_str.split('\n') if u.strip()]
-    
     config = {
         "id": campaign.id,
-        "type": settings.get("popunder_type", "popunder"),
-        "urls": urls,
-        "freq": settings.get("frequency_cap", 1),
-        "rt": {
-            "enable": settings.get("rt_enable", False),
-            "se": settings.get("referer_se", False),
-            "sm": settings.get("referer_sm", False),
-            "empty": settings.get("referer_empty", False),
-            "notEmpty": settings.get("referer_not_empty", False),
-        },
-        "banner": settings.get("floating_banner", ""),
-        "html": settings.get("html_body", ""),
+        "url": settings.get("direct_link", ""),
+        "timer": settings.get("timer", 0),
+        "interval": settings.get("interval", 24),
+        "devices": settings.get("devices", ["desktop", "mobile", "tablet"]),
     }
 
     js_code = POPUNDER_ENGINE_TEMPLATE.replace('__CONFIG__', json.dumps(config))
