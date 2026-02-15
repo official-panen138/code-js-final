@@ -1,0 +1,76 @@
+{
+  "summary": "Comprehensive testing of JS Hosting Platform per-script whitelist features completed. All requested features working correctly: 1) Per-script whitelist management with add/remove/toggle domains, 2) Domain tester within each script's whitelist dialog, 3) Script URL display in analytics by_script section, 4) Clear Logs button in Access Logs section, 5) Whitelist count badge on script cards.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "passed_tests": [
+    "Backend: Login with admin credentials (admin@jshost.com / Admin@123)",
+    "Backend: Per-script whitelist list (GET /api/projects/{id}/scripts/{id}/whitelist)",
+    "Backend: Add exact domain to script whitelist (POST)",
+    "Backend: Add wildcard domain (*.domain.com) to script whitelist",
+    "Backend: Duplicate domain pattern rejected with 400",
+    "Backend: Invalid domain pattern (*.*.com) rejected with 400",
+    "Backend: Whitelist toggle on/off (PATCH is_active)",
+    "Backend: Whitelist delete (DELETE)",
+    "Backend: Script returns whitelist_count field",
+    "Backend: Domain tester exact match (test-domain endpoint)",
+    "Backend: Domain tester wildcard match",
+    "Backend: Domain tester denied for non-whitelisted domain",
+    "Backend: Domain normalization (https://EXAMPLE.COM/path -> example.com)",
+    "Backend: Analytics has by_script section",
+    "Backend: by_script includes script_url, script_name, count, allowed, denied",
+    "Backend: script_url format is /api/js/{project_slug}/{script_slug}.js",
+    "Backend: Clear logs endpoint (DELETE /api/projects/{id}/logs)",
+    "Backend: Logs empty after clear",
+    "Backend: JS delivery respects per-script whitelist",
+    "Frontend: Login flow works correctly",
+    "Frontend: Whitelist count badge displays on script cards (e.g., '1 domain')",
+    "Frontend: Whitelist dialog opens from Shield button on script",
+    "Frontend: Add domain input and Add button present",
+    "Frontend: Domain tester section with input and Test button",
+    "Frontend: Domain test shows Allowed/Denied result with matched pattern",
+    "Frontend: Domain toggle switches work",
+    "Frontend: Domain delete buttons work",
+    "Frontend: Analytics tab navigation works",
+    "Frontend: Clear Logs button present in Analytics > Access Logs section",
+    "Frontend: Clear Logs shows confirmation dialog and clears logs",
+    "Frontend: 'Access logs cleared' success toast shown",
+    "Frontend: Empty state 'No access logs yet' shown after clear",
+    "Frontend: Requests by Script URL table shows script URLs",
+    "Frontend: Access Logs table shows domain, status badge, IP, time"
+  ],
+  "test_report_links": [
+    "/app/backend/tests/test_per_script_whitelist.py",
+    "/app/test_reports/pytest/per_script_whitelist_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Per-script whitelist correctly implemented - ScriptWhitelist model links to Script, not Project",
+    "Domain tester endpoint at /api/projects/{id}/scripts/{id}/test-domain correctly validates against script's whitelist",
+    "Analytics by_script section properly joins AccessLog with Script to show script URLs",
+    "Clear logs endpoint correctly deletes only AccessLog entries for the project",
+    "Frontend ProjectDetailPage.jsx properly manages whitelist state per-script",
+    "All interactive elements have proper data-testid attributes for testing"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_per_script_whitelist.py"
+  ],
+  "success_rate": {
+    "backend": "100% (23/23 pytest tests passed)",
+    "frontend": "100% (all UI flows working correctly)"
+  },
+  "test_credentials": {
+    "email": "admin@jshost.com",
+    "password": "Admin@123"
+  },
+  "seed_data_creation": "Test projects and scripts created during testing with 'TEST_' prefix. Automatically cleaned up after test completion. Project ID 2 has existing scripts with whitelists for manual testing.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Per-script whitelist features fully tested. Key endpoints: 1) /api/projects/{id}/scripts/{id}/whitelist (CRUD for domain patterns), 2) /api/projects/{id}/scripts/{id}/test-domain (domain tester), 3) DELETE /api/projects/{id}/logs (clear access logs), 4) GET /api/projects/{id}/analytics (includes by_script with script URLs). Frontend dialog at ProjectDetailPage.jsx ScriptsTab component handles whitelist management with data-testid attributes: whitelist-script-{id}, whitelist-dialog, whitelist-add-domain-input, whitelist-test-domain-input, whitelist-test-domain-btn, whitelist-test-result, clear-logs-btn."
+}
