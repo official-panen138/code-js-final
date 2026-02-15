@@ -726,7 +726,9 @@ async def create_script(project_id: int, data: ScriptCreate, db: AsyncSession = 
 
 @api_router.get("/projects/{project_id}/scripts/{script_id}")
 async def get_script(project_id: int, script_id: int, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
-    await get_user_project(db, project_id, current_user['user_id'])
+    user_id = current_user['user_id']
+    is_admin = await is_user_admin(db, user_id)
+    await get_user_project(db, project_id, user_id, is_admin)
     result = await db.execute(
         select(Script).options(selectinload(Script.whitelists))
         .where(and_(Script.id == script_id, Script.project_id == project_id))
@@ -739,7 +741,9 @@ async def get_script(project_id: int, script_id: int, db: AsyncSession = Depends
 
 @api_router.patch("/projects/{project_id}/scripts/{script_id}")
 async def update_script(project_id: int, script_id: int, data: ScriptUpdate, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
-    await get_user_project(db, project_id, current_user['user_id'])
+    user_id = current_user['user_id']
+    is_admin = await is_user_admin(db, user_id)
+    await get_user_project(db, project_id, user_id, is_admin)
     result = await db.execute(
         select(Script).options(selectinload(Script.whitelists))
         .where(and_(Script.id == script_id, Script.project_id == project_id))
