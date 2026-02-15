@@ -205,15 +205,14 @@ SYSTEM_MENUS = [
 
 
 async def generate_unique_slug(db: AsyncSession, name: str) -> str:
-    base = slugify(name, max_length=200)
-    slug = base
-    counter = 1
+    """Generate a unique numeric slug for projects."""
+    import random
     while True:
+        # Generate a random 8-digit number
+        slug = str(random.randint(10000000, 99999999))
         result = await db.execute(select(Project).where(Project.slug == slug))
         if not result.scalar_one_or_none():
             return slug
-        slug = f"{base}-{counter}"
-        counter += 1
 
 
 async def generate_script_slug(db: AsyncSession, project_id: int, name: str) -> str:
