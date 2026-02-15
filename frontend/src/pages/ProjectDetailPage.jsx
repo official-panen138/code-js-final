@@ -1163,17 +1163,44 @@ function ScriptsTab({ projectId, scripts, onRefresh, getEmbedUrl, copied, copyTo
 
 
 /* ─── Embed Tab ─── */
-/* ─── Embed Tab ─── */
-function EmbedTab({ project, scripts, getEmbedUrl, copied, copyToClipboard }) {
+function EmbedTab({ project, scripts, getEmbedUrl, copied, copyToClipboard, cdnDomains, selectedCdn, setSelectedCdn }) {
   return (
     <div className="space-y-6" data-testid="embed-section">
-      <div>
-        <h2 className="text-xl font-medium tracking-tight mb-2" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
-          Embed URLs
-        </h2>
-        <p className="text-sm text-muted-foreground">
-          Copy these embed codes to include your scripts on whitelisted domains.
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-xl font-medium tracking-tight mb-2" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
+            Embed URLs
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            Copy these embed codes to include your scripts on whitelisted domains.
+          </p>
+        </div>
+        
+        {/* CDN Domain Selector */}
+        {cdnDomains.length > 0 && (
+          <div className="flex items-center gap-2">
+            <Label className="text-xs text-muted-foreground">Serve from:</Label>
+            <Select value={selectedCdn} onValueChange={setSelectedCdn}>
+              <SelectTrigger className="w-[220px] h-9" data-testid="cdn-selector">
+                <SelectValue placeholder="Select domain" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="default">
+                  <span className="flex items-center gap-2">
+                    <Globe className="w-3 h-3" /> Default (Main Platform)
+                  </span>
+                </SelectItem>
+                {cdnDomains.map((cdn) => (
+                  <SelectItem key={cdn.id} value={cdn.id.toString()}>
+                    <span className="flex items-center gap-2">
+                      <Globe className="w-3 h-3 text-green-600" /> {cdn.domain}
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
       </div>
 
       {scripts.length === 0 ? (
