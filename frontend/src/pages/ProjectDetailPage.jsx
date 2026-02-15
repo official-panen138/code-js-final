@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../components/ui/dialog';
 import { Switch } from '../components/ui/switch';
 import { Separator } from '../components/ui/separator';
+import { Textarea } from '../components/ui/textarea';
 import {
   ArrowLeft, Copy, Check, Plus, Trash2, Pencil, FileCode, Globe,
   Shield, Activity, ExternalLink, AlertCircle, CheckCircle, XCircle, Search, SaveAll
