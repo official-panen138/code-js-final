@@ -435,9 +435,21 @@ function ScriptsTab({ projectId, scripts, onRefresh, getEmbedUrl, copied, copyTo
               />
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="flex gap-2">
             <Button variant="outline" onClick={() => { setShowCreate(false); resetForm(); }}>Cancel</Button>
-            <Button onClick={handleSave} disabled={saving} className="bg-[#0F172A] hover:bg-[#1E293B] text-white" data-testid="save-script-btn">
+            {editScript && (
+              <Button 
+                variant="outline" 
+                onClick={handleSaveAsNewVersion} 
+                disabled={savingVersion || saving}
+                className="border-blue-200 text-blue-700 hover:bg-blue-50"
+                data-testid="save-as-version-btn"
+              >
+                <SaveAll className="w-4 h-4 mr-2" />
+                {savingVersion ? 'Saving...' : 'Save as New Version'}
+              </Button>
+            )}
+            <Button onClick={handleSave} disabled={saving || savingVersion} className="bg-[#0F172A] hover:bg-[#1E293B] text-white" data-testid="save-script-btn">
               {saving ? 'Saving...' : editScript ? 'Update Script' : 'Create Script'}
             </Button>
           </DialogFooter>
