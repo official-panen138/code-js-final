@@ -205,7 +205,7 @@ export default function PopundersPage() {
                   <li>Opens a random URL from your list in a new window behind the current page</li>
                   <li>Triggers on first user click/touch after page load</li>
                   <li>Timer controls delay before opening (in seconds)</li>
-                  <li>Interval controls hours between shows for same user</li>
+                  <li>Frequency limits how many times per day a user sees the popunder</li>
                   <li>Country detection uses visitor's IP address</li>
                 </ul>
               </div>
