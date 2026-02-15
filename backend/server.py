@@ -1409,8 +1409,8 @@ async def create_popunder_campaign(data: PopunderCampaignCreate, db: AsyncSessio
     if not data.name or not data.name.strip():
         raise HTTPException(status_code=400, detail="Campaign name is required")
 
-    if not data.settings or not data.settings.direct_link or not data.settings.direct_link.strip():
-        raise HTTPException(status_code=400, detail="Direct link URL is required")
+    if not data.settings or not data.settings.url_list or not data.settings.url_list.strip():
+        raise HTTPException(status_code=400, detail="At least one URL is required")
 
     if data.status and data.status not in ('active', 'paused'):
         raise HTTPException(status_code=400, detail="Status must be 'active' or 'paused'")
