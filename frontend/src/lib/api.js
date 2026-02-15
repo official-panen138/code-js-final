@@ -122,10 +122,4 @@ export const popunderAPI = {
   deleteAnalyticsLog: (id, logId) => api.delete(`/popunders/${id}/analytics/${logId}`),
 };
 
-// Auth - remove register
-export const authAPI = {
-  login: (data) => api.post('/auth/login', data),
-  me: () => api.get('/auth/me'),
-};
-
 export default api;
