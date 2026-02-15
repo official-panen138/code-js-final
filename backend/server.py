@@ -1118,7 +1118,9 @@ async def get_analytics_logs(project_id: int, page: int = 1, per_page: int = 20,
 @api_router.get("/projects/{project_id}/blacklisted-domains")
 async def get_blacklisted_domains(project_id: int, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
     """Get list of domains that were denied access (not whitelisted)."""
-    await get_user_project(db, project_id, current_user['user_id'])
+    user_id = current_user['user_id']
+    is_admin = await is_user_admin(db, user_id)
+    await get_user_project(db, project_id, user_id, is_admin)
 
     # Get denied domains with count, most recent first
     result = await db.execute(
