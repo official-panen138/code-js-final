@@ -171,7 +171,7 @@ def script_to_dict(s: Script, include_whitelists: bool = False) -> dict:
     return d
 
 def log_to_dict(l: AccessLog) -> dict:
-    return {"id": l.id, "project_id": l.project_id, "script_id": l.script_id, "ref_domain": l.ref_domain, "allowed": l.allowed, "ip": l.ip, "user_agent": l.user_agent, "created_at": l.created_at.isoformat() if l.created_at else None}
+    return {"id": l.id, "project_id": l.project_id, "script_id": l.script_id, "ref_domain": l.ref_domain, "referer_url": l.referer_url, "allowed": l.allowed, "ip": l.ip, "user_agent": l.user_agent, "created_at": l.created_at.isoformat() if l.created_at else None}
 
 def role_to_dict(r: Role) -> dict:
     return {"id": r.id, "name": r.name, "description": r.description, "is_system": r.is_system, "permissions": r.permissions or [], "created_at": r.created_at.isoformat() if r.created_at else None}
@@ -1421,13 +1421,17 @@ async def deliver_js(project_slug: str, script_file: str, request: Request, db: 
         return secondary_response(script)
 
 
-async def _log_access(db: AsyncSession, project_id: int, script_id, request: Request, allowed: bool, domain: str = None):
-    """Log access attempt."""
+async def _log_access(db: AsyncSession, project_id: int, script_id, request: Request, allowed: bool, domain: str = None, referer_url: str = None):
+    """Log access attempt with full referrer URL."""
     try:
+        # Get full referrer URL from request headers
+        full_referer = referer_url or request.headers.get('referer', '') or request.headers.get('origin', '')
+        
         log = AccessLog(
             project_id=project_id,
             script_id=script_id,
-            ref_domain=domain or normalize_domain(request.headers.get('origin', '') or request.headers.get('referer', '')),
+            ref_domain=domain or normalize_domain(full_referer),
+            referer_url=full_referer[:2048] if full_referer else None,  # Truncate to column max length
             allowed=allowed,
             ip=request.client.host if request.client else None,
             user_agent=request.headers.get('user-agent', '')
