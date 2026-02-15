@@ -71,7 +71,7 @@ export const scriptAPI = {
   update: (projectId, id, data) => api.patch(`/projects/${projectId}/scripts/${id}`, data),
   delete: (projectId, id) => api.delete(`/projects/${projectId}/scripts/${id}`),
   analytics: (projectId, scriptId) => api.get(`/projects/${projectId}/scripts/${scriptId}/analytics`),
-  logs: (projectId, scriptId, limit = 100) => api.get(`/projects/${projectId}/scripts/${scriptId}/logs?limit=${limit}`),
+  logs: (projectId, scriptId, page = 1, perPage = 20) => api.get(`/projects/${projectId}/scripts/${scriptId}/logs?page=${page}&per_page=${perPage}`),
   clearLogs: (projectId, scriptId) => api.delete(`/projects/${projectId}/scripts/${scriptId}/logs`),
 };
 
