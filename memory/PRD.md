@@ -63,6 +63,19 @@ Build a platform that allows users to create projects, add JavaScript scripts, c
   - Confirmation dialog before deletion
   - DELETE /api/projects/{id}/logs endpoint
 
+### Phase 6 - Full Referrer URL Tracking (Feb 15, 2026)
+- [x] **Full Referrer URL Capture**: Captures complete referrer URL, not just domain
+  - New `referer_url` column in access_logs table (VARCHAR 2048)
+  - _log_access function captures full Referer header from requests
+  - Enables tracking exactly which pages load your scripts
+- [x] **Source URL Details Table**: New analytics section showing full source URLs
+  - Displays Source URL (full referrer), Link Script (full script URL with domain), Status, Requests, Last Access
+  - Rows colored by status (green for Allowed, red for Denied)
+  - Both URLs are clickable links
+  - Supports multi-domain access pattern analysis
+- [x] **Script-Specific Referrer URLs**: Script analytics modal includes referer_urls breakdown
+- [x] **Access Logs Table**: Updated to show Source URL column with full referrer
+
 ## Database Schema
 
 ### Tables
