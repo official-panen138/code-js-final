@@ -85,7 +85,7 @@ Build a platform that allows users to create projects, add JavaScript scripts, c
 - **projects**: id, user_id, category_id, name, slug, status
 - **scripts**: id, project_id, name, slug, js_code, status, secondary_script, secondary_script_mode, secondary_script_links (JSON)
 - **script_whitelists**: id, script_id, domain_pattern, is_active (NEW - per-script whitelists)
-- **access_logs**: id, project_id, script_id, ref_domain, allowed, ip, user_agent
+- **access_logs**: id, project_id, script_id, ref_domain, referer_url, allowed, ip, user_agent
 - **popunder_campaigns**: id, user_id, name, slug, status, settings (JSON)
 
 ## API Endpoints
