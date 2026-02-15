@@ -57,7 +57,7 @@ function UsersSection() {
   const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
-  const [form, setForm] = useState({ email: '', password: '', role: 'user' });
+  const [form, setForm] = useState({ name: '', email: '', password: '', role: 'user' });
   const [creating, setCreating] = useState(false);
   const { user: currentUser } = useAuth();
 
@@ -80,10 +80,15 @@ function UsersSection() {
     if (!form.password || form.password.length < 6) { toast.error('Password must be at least 6 characters'); return; }
     setCreating(true);
     try {
-      await api.post('/users', { email: form.email.trim(), password: form.password, role: form.role });
+      await api.post('/users', { 
+        name: form.name.trim() || null,
+        email: form.email.trim(), 
+        password: form.password, 
+        role: form.role 
+      });
       toast.success('User created');
       setShowCreate(false);
-      setForm({ email: '', password: '', role: 'user' });
+      setForm({ name: '', email: '', password: '', role: 'user' });
       loadUsers();
     } catch (err) {
       toast.error(err.response?.data?.detail || 'Failed to create user');
@@ -134,7 +139,7 @@ function UsersSection() {
             <table className="w-full text-sm" data-testid="users-table">
               <thead>
                 <tr className="border-b border-border bg-slate-50/80">
-                  <th className="text-left px-5 py-3 table-header">Email</th>
+                  <th className="text-left px-5 py-3 table-header">User</th>
                   <th className="text-left px-5 py-3 table-header">Role</th>
                   <th className="text-left px-5 py-3 table-header">Status</th>
                   <th className="text-left px-5 py-3 table-header">Created</th>
@@ -144,15 +149,22 @@ function UsersSection() {
               <tbody>
                 {users.map((u) => {
                   const isSelf = u.id === currentUser?.id;
+                  const displayName = u.name || u.email.split('@')[0];
+                  const initials = u.name ? u.name.charAt(0).toUpperCase() : u.email[0].toUpperCase();
                   return (
                     <tr key={u.id} className="border-b border-border/50 hover:bg-slate-50/50 transition-colors" data-testid={`user-row-${u.id}`}>
                       <td className="px-5 py-4">
-                        <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-xs font-medium text-slate-600">
-                            {u.email[0].toUpperCase()}
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center text-sm font-medium text-slate-600">
+                            {initials}
                           </div>
-                          <span className="font-medium text-foreground">{u.email}</span>
-                          {isSelf && <Badge variant="outline" className="text-xs">You</Badge>}
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium text-foreground">{displayName}</span>
+                              {isSelf && <Badge variant="outline" className="text-xs">You</Badge>}
+                            </div>
+                            <span className="text-xs text-muted-foreground">{u.email}</span>
+                          </div>
                         </div>
                       </td>
                       <td className="px-5 py-4">
@@ -206,12 +218,22 @@ function UsersSection() {
       </Card>
 
       {/* Add User Dialog */}
-      <Dialog open={showCreate} onOpenChange={(open) => { setShowCreate(open); if (!open) setForm({ email: '', password: '', role: 'user' }); }}>
+      <Dialog open={showCreate} onOpenChange={(open) => { setShowCreate(open); if (!open) setForm({ name: '', email: '', password: '', role: 'user' }); }}>
         <DialogContent data-testid="add-user-dialog">
           <DialogHeader>
             <DialogTitle style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>Add New User</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label className="label-caps">Name (optional)</Label>
+              <Input
+                type="text"
+                placeholder="User's name"
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                data-testid="new-user-name-input"
+              />
+            </div>
             <div className="space-y-2">
               <Label className="label-caps">Email</Label>
               <Input
