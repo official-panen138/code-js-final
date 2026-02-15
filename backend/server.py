@@ -477,6 +477,13 @@ async def update_project(project_id: int, data: ProjectUpdate, db: AsyncSession 
         project.status = data.status
     if data.secondary_script is not None:
         project.secondary_script = data.secondary_script if data.secondary_script.strip() else None
+    if data.secondary_script_mode is not None:
+        if data.secondary_script_mode not in ('js', 'links'):
+            raise HTTPException(status_code=400, detail="Secondary script mode must be 'js' or 'links'")
+        project.secondary_script_mode = data.secondary_script_mode
+    if data.secondary_script_links is not None:
+        # Convert Pydantic models to dicts for JSON storage
+        project.secondary_script_links = [link.model_dump() for link in data.secondary_script_links]
 
     await db.commit()
     await db.refresh(project)
