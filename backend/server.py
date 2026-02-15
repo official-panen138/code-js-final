@@ -103,6 +103,12 @@ class RoleUpdate(BaseModel):
     description: Optional[str] = None
     permissions: Optional[List[str]] = None
 
+class CustomDomainCreate(BaseModel):
+    domain: str
+
+class CustomDomainUpdate(BaseModel):
+    is_active: Optional[bool] = None
+
 
 # ─── Helpers ───
 def user_to_dict(u: User) -> dict:
