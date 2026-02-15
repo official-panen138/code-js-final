@@ -201,6 +201,29 @@ export default function PopunderDetailPage() {
     }
   };
 
+  const deleteAnalyticsLog = async (logId) => {
+    try {
+      await popunderAPI.deleteAnalyticsLog(campaignId, logId);
+      toast.success('Log entry deleted');
+      loadAnalyticsLogs(analyticsPage);
+      loadAnalytics();
+    } catch (err) {
+      toast.error('Failed to delete log');
+    }
+  };
+
+  const clearAllAnalytics = async () => {
+    if (!window.confirm('Are you sure you want to clear all analytics data?')) return;
+    try {
+      await popunderAPI.clearAnalytics(campaignId);
+      toast.success('Analytics cleared');
+      loadAnalytics();
+      loadAnalyticsLogs(1);
+    } catch (err) {
+      toast.error('Failed to clear analytics');
+    }
+  };
+
   if (loading) {
     return (
       <Layout>
