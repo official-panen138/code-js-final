@@ -621,7 +621,7 @@ async def update_script(project_id: int, script_id: int, data: ScriptUpdate, db:
 
     if data.name is not None:
         script.name = data.name
-        script.slug = await generate_script_slug(db, project_id, data.name)
+        # Note: slug is NOT changed on update to preserve embed URLs
     if data.js_code is not None:
         script.js_code = data.js_code
     if data.status is not None:
