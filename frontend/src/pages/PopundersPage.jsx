@@ -359,15 +359,15 @@ export default function PopundersPage() {
                 <p className="text-xs text-muted-foreground">Delay before popunder opens</p>
               </div>
               <div className="space-y-2">
-                <Label className="label-caps">Interval (hours)</Label>
+                <Label className="label-caps">Frequency (per day)</Label>
                 <Input
                   type="number"
                   min="1"
-                  value={form.interval}
-                  onChange={(e) => setForm({ ...form, interval: e.target.value })}
-                  data-testid="campaign-interval-input"
+                  value={form.frequency}
+                  onChange={(e) => setForm({ ...form, frequency: e.target.value })}
+                  data-testid="campaign-frequency-input"
                 />
-                <p className="text-xs text-muted-foreground">Hours between shows</p>
+                <p className="text-xs text-muted-foreground">Max shows per user per day</p>
               </div>
             </div>
 
