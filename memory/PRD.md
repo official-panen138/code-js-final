@@ -42,10 +42,14 @@ Build a platform that allows users to create projects, add JavaScript scripts, c
 - [x] **Blacklisted Domains List**: Analytics tab shows domains that were denied access (not whitelisted)
   - Domain name, request count, last seen timestamp
   - Real-time tracking from access_logs
-- [x] **Secondary Script**: Fallback JS for non-whitelisted domains
-  - Per-project configurable JS code
-  - Served instead of noop response when domain not whitelisted
-  - Configurable via project settings dialog
+- [x] **Secondary Script V2 - Two-Mode Feature**: Enhanced fallback content for non-whitelisted domains
+  - **Mode A (Full JS Script)**: Raw JavaScript code served to non-whitelisted domains
+  - **Mode B (Link Injection)**: Generates hidden HTML links for SEO/backlink purposes
+    - Format: `<div style="display:none;"><a href="URL">keyword</a></div>`
+    - Multiple URL/keyword pairs supported
+    - Self-contained JavaScript that injects the HTML on page load
+  - Modes are mutually exclusive via UI toggle
+  - Configurable via project settings dialog with modern UI
 
 ## Database Schema
 
@@ -53,7 +57,7 @@ Build a platform that allows users to create projects, add JavaScript scripts, c
 - **users**: id, email, password_hash, role, is_active
 - **roles**: id, name, permissions (JSON)
 - **categories**: id, name, description
-- **projects**: id, user_id, category_id, name, slug, status, **secondary_script (NEW)**
+- **projects**: id, user_id, category_id, name, slug, status, secondary_script, **secondary_script_mode**, **secondary_script_links (JSON)**
 - **project_whitelists**: id, project_id, domain_pattern, is_active
 - **scripts**: id, project_id, name, slug, js_code, status
 - **access_logs**: id, project_id, script_id, ref_domain, allowed, ip, user_agent
@@ -63,13 +67,13 @@ Build a platform that allows users to create projects, add JavaScript scripts, c
 
 ### Projects
 - GET/POST `/api/projects` - List/Create
-- GET/PATCH/DELETE `/api/projects/{id}` - CRUD
+- GET/PATCH/DELETE `/api/projects/{id}` - CRUD (includes secondary_script_mode and secondary_script_links)
 - GET/POST `/api/projects/{id}/whitelist` - Whitelist management
 - GET/POST `/api/projects/{id}/scripts` - Script management
-- **GET `/api/projects/{id}/blacklisted-domains`** - Get denied domains (NEW)
+- GET `/api/projects/{id}/blacklisted-domains` - Get denied domains
 
 ### Public JS Delivery
-- GET `/api/js/{projectSlug}/{scriptFile}` - Serves script or secondary_script or noop
+- GET `/api/js/{projectSlug}/{scriptFile}` - Serves script or secondary_script (JS/Links mode) or noop
 - GET `/api/js/popunder/{campaignSlug}.js` - Popunder JS
 
 ## Credentials
