@@ -612,6 +612,13 @@ async def create_script(project_id: int, data: ScriptCreate, db: AsyncSession = 
     db.add(script)
     await db.commit()
     await db.refresh(script)
+    
+    # Reload with whitelists relationship
+    result = await db.execute(
+        select(Script).options(selectinload(Script.whitelists))
+        .where(Script.id == script.id)
+    )
+    script = result.scalar_one()
     return {"script": script_to_dict(script, include_whitelists=True)}
 
 
