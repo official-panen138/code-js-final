@@ -1425,8 +1425,8 @@ POPUNDER_ENGINE_JS = '''
 '''
 
 
-@api_router.get("/js/popunder/{campaign_slug}.js")
-async def deliver_popunder_js(campaign_slug: str, request: Request, db: AsyncSession = Depends(get_db)):
+@api_router.get("/js/popunder/{campaign_file}")
+async def deliver_popunder_js(campaign_file: str, request: Request, db: AsyncSession = Depends(get_db)):
     """
     Public Popunder JS delivery endpoint.
     Strict validation order:
@@ -1438,6 +1438,12 @@ async def deliver_popunder_js(campaign_slug: str, request: Request, db: AsyncSes
 
     def noop_response():
         return Response(content=NOOP_JS, media_type="application/javascript; charset=utf-8", headers=JS_CACHE_HEADERS)
+
+    # Must end with .js
+    if not campaign_file.endswith('.js'):
+        return noop_response()
+
+    campaign_slug = campaign_file[:-3]  # Remove .js extension
 
     # 1. Resolve campaign by slug
     result = await db.execute(
