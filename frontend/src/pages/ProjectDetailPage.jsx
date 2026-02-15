@@ -875,7 +875,8 @@ function WhitelistTab({ projectId, whitelists, onRefresh }) {
 
 
 /* ─── Embed Tab ─── */
-function EmbedTab({ project, scripts, popunders, getEmbedUrl, getPopunderEmbedUrl, copied, copyToClipboard }) {
+/* ─── Embed Tab ─── */
+function EmbedTab({ project, scripts, getEmbedUrl, copied, copyToClipboard }) {
   return (
     <div className="space-y-6" data-testid="embed-section">
       <div>
@@ -887,12 +888,15 @@ function EmbedTab({ project, scripts, popunders, getEmbedUrl, getPopunderEmbedUr
         </p>
       </div>
 
-      {/* Scripts Section */}
-      {scripts.length > 0 && (
+      {scripts.length === 0 ? (
+        <Card className="border border-dashed bg-white">
+          <CardContent className="p-10 text-center">
+            <FileCode className="w-8 h-8 text-muted-foreground mx-auto mb-2" strokeWidth={1.5} />
+            <p className="text-muted-foreground text-sm">No scripts to embed. Create a script first.</p>
+          </CardContent>
+        </Card>
+      ) : (
         <div className="space-y-4">
-          <h3 className="text-base font-medium flex items-center gap-2">
-            <FileCode className="w-4 h-4" /> Scripts
-          </h3>
           {scripts.map((script) => {
             const embedTag = `<script src="${getEmbedUrl(script.slug)}"></script>`;
             return (
@@ -925,55 +929,6 @@ function EmbedTab({ project, scripts, popunders, getEmbedUrl, getPopunderEmbedUr
             );
           })}
         </div>
-      )}
-
-      {/* Popunders Section */}
-      {popunders && popunders.length > 0 && (
-        <div className="space-y-4">
-          <h3 className="text-base font-medium flex items-center gap-2">
-            <Layers className="w-4 h-4" /> Popunder Campaigns
-          </h3>
-          {popunders.map((campaign) => {
-            const embedTag = `<script src="${getPopunderEmbedUrl(campaign.slug)}"></script>`;
-            return (
-              <Card key={campaign.id} className="border border-border bg-white" data-testid={`embed-popunder-${campaign.id}`}>
-                <CardContent className="p-5 space-y-3">
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-medium">{campaign.name}</h3>
-                    <Badge className={campaign.status === 'active' ? 'status-active' : 'status-paused'}>
-                      {campaign.status}
-                    </Badge>
-                  </div>
-                  <div className="bg-[#0F172A] rounded-lg p-4 flex items-center justify-between gap-3">
-                    <code className="text-sm text-slate-300 break-all" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
-                      {embedTag}
-                    </code>
-                    <Button
-                      variant="ghost" size="sm"
-                      className="text-slate-400 hover:text-white flex-shrink-0"
-                      onClick={() => copyToClipboard(embedTag, `embed-pop-${campaign.id}`)}
-                      data-testid={`copy-embed-popunder-${campaign.id}`}
-                    >
-                      {copied === `embed-pop-${campaign.id}` ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
-                    </Button>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Target: <code className="text-xs">{campaign.settings?.target_url || '—'}</code>
-                  </p>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-      )}
-
-      {scripts.length === 0 && (!popunders || popunders.length === 0) && (
-        <Card className="border border-dashed bg-white">
-          <CardContent className="p-10 text-center">
-            <FileCode className="w-8 h-8 text-muted-foreground mx-auto mb-2" strokeWidth={1.5} />
-            <p className="text-muted-foreground text-sm">No scripts or campaigns to embed. Create one first.</p>
-          </CardContent>
-        </Card>
       )}
     </div>
   );
