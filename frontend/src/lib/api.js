@@ -116,6 +116,17 @@ export const popunderAPI = {
   create: (data) => api.post('/popunders', data),
   update: (id, data) => api.patch(`/popunders/${id}`, data),
   delete: (id) => api.delete(`/popunders/${id}`),
+  // Analytics
+  getAnalytics: (id) => api.get(`/popunders/${id}/analytics`),
+  getAnalyticsLogs: (id, page = 1, perPage = 20) => api.get(`/popunders/${id}/analytics/logs?page=${page}&per_page=${perPage}`),
+  clearAnalytics: (id) => api.delete(`/popunders/${id}/analytics`),
+  deleteAnalyticsLog: (id, logId) => api.delete(`/popunders/${id}/analytics/${logId}`),
+};
+
+// Auth - remove register
+export const authAPI = {
+  login: (data) => api.post('/auth/login', data),
+  me: () => api.get('/auth/me'),
 };
 
 export default api;
