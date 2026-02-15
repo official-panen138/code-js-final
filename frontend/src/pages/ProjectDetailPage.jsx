@@ -501,7 +501,14 @@ function ScriptsTab({ projectId, scripts, onRefresh, getEmbedUrl, copied, copyTo
               <CardContent className="p-4">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-3">
-                    <h3 className="font-medium">{script.name}</h3>
+                    <h3 
+                      className="font-medium cursor-pointer hover:text-blue-600 hover:underline transition-colors" 
+                      onClick={() => openScriptAnalytics(script)}
+                      data-testid={`script-name-${script.id}`}
+                      title="View script analytics"
+                    >
+                      {script.name}
+                    </h3>
                     <Badge className={script.status === 'active' ? 'status-active' : 'status-disabled'}>
                       {script.status}
                     </Badge>
