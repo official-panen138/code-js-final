@@ -270,9 +270,9 @@ export default function PopunderDetailPage() {
                       </span>
                     </div>
                     <div>
-                      <span className="label-caps block mb-1">Interval</span>
-                      <span className="text-slate-700" data-testid="interval-value">
-                        {settings.interval || 24} hours between shows
+                      <span className="label-caps block mb-1">Frequency</span>
+                      <span className="text-slate-700" data-testid="frequency-value">
+                        {settings.frequency || 1}x per user per day
                       </span>
                     </div>
                   </div>
