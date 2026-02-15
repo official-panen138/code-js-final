@@ -175,10 +175,18 @@ def custom_domain_to_dict(d: CustomDomain) -> dict:
 
 def popunder_campaign_to_dict(p: PopunderCampaign) -> dict:
     return {
-        "id": p.id, "project_id": p.project_id, "name": p.name,
+        "id": p.id, "user_id": p.user_id, "name": p.name,
         "slug": p.slug, "status": p.status, "settings": p.settings or {},
         "created_at": p.created_at.isoformat() if p.created_at else None,
         "updated_at": p.updated_at.isoformat() if p.updated_at else None,
+    }
+
+
+def popunder_whitelist_to_dict(w: PopunderWhitelist) -> dict:
+    return {
+        "id": w.id, "campaign_id": w.campaign_id, "domain_pattern": w.domain_pattern,
+        "is_active": w.is_active,
+        "created_at": w.created_at.isoformat() if w.created_at else None,
     }
 
 
@@ -186,6 +194,7 @@ def popunder_campaign_to_dict(p: PopunderCampaign) -> dict:
 SYSTEM_MENUS = [
     {"key": "dashboard", "label": "Dashboard", "description": "View dashboard and stats"},
     {"key": "projects", "label": "Projects", "description": "Manage JS hosting projects"},
+    {"key": "popunders", "label": "Popunder Campaigns", "description": "Manage popunder ad campaigns"},
     {"key": "settings", "label": "Settings", "description": "Manage categories"},
     {"key": "user_management", "label": "User Management", "description": "Manage users and roles"},
     {"key": "custom_domains", "label": "Custom Domains", "description": "Manage custom domains for JS delivery"},
