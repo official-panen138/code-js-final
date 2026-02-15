@@ -757,6 +757,53 @@ async def get_analytics(project_id: int, db: AsyncSession = Depends(get_db), cur
     }
 
 
+# ─── Blacklisted Domains (non-whitelisted) ───
+@api_router.get("/projects/{project_id}/blacklisted-domains")
+async def get_blacklisted_domains(project_id: int, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
+    """Get list of domains that were denied access (not whitelisted)."""
+    await get_user_project(db, project_id, current_user['user_id'])
+
+    # Get denied domains with count, most recent first
+    result = await db.execute(
+        select(
+            AccessLog.ref_domain,
+            func.count(AccessLog.id).label('request_count'),
+            func.max(AccessLog.created_at).label('last_seen'),
+        )
+        .where(and_(
+            AccessLog.project_id == project_id,
+            AccessLog.allowed == False,
+            AccessLog.ref_domain != None,
+            AccessLog.ref_domain != ''
+        ))
+        .group_by(AccessLog.ref_domain)
+        .order_by(desc(func.count(AccessLog.id)))
+        .limit(100)
+    )
+    
+    blacklisted = [
+        {
+            "domain": row.ref_domain,
+            "request_count": row.request_count,
+            "last_seen": row.last_seen.isoformat() if row.last_seen else None
+        }
+        for row in result
+    ]
+
+    # Total denied count
+    total_denied = await db.execute(
+        select(func.count(AccessLog.id)).where(and_(
+            AccessLog.project_id == project_id,
+            AccessLog.allowed == False
+        ))
+    )
+    
+    return {
+        "blacklisted_domains": blacklisted,
+        "total_denied_requests": total_denied.scalar() or 0,
+    }
+
+
 # ─── Domain Tester ───
 @api_router.post("/projects/{project_id}/test-domain")
 async def test_domain(project_id: int, data: DomainTestRequest, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
