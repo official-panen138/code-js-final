@@ -70,6 +70,7 @@ export default function ProjectDetailPage() {
   };
 
   const getEmbedUrl = (scriptSlug) => `${BACKEND_URL}/api/js/${project?.slug}/${scriptSlug}.js`;
+  const getPopunderEmbedUrl = (campaignSlug) => `${BACKEND_URL}/api/js/popunder/${project?.slug}/${campaignSlug}.js`;
 
   if (loading) {
     return (
