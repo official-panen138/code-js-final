@@ -344,31 +344,6 @@ async def get_user_campaign(db: AsyncSession, campaign_id: int, user_id: int, is
 
 
 # ─── Auth Routes ───
-@api_router.post("/auth/register")
-async def register(data: UserRegister, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(User).where(User.email == data.email.lower()))
-    if result.scalar_one_or_none():
-        raise HTTPException(status_code=400, detail="Email already registered")
-
-    user = User(
-        name=data.name.strip() if data.name else None,
-        email=data.email.lower(), 
-        password_hash=hash_password(data.password)
-    )
-    db.add(user)
-    await db.commit()
-    await db.refresh(user)
-
-    # Get role permissions
-    role_result = await db.execute(select(Role).where(Role.name == user.role))
-    role = role_result.scalar_one_or_none()
-    user_dict = user_to_dict(user)
-    user_dict["permissions"] = role.permissions if role else []
-
-    token = create_token(user.id, user.email)
-    return {"token": token, "user": user_dict}
-
-
 @api_router.post("/auth/login")
 async def login(data: UserLogin, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(User).where(User.email == data.email.lower()))
