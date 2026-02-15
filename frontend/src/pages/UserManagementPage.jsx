@@ -204,12 +204,64 @@ function UsersSection() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Add User Dialog */}
+      <Dialog open={showCreate} onOpenChange={(open) => { setShowCreate(open); if (!open) setForm({ email: '', password: '', role: 'user' }); }}>
+        <DialogContent data-testid="add-user-dialog">
+          <DialogHeader>
+            <DialogTitle style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>Add New User</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label className="label-caps">Email</Label>
+              <Input
+                type="email"
+                placeholder="user@example.com"
+                value={form.email}
+                onChange={(e) => setForm({ ...form, email: e.target.value })}
+                data-testid="new-user-email-input"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="label-caps">Password</Label>
+              <Input
+                type="password"
+                placeholder="Min 6 characters"
+                value={form.password}
+                onChange={(e) => setForm({ ...form, password: e.target.value })}
+                data-testid="new-user-password-input"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="label-caps">Role</Label>
+              <Select value={form.role} onValueChange={(val) => setForm({ ...form, role: val })}>
+                <SelectTrigger data-testid="new-user-role-select">
+                  <SelectValue placeholder="Select role" />
+                </SelectTrigger>
+                <SelectContent>
+                  {roles.map(r => (
+                    <SelectItem key={r.id} value={r.name}>{r.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCreate(false)}>Cancel</Button>
+            <Button
+              onClick={handleCreate}
+              disabled={creating}
+              className="bg-[#0F172A] hover:bg-[#1E293B] text-white"
+              data-testid="confirm-add-user-btn"
+            >
+              {creating ? 'Creating...' : 'Create User'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
-
-
-/* ─── Roles Section ─── */
 function RolesSection() {
   const [roles, setRoles] = useState([]);
   const [menus, setMenus] = useState([]);
