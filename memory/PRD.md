@@ -120,6 +120,27 @@ Build a platform that allows users to create projects, add JavaScript scripts, c
   - Login page shows "Contact your administrator for account access"
   - User creation now exclusively through User Management (admin-only)
 
+### Phase 11 - Popunder Improvements & Campaign Analytics (Feb 15, 2026)
+- [x] **True Popunder Behavior**: Updated JS engine to open windows behind the main tab
+  - Uses blur/focus technique with multiple fallbacks for cross-browser support
+  - Creates ghost element for focus steal
+  - Includes about:blank fallback for stubborn browsers
+- [x] **Campaign Analytics Tracking**:
+  - Tracks impressions (on script load) and clicks (on popunder open)
+  - New `campaign_analytics` database table with: campaign_id, event_type, referer_url, target_url, user_agent, ip_hash, country_code, device_type
+  - Public tracking endpoint: `POST /api/popunder-analytics`
+- [x] **Analytics Dashboard**:
+  - Summary cards: Total Impressions, Unique Visitors, Total Clicks, CTR
+  - Clicks by Device breakdown with progress bars
+  - Top Referrers list
+  - Activity Log table with pagination and per-row delete
+  - Clear All button to reset analytics
+- [x] **API Endpoints**:
+  - `GET /api/popunders/{id}/analytics` - Summary stats
+  - `GET /api/popunders/{id}/analytics/logs` - Paginated log entries
+  - `DELETE /api/popunders/{id}/analytics` - Clear all analytics
+  - `DELETE /api/popunders/{id}/analytics/{log_id}` - Delete single log
+
 ## Database Schema
 
 ### Tables
