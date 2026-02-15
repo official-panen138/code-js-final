@@ -320,12 +320,20 @@ async def generate_popunder_slug(db: AsyncSession, name: str) -> str:
         counter += 1
 
 
-async def get_user_campaign(db: AsyncSession, campaign_id: int, user_id: int) -> PopunderCampaign:
-    """Get a popunder campaign owned by the user."""
-    result = await db.execute(
-        select(PopunderCampaign)
-        .where(and_(PopunderCampaign.id == campaign_id, PopunderCampaign.user_id == user_id))
-    )
+async def get_user_campaign(db: AsyncSession, campaign_id: int, user_id: int, is_admin: bool = False) -> PopunderCampaign:
+    """Get a popunder campaign by ID. If is_admin is True, bypasses user ownership check."""
+    if is_admin:
+        # Admin can access any campaign
+        result = await db.execute(
+            select(PopunderCampaign)
+            .where(PopunderCampaign.id == campaign_id)
+        )
+    else:
+        # Regular users can only access their own campaigns
+        result = await db.execute(
+            select(PopunderCampaign)
+            .where(and_(PopunderCampaign.id == campaign_id, PopunderCampaign.user_id == user_id))
+        )
     campaign = result.scalar_one_or_none()
     if not campaign:
         raise HTTPException(status_code=404, detail="Popunder campaign not found")
