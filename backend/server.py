@@ -159,6 +159,7 @@ SYSTEM_MENUS = [
     {"key": "projects", "label": "Projects", "description": "Manage JS hosting projects"},
     {"key": "settings", "label": "Settings", "description": "Manage categories"},
     {"key": "user_management", "label": "User Management", "description": "Manage users and roles"},
+    {"key": "custom_domains", "label": "Custom Domains", "description": "Manage custom domains for JS delivery"},
 ]
 
 
