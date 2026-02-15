@@ -90,7 +90,7 @@ export const logsAPI = {
 // Analytics
 export const analyticsAPI = {
   get: (projectId) => api.get(`/projects/${projectId}/analytics`),
-  getLogs: (projectId, limit = 100) => api.get(`/projects/${projectId}/analytics/logs?limit=${limit}`),
+  getLogs: (projectId, page = 1, perPage = 20) => api.get(`/projects/${projectId}/analytics/logs?page=${page}&per_page=${perPage}`),
   getBlacklistedDomains: (projectId) => api.get(`/projects/${projectId}/blacklisted-domains`),
 };
 
