@@ -190,7 +190,7 @@ class PopunderCampaignUpdate(BaseModel):
 
 # ─── Helpers ───
 def user_to_dict(u: User) -> dict:
-    return {"id": u.id, "email": u.email, "role": u.role, "is_active": u.is_active, "created_at": u.created_at.isoformat() if u.created_at else None}
+    return {"id": u.id, "name": u.name, "email": u.email, "role": u.role, "is_active": u.is_active, "created_at": u.created_at.isoformat() if u.created_at else None}
 
 def category_to_dict(c: Category) -> dict:
     return {"id": c.id, "name": c.name, "description": c.description, "is_active": c.is_active}
