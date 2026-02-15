@@ -63,10 +63,19 @@ export default function ProjectsPage() {
     }
   };
 
-  const filtered = projects.filter((p) =>
-    p.name.toLowerCase().includes(search.toLowerCase()) ||
-    p.slug.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = projects.filter((p) => {
+    const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase()) ||
+      p.slug.toLowerCase().includes(search.toLowerCase());
+    const matchesCategory = categoryFilter === 'all' || 
+      (p.category && String(p.category.id) === categoryFilter);
+    return matchesSearch && matchesCategory;
+  });
+
+  // Count projects per category for the filter badges
+  const categoryCounts = categories.reduce((acc, cat) => {
+    acc[cat.id] = projects.filter(p => p.category && p.category.id === cat.id).length;
+    return acc;
+  }, {});
 
   if (loading) {
     return (
