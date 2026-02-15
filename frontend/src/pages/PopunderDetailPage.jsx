@@ -57,6 +57,13 @@ export default function PopunderDetailPage() {
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(null);
 
+  // Analytics state
+  const [analytics, setAnalytics] = useState(null);
+  const [analyticsLogs, setAnalyticsLogs] = useState([]);
+  const [analyticsPage, setAnalyticsPage] = useState(1);
+  const [analyticsPagination, setAnalyticsPagination] = useState({});
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
+
   // Edit form
   const [showEdit, setShowEdit] = useState(false);
   const [editForm, setEditForm] = useState({});
@@ -74,9 +81,34 @@ export default function PopunderDetailPage() {
     }
   }, [campaignId, navigate]);
 
+  const loadAnalytics = useCallback(async () => {
+    try {
+      const res = await popunderAPI.getAnalytics(campaignId);
+      setAnalytics(res.data);
+    } catch (err) {
+      console.error('Failed to load analytics:', err);
+    }
+  }, [campaignId]);
+
+  const loadAnalyticsLogs = useCallback(async (page = 1) => {
+    setAnalyticsLoading(true);
+    try {
+      const res = await popunderAPI.getAnalyticsLogs(campaignId, page);
+      setAnalyticsLogs(res.data.logs);
+      setAnalyticsPagination(res.data.pagination);
+      setAnalyticsPage(page);
+    } catch (err) {
+      console.error('Failed to load analytics logs:', err);
+    } finally {
+      setAnalyticsLoading(false);
+    }
+  }, [campaignId]);
+
   useEffect(() => {
     loadCampaign();
-  }, [loadCampaign]);
+    loadAnalytics();
+    loadAnalyticsLogs(1);
+  }, [loadCampaign, loadAnalytics, loadAnalyticsLogs]);
 
   const copyToClipboard = (text, id) => {
     navigator.clipboard.writeText(text);
