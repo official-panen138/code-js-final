@@ -227,6 +227,19 @@ function ScriptsTab({ projectId, scripts, onRefresh, getEmbedUrl, copied, copyTo
   const [secondaryCode, setSecondaryCode] = useState('');
   const [secondaryLinks, setSecondaryLinks] = useState([]);
   const [savingSecondary, setSavingSecondary] = useState(false);
+  
+  // Whitelist state
+  const [showWhitelist, setShowWhitelist] = useState(false);
+  const [whitelistScript, setWhitelistScript] = useState(null);
+  const [whitelistEntries, setWhitelistEntries] = useState([]);
+  const [loadingWhitelist, setLoadingWhitelist] = useState(false);
+  const [newDomain, setNewDomain] = useState('');
+  const [addingDomain, setAddingDomain] = useState(false);
+  
+  // Domain tester state
+  const [testDomain, setTestDomain] = useState('');
+  const [testResult, setTestResult] = useState(null);
+  const [testing, setTesting] = useState(false);
 
   const resetForm = () => { 
     setForm({ name: '', js_code: '', secondary_script_mode: 'js', secondary_script: '', secondary_script_links: [] }); 
