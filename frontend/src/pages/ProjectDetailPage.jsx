@@ -936,9 +936,10 @@ function EmbedTab({ project, scripts, getEmbedUrl, copied, copyToClipboard }) {
 /* ─── Analytics Tab ─── */
 const CHART_COLORS = ['#16A34A', '#DC2626', '#2563EB', '#F59E0B', '#8B5CF6'];
 
-function AnalyticsTab({ logs, logStats, analytics, projectId }) {
+function AnalyticsTab({ logs, logStats, analytics, projectId, onRefresh }) {
   const [blacklisted, setBlacklisted] = useState([]);
   const [loadingBlacklisted, setLoadingBlacklisted] = useState(false);
+  const [clearingLogs, setClearingLogs] = useState(false);
 
   useEffect(() => {
     const loadBlacklisted = async () => {
@@ -954,6 +955,22 @@ function AnalyticsTab({ logs, logStats, analytics, projectId }) {
     };
     loadBlacklisted();
   }, [projectId]);
+
+  const handleClearLogs = async () => {
+    if (!window.confirm('Are you sure you want to clear all access logs for this project? This action cannot be undone.')) {
+      return;
+    }
+    setClearingLogs(true);
+    try {
+      await logsAPI.clear(projectId);
+      toast.success('Access logs cleared');
+      onRefresh();
+    } catch (err) {
+      toast.error('Failed to clear logs');
+    } finally {
+      setClearingLogs(false);
+    }
+  };
 
   const pieData = logStats ? [
     { name: 'Allowed', value: logStats.allowed },
