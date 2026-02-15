@@ -1419,7 +1419,6 @@ async def deliver_popunder_js(project_slug: str, campaign_file: str, request: Re
         "height": settings.get("height", 600),
     }
 
-    import json
     js_code = POPUNDER_ENGINE_JS.replace('__CONFIG__', json.dumps(config))
     return Response(content=js_code, media_type="application/javascript; charset=utf-8", headers=JS_CACHE_HEADERS)
 
