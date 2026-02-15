@@ -764,6 +764,60 @@ function AnalyticsTab({ logs, logStats, analytics, projectId }) {
         </Card>
       )}
 
+      {/* Blacklisted Domains (non-whitelisted) */}
+      <Card className="border bg-white shadow-sm">
+        <CardHeader>
+          <CardTitle className="text-base font-medium flex items-center gap-2" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
+            <XCircle className="w-4 h-4 text-red-600" /> Blacklisted Domains
+          </CardTitle>
+          <p className="text-xs text-muted-foreground mt-1">
+            Domains that tried to access your scripts but were denied (not whitelisted)
+          </p>
+        </CardHeader>
+        <CardContent>
+          {loadingBlacklisted ? (
+            <div className="text-center py-6">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-slate-900 mx-auto" />
+            </div>
+          ) : blacklisted.length === 0 ? (
+            <div className="text-center py-6">
+              <Shield className="w-8 h-8 text-muted-foreground mx-auto mb-2" strokeWidth={1.5} />
+              <p className="text-muted-foreground text-sm">No denied requests detected yet</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm" data-testid="blacklisted-domains-table">
+                <thead>
+                  <tr className="border-b border-border bg-slate-50/80">
+                    <th className="text-left px-4 py-3 table-header">Domain</th>
+                    <th className="text-left px-4 py-3 table-header">Requests</th>
+                    <th className="text-left px-4 py-3 table-header">Last Seen</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {blacklisted.map((item, idx) => (
+                    <tr key={idx} className="border-b border-border/50 hover:bg-red-50/30 transition-colors">
+                      <td className="px-4 py-3 font-mono text-xs" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
+                        <div className="flex items-center gap-2">
+                          <XCircle className="w-3 h-3 text-red-500" />
+                          {item.domain}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 font-mono text-xs text-red-700" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
+                        {item.request_count}
+                      </td>
+                      <td className="px-4 py-3 text-xs text-muted-foreground">
+                        {item.last_seen ? new Date(item.last_seen).toLocaleString() : '—'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Logs table */}
       <div>
         <h2 className="text-xl font-medium tracking-tight mb-4" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
