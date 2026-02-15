@@ -963,14 +963,14 @@ function ScriptsTab({ projectId, scripts, onRefresh, getEmbedUrl, copied, copyTo
                         </thead>
                         <tbody>
                           {scriptAnalyticsData.domains.map((item, idx) => (
-                            <tr key={idx} className={`border-b border-border/50 transition-colors ${item.status === 'allowed' ? 'hover:bg-green-50/30' : 'hover:bg-red-50/30'}`}>
+                            <tr key={idx} className={`border-b border-border/50 transition-colors ${item.status === 'allowed' ? 'bg-green-50/30' : 'bg-red-50/30'}`}>
                               <td className="px-3 py-2 font-mono text-xs" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
                                 {item.domain}
                               </td>
                               <td className="px-3 py-2">
-                                <Badge className={item.status === 'allowed' ? 'status-active' : 'status-disabled'} style={{ fontSize: '10px' }}>
+                                <span className={`px-2 py-0.5 rounded text-xs font-medium ${item.status === 'allowed' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
                                   {item.status === 'allowed' ? 'Allowed' : 'Denied'}
-                                </Badge>
+                                </span>
                               </td>
                               <td className="px-3 py-2 font-mono text-xs" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
                                 <span className={item.status === 'allowed' ? 'text-green-700' : 'text-red-700'}>
@@ -1007,16 +1007,22 @@ function ScriptsTab({ projectId, scripts, onRefresh, getEmbedUrl, copied, copyTo
                         </thead>
                         <tbody>
                           {scriptAnalyticsData.referer_urls.map((item, idx) => (
-                            <tr key={idx} className={`border-b border-border/50 transition-colors ${item.status === 'allowed' ? 'hover:bg-green-50/30' : 'hover:bg-red-50/30'}`}>
-                              <td className="px-3 py-2 max-w-[200px]">
-                                <code className="text-xs font-mono text-blue-700 break-all block" style={{ fontFamily: 'JetBrains Mono, monospace' }} title={item.referer_url}>
-                                  {item.referer_url.length > 50 ? item.referer_url.substring(0, 50) + '...' : item.referer_url}
-                                </code>
+                            <tr key={idx} className={`border-b border-border/50 transition-colors ${item.status === 'allowed' ? 'bg-green-50/30' : 'bg-red-50/30'}`}>
+                              <td className="px-3 py-2 max-w-[250px]">
+                                <a 
+                                  href={item.referer_url} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="text-xs font-mono text-blue-600 hover:text-blue-800 underline break-all block"
+                                  style={{ fontFamily: 'JetBrains Mono, monospace' }}
+                                >
+                                  {item.referer_url}
+                                </a>
                               </td>
                               <td className="px-3 py-2">
-                                <Badge className={item.status === 'allowed' ? 'status-active' : 'status-disabled'} style={{ fontSize: '10px' }}>
+                                <span className={`px-2 py-0.5 rounded text-xs font-medium ${item.status === 'allowed' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
                                   {item.status === 'allowed' ? 'Allowed' : 'Denied'}
-                                </Badge>
+                                </span>
                               </td>
                               <td className="px-3 py-2 font-mono text-xs" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
                                 <span className={item.status === 'allowed' ? 'text-green-700' : 'text-red-700'}>
@@ -1040,7 +1046,29 @@ function ScriptsTab({ projectId, scripts, onRefresh, getEmbedUrl, copied, copyTo
               </div>
             )}
           </div>
-          <DialogFooter>
+          <DialogFooter className="flex justify-between sm:justify-between">
+            {scriptAnalyticsData && scriptAnalyticsData.summary.total > 0 && (
+              <Button 
+                variant="destructive" 
+                size="sm"
+                onClick={async () => {
+                  if (window.confirm(`Are you sure you want to clear all logs for "${analyticsScript?.name}"?`)) {
+                    try {
+                      await scriptAPI.clearLogs(projectId, analyticsScript.id);
+                      toast.success('Logs cleared successfully');
+                      // Refresh analytics
+                      const { data } = await scriptAPI.analytics(projectId, analyticsScript.id);
+                      setScriptAnalyticsData(data);
+                    } catch (err) {
+                      toast.error('Failed to clear logs');
+                    }
+                  }
+                }}
+                data-testid="clear-script-logs-btn"
+              >
+                <Trash2 className="w-4 h-4 mr-1" /> Clear Logs
+              </Button>
+            )}
             <Button variant="outline" onClick={() => setShowScriptAnalytics(false)}>Close</Button>
           </DialogFooter>
         </DialogContent>
