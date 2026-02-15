@@ -2310,6 +2310,190 @@ async def delete_popunder_campaign(campaign_id: int, db: AsyncSession = Depends(
     return {"message": "Popunder campaign deleted"}
 
 
+# ─── Campaign Analytics Endpoints ───
+@api_router.post("/popunder-analytics")
+async def track_popunder_event(data: CampaignAnalyticsEvent, request: Request, db: AsyncSession = Depends(get_db)):
+    """Public endpoint to track popunder impressions and clicks."""
+    # Validate event type
+    if data.event_type not in ('impression', 'click'):
+        raise HTTPException(status_code=400, detail="Invalid event type")
+    
+    # Verify campaign exists
+    result = await db.execute(select(PopunderCampaign).where(PopunderCampaign.id == data.campaign_id))
+    campaign = result.scalar_one_or_none()
+    if not campaign:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+    
+    # Get IP and hash it for privacy
+    client_ip = request.client.host if request.client else None
+    ip_hash = None
+    if client_ip:
+        import hashlib
+        ip_hash = hashlib.sha256(client_ip.encode()).hexdigest()[:32]
+    
+    # Get user agent
+    user_agent = request.headers.get('user-agent', '')[:512]
+    
+    # Create analytics entry
+    analytics = CampaignAnalytics(
+        campaign_id=data.campaign_id,
+        event_type=data.event_type,
+        referer_url=data.referer_url[:2048] if data.referer_url else None,
+        target_url=data.target_url[:2048] if data.target_url else None,
+        user_agent=user_agent,
+        ip_hash=ip_hash,
+        device_type=data.device_type
+    )
+    db.add(analytics)
+    await db.commit()
+    
+    return {"status": "ok"}
+
+
+@api_router.get("/popunders/{campaign_id}/analytics")
+async def get_campaign_analytics(campaign_id: int, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
+    """Get analytics summary for a campaign."""
+    user_id = current_user['user_id']
+    is_admin = await is_user_admin(db, user_id)
+    campaign = await get_user_campaign(db, campaign_id, user_id, is_admin)
+    
+    # Get total impressions
+    impressions_result = await db.execute(
+        select(func.count(CampaignAnalytics.id))
+        .where(and_(CampaignAnalytics.campaign_id == campaign_id, CampaignAnalytics.event_type == 'impression'))
+    )
+    total_impressions = impressions_result.scalar() or 0
+    
+    # Get total clicks
+    clicks_result = await db.execute(
+        select(func.count(CampaignAnalytics.id))
+        .where(and_(CampaignAnalytics.campaign_id == campaign_id, CampaignAnalytics.event_type == 'click'))
+    )
+    total_clicks = clicks_result.scalar() or 0
+    
+    # Get unique impressions (by ip_hash)
+    unique_impressions_result = await db.execute(
+        select(func.count(func.distinct(CampaignAnalytics.ip_hash)))
+        .where(and_(CampaignAnalytics.campaign_id == campaign_id, CampaignAnalytics.event_type == 'impression'))
+    )
+    unique_impressions = unique_impressions_result.scalar() or 0
+    
+    # Get clicks by device
+    device_clicks = await db.execute(
+        select(CampaignAnalytics.device_type, func.count(CampaignAnalytics.id))
+        .where(and_(CampaignAnalytics.campaign_id == campaign_id, CampaignAnalytics.event_type == 'click'))
+        .group_by(CampaignAnalytics.device_type)
+    )
+    clicks_by_device = {row[0] or 'unknown': row[1] for row in device_clicks.fetchall()}
+    
+    # Get top referers
+    top_referers = await db.execute(
+        select(CampaignAnalytics.referer_url, func.count(CampaignAnalytics.id).label('count'))
+        .where(and_(CampaignAnalytics.campaign_id == campaign_id, CampaignAnalytics.referer_url != None))
+        .group_by(CampaignAnalytics.referer_url)
+        .order_by(desc('count'))
+        .limit(10)
+    )
+    referers = [{"url": row[0], "count": row[1]} for row in top_referers.fetchall()]
+    
+    # Calculate CTR
+    ctr = (total_clicks / total_impressions * 100) if total_impressions > 0 else 0
+    
+    return {
+        "campaign_id": campaign_id,
+        "campaign_name": campaign.name,
+        "summary": {
+            "total_impressions": total_impressions,
+            "unique_impressions": unique_impressions,
+            "total_clicks": total_clicks,
+            "ctr": round(ctr, 2)
+        },
+        "clicks_by_device": clicks_by_device,
+        "top_referers": referers
+    }
+
+
+@api_router.get("/popunders/{campaign_id}/analytics/logs")
+async def get_campaign_analytics_logs(campaign_id: int, page: int = 1, per_page: int = 20, event_type: Optional[str] = None, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
+    """Get individual analytics log entries with pagination."""
+    user_id = current_user['user_id']
+    is_admin = await is_user_admin(db, user_id)
+    await get_user_campaign(db, campaign_id, user_id, is_admin)
+    
+    # Build query
+    query = select(CampaignAnalytics).where(CampaignAnalytics.campaign_id == campaign_id)
+    count_query = select(func.count(CampaignAnalytics.id)).where(CampaignAnalytics.campaign_id == campaign_id)
+    
+    if event_type and event_type in ('impression', 'click'):
+        query = query.where(CampaignAnalytics.event_type == event_type)
+        count_query = count_query.where(CampaignAnalytics.event_type == event_type)
+    
+    # Get total count
+    total_result = await db.execute(count_query)
+    total = total_result.scalar() or 0
+    
+    # Get paginated results
+    offset = (page - 1) * per_page
+    query = query.order_by(desc(CampaignAnalytics.created_at)).offset(offset).limit(per_page)
+    result = await db.execute(query)
+    logs = result.scalars().all()
+    
+    return {
+        "logs": [
+            {
+                "id": log.id,
+                "event_type": log.event_type,
+                "referer_url": log.referer_url,
+                "target_url": log.target_url,
+                "device_type": log.device_type,
+                "created_at": log.created_at.isoformat() if log.created_at else None
+            }
+            for log in logs
+        ],
+        "pagination": {
+            "page": page,
+            "per_page": per_page,
+            "total": total,
+            "total_pages": (total + per_page - 1) // per_page
+        }
+    }
+
+
+@api_router.delete("/popunders/{campaign_id}/analytics")
+async def clear_campaign_analytics(campaign_id: int, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
+    """Clear all analytics for a campaign."""
+    user_id = current_user['user_id']
+    is_admin = await is_user_admin(db, user_id)
+    await get_user_campaign(db, campaign_id, user_id, is_admin)
+    
+    await db.execute(
+        CampaignAnalytics.__table__.delete().where(CampaignAnalytics.campaign_id == campaign_id)
+    )
+    await db.commit()
+    
+    return {"message": "Analytics cleared"}
+
+
+@api_router.delete("/popunders/{campaign_id}/analytics/{log_id}")
+async def delete_campaign_analytics_log(campaign_id: int, log_id: int, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
+    """Delete a single analytics log entry."""
+    user_id = current_user['user_id']
+    is_admin = await is_user_admin(db, user_id)
+    await get_user_campaign(db, campaign_id, user_id, is_admin)
+    
+    result = await db.execute(
+        select(CampaignAnalytics).where(and_(CampaignAnalytics.id == log_id, CampaignAnalytics.campaign_id == campaign_id))
+    )
+    log = result.scalar_one_or_none()
+    if not log:
+        raise HTTPException(status_code=404, detail="Log entry not found")
+    
+    await db.delete(log)
+    await db.commit()
+    
+    return {"message": "Log entry deleted"}
+
+
 # ─── Seed Data ───
 SEED_CATEGORIES = [
     {"name": "Website", "description": "General website scripts"},
