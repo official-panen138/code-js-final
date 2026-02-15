@@ -102,13 +102,19 @@ export const customDomainAPI = {
   delete: (id) => api.delete(`/custom-domains/${id}`),
 };
 
-// Popunder Campaigns
+// Popunder Campaigns (standalone)
 export const popunderAPI = {
-  list: (projectId) => api.get(`/projects/${projectId}/popunders`),
-  get: (projectId, id) => api.get(`/projects/${projectId}/popunders/${id}`),
-  create: (projectId, data) => api.post(`/projects/${projectId}/popunders`, data),
-  update: (projectId, id, data) => api.patch(`/projects/${projectId}/popunders/${id}`, data),
-  delete: (projectId, id) => api.delete(`/projects/${projectId}/popunders/${id}`),
+  list: () => api.get('/popunders'),
+  get: (id) => api.get(`/popunders/${id}`),
+  create: (data) => api.post('/popunders', data),
+  update: (id, data) => api.patch(`/popunders/${id}`, data),
+  delete: (id) => api.delete(`/popunders/${id}`),
+  // Whitelist management
+  listWhitelist: (id) => api.get(`/popunders/${id}/whitelist`),
+  addWhitelist: (id, data) => api.post(`/popunders/${id}/whitelist`, data),
+  updateWhitelist: (id, whitelistId, data) => api.patch(`/popunders/${id}/whitelist/${whitelistId}`, data),
+  deleteWhitelist: (id, whitelistId) => api.delete(`/popunders/${id}/whitelist/${whitelistId}`),
+  testDomain: (id, domain) => api.post(`/popunders/${id}/test-domain`, { domain }),
 };
 
 export default api;
