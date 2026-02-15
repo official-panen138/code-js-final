@@ -216,11 +216,14 @@ async def generate_unique_slug(db: AsyncSession, name: str) -> str:
 
 
 async def generate_script_slug(db: AsyncSession, project_id: int, name: str) -> str:
-    """Generate a unique numeric slug for scripts within a project."""
+    """Generate a unique alphanumeric slug for scripts within a project."""
     import random
+    import string
     while True:
-        # Generate a random 8-digit number
-        slug = str(random.randint(10000000, 99999999))
+        # Generate a random alphanumeric string (5 letters + 5 digits)
+        letters = ''.join(random.choices(string.ascii_lowercase, k=5))
+        digits = ''.join(random.choices(string.digits, k=5))
+        slug = letters + digits
         result = await db.execute(select(Script).where(and_(Script.project_id == project_id, Script.slug == slug)))
         if not result.scalar_one_or_none():
             return slug
