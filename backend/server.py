@@ -250,7 +250,6 @@ async def get_user_campaign(db: AsyncSession, campaign_id: int, user_id: int) ->
     """Get a popunder campaign owned by the user."""
     result = await db.execute(
         select(PopunderCampaign)
-        .options(selectinload(PopunderCampaign.whitelists))
         .where(and_(PopunderCampaign.id == campaign_id, PopunderCampaign.user_id == user_id))
     )
     campaign = result.scalar_one_or_none()
