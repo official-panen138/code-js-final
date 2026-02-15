@@ -456,6 +456,22 @@ function ScriptsTab({ projectId, scripts, onRefresh, getEmbedUrl, copied, copyTo
     }
   };
 
+  // Script Analytics functions
+  const openScriptAnalytics = async (script) => {
+    setAnalyticsScript(script);
+    setShowScriptAnalytics(true);
+    setLoadingScriptAnalytics(true);
+    setScriptAnalyticsData(null);
+    try {
+      const res = await scriptAPI.analytics(projectId, script.id);
+      setScriptAnalyticsData(res.data);
+    } catch (err) {
+      toast.error('Failed to load script analytics');
+    } finally {
+      setLoadingScriptAnalytics(false);
+    }
+  };
+
   return (
     <div className="space-y-4" data-testid="scripts-section">
       <div className="flex items-center justify-between">
