@@ -141,6 +141,22 @@ Build a platform that allows users to create projects, add JavaScript scripts, c
   - `DELETE /api/popunders/{id}/analytics` - Clear all analytics
   - `DELETE /api/popunders/{id}/analytics/{log_id}` - Delete single log
 
+### Phase 12 - Enhanced Pop-under Behavior (Feb 15, 2026)
+- [x] **True Pop-under (Refined)**: Enhanced JavaScript to ensure popup opens behind main window
+  - Window opens with specific features (width, height, toolbar, menubar, etc.)
+  - Immediate blur on popup window
+  - Multiple focus techniques: window.focus(), self.focus(), click simulation (createEvent/dispatchEvent)
+  - Temporary input element focus technique for stubborn browsers
+  - Cascading setTimeout calls at 0ms, 1ms, 10ms, 50ms, 100ms for async focus
+  - Re-blur popup in setTimeout callbacks to prevent focus stealing
+  - Opener reference handling for frames
+  - window.top focus for iframe contexts
+- [x] **Pop-under Test Page**: Dedicated test endpoint for campaign verification
+  - `GET /api/test/popunder/{campaign_slug}` - Returns HTML test page
+  - Shows campaign info, script URL, and clear test instructions
+  - Loads the actual popunder script for real testing
+  - Beautiful dark UI matching the platform design
+
 ## Database Schema
 
 ### Tables
