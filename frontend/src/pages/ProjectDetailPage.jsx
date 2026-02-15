@@ -115,6 +115,9 @@ export default function ProjectDetailPage() {
             <TabsTrigger value="embed" data-testid="embed-tab">
               <ExternalLink className="w-4 h-4 mr-2" /> Embed
             </TabsTrigger>
+            <TabsTrigger value="analytics" data-testid="analytics-tab">
+              <Activity className="w-4 h-4 mr-2" /> Analytics
+            </TabsTrigger>
           </TabsList>
 
           {/* Scripts Tab */}
@@ -137,6 +140,13 @@ export default function ProjectDetailPage() {
               getEmbedUrl={getEmbedUrl} 
               copied={copied} 
               copyToClipboard={copyToClipboard} 
+            />
+          </TabsContent>
+
+          {/* Analytics Tab */}
+          <TabsContent value="analytics">
+            <AnalyticsLogsTab 
+              projectId={projectId}
             />
           </TabsContent>
         </Tabs>
