@@ -1361,13 +1361,13 @@ function AnalyticsTab({ logs, logStats, analytics, projectId, onRefresh }) {
                       </td>
                       <td className="px-4 py-3">
                         <a 
-                          href={`${window.location.origin}${item.script_url}`} 
+                          href={`${BACKEND_URL}${item.script_url}`} 
                           target="_blank" 
                           rel="noopener noreferrer"
                           className="text-sm text-blue-600 hover:text-blue-800 underline font-mono"
                           style={{ fontFamily: 'JetBrains Mono, monospace' }}
                         >
-                          {`${window.location.origin}${item.script_url}`}
+                          {`${BACKEND_URL}${item.script_url}`}
                         </a>
                       </td>
                       <td className="px-4 py-3">
