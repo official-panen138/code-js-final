@@ -1075,6 +1075,40 @@ function ScriptsTab({ projectId, scripts, onRefresh, getEmbedUrl, copied, copyTo
                       </table>
                     </div>
                   )}
+                  
+                  {/* Pagination Controls for Script Modal */}
+                  {scriptAnalyticsData.pagination && scriptAnalyticsData.pagination.total_pages > 1 && (
+                    <div className="flex items-center justify-between mt-3 pt-3 border-t border-border">
+                      <p className="text-xs text-muted-foreground">
+                        Showing {((scriptAnalyticsData.pagination.page - 1) * scriptAnalyticsData.pagination.per_page) + 1} - {Math.min(scriptAnalyticsData.pagination.page * scriptAnalyticsData.pagination.per_page, scriptAnalyticsData.pagination.total_items)} of {scriptAnalyticsData.pagination.total_items}
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7 px-2 text-xs"
+                          onClick={() => loadScriptLogsPage(scriptAnalyticsData.pagination.page - 1)}
+                          disabled={!scriptAnalyticsData.pagination.has_prev || loadingScriptAnalytics}
+                          data-testid="script-modal-prev-page"
+                        >
+                          <ChevronLeft className="w-3 h-3 mr-1" /> Prev
+                        </Button>
+                        <span className="text-xs px-2 py-1 bg-slate-100 rounded font-mono" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
+                          {scriptAnalyticsData.pagination.page} / {scriptAnalyticsData.pagination.total_pages}
+                        </span>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7 px-2 text-xs"
+                          onClick={() => loadScriptLogsPage(scriptAnalyticsData.pagination.page + 1)}
+                          disabled={!scriptAnalyticsData.pagination.has_next || loadingScriptAnalytics}
+                          data-testid="script-modal-next-page"
+                        >
+                          Next <ChevronRight className="w-3 h-3 ml-1" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </>
             ) : (
