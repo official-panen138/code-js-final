@@ -129,6 +129,18 @@ def script_to_dict(s: Script) -> dict:
 def log_to_dict(l: AccessLog) -> dict:
     return {"id": l.id, "project_id": l.project_id, "script_id": l.script_id, "ref_domain": l.ref_domain, "allowed": l.allowed, "ip": l.ip, "user_agent": l.user_agent, "created_at": l.created_at.isoformat() if l.created_at else None}
 
+def role_to_dict(r: Role) -> dict:
+    return {"id": r.id, "name": r.name, "description": r.description, "is_system": r.is_system, "permissions": r.permissions or [], "created_at": r.created_at.isoformat() if r.created_at else None}
+
+
+# System menu definitions - when new menus are added here, they auto-appear in role management
+SYSTEM_MENUS = [
+    {"key": "dashboard", "label": "Dashboard", "description": "View dashboard and stats"},
+    {"key": "projects", "label": "Projects", "description": "Manage JS hosting projects"},
+    {"key": "settings", "label": "Settings", "description": "Manage categories"},
+    {"key": "user_management", "label": "User Management", "description": "Manage users and roles"},
+]
+
 
 async def generate_unique_slug(db: AsyncSession, name: str) -> str:
     base = slugify(name, max_length=200)
