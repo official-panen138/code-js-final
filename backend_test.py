@@ -6,7 +6,7 @@ import json
 from datetime import datetime
 
 class CustomDomainAPITester:
-    def __init__(self, base_url="https://secondary-v2.preview.emergentagent.com"):
+    def __init__(self, base_url="https://js-hosting-platform-1.preview.emergentagent.com"):
         self.base_url = f"{base_url}/api"
         self.admin_token = None
         self.user_token = None

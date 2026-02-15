@@ -6,7 +6,7 @@ import pytest
 import requests
 import os
 
-API_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://secondary-v2.preview.emergentagent.com')
+API_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://js-hosting-platform-1.preview.emergentagent.com')
 API = f"{API_URL}/api"
 
 # ── Test fixtures ──
