@@ -166,7 +166,7 @@ def whitelist_to_dict(w: ProjectWhitelist) -> dict:
     return {"id": w.id, "project_id": w.project_id, "domain_pattern": w.domain_pattern, "is_active": w.is_active, "created_at": w.created_at.isoformat() if w.created_at else None}
 
 def script_to_dict(s: Script) -> dict:
-    return {"id": s.id, "project_id": s.project_id, "name": s.name, "slug": s.slug, "js_code": s.js_code, "status": s.status, "created_at": s.created_at.isoformat() if s.created_at else None}
+    return {"id": s.id, "project_id": s.project_id, "name": s.name, "slug": s.slug, "js_code": s.js_code, "status": s.status, "secondary_script": s.secondary_script or "", "secondary_script_mode": s.secondary_script_mode or "js", "secondary_script_links": s.secondary_script_links or [], "created_at": s.created_at.isoformat() if s.created_at else None}
 
 def log_to_dict(l: AccessLog) -> dict:
     return {"id": l.id, "project_id": l.project_id, "script_id": l.script_id, "ref_domain": l.ref_domain, "allowed": l.allowed, "ip": l.ip, "user_agent": l.user_agent, "created_at": l.created_at.isoformat() if l.created_at else None}
