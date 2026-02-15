@@ -125,22 +125,22 @@ class PopunderCampaign(Base):
     name = Column(String(255), nullable=False)
     slug = Column(String(255), unique=True, nullable=False, index=True)
     status = Column(Enum('active', 'paused', name='popunder_status'), default='active', nullable=False)
-    settings = Column(JSON, nullable=False, default=dict)  # target_url, frequency, delay, width, height
+    settings = Column(JSON, nullable=False, default=dict)
+    # Settings JSON structure:
+    # {
+    #   "popunder_type": "popunder" | "popup",
+    #   "url_list": "url1\nurl2\nurl3",  # newline separated URLs
+    #   "frequency_cap": 1,  # per user per day
+    #   "rt_enable": false,  # referer targeting
+    #   "referer_se": false,  # search engine
+    #   "referer_sm": false,  # social media
+    #   "referer_empty": false,
+    #   "referer_not_empty": false,
+    #   "floating_banner": "",  # HTML code
+    #   "html_body": ""  # HTML to inject in body
+    # }
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)
 
     user = relationship('User', back_populates='popunder_campaigns')
-    whitelists = relationship('PopunderWhitelist', back_populates='campaign', cascade='all, delete-orphan')
-
-
-class PopunderWhitelist(Base):
-    __tablename__ = 'popunder_whitelists'
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    campaign_id = Column(Integer, ForeignKey('popunder_campaigns.id', ondelete='CASCADE'), nullable=False, index=True)
-    domain_pattern = Column(String(255), nullable=False)
-    is_active = Column(Boolean, default=True, nullable=False)
-    created_at = Column(DateTime, server_default=func.now(), nullable=False)
-
-    campaign = relationship('PopunderCampaign', back_populates='whitelists')
 
