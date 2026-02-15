@@ -932,20 +932,26 @@ async def get_analytics(project_id: int, db: AsyncSession = Depends(get_db), cur
 
 # ─── Individual Access Logs for Analytics Tab ───
 @api_router.get("/projects/{project_id}/analytics/logs")
-async def get_analytics_logs(project_id: int, limit: int = 100, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
-    """Get individual access log entries for the Analytics tab with per-row delete capability."""
+async def get_analytics_logs(project_id: int, page: int = 1, per_page: int = 20, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
+    """Get individual access log entries for the Analytics tab with pagination and per-row delete capability."""
     project = await get_user_project(db, project_id, current_user['user_id'])
+
+    # Ensure valid pagination params
+    page = max(1, page)
+    per_page = min(max(1, per_page), 100)  # Max 100 per page
+    offset = (page - 1) * per_page
 
     # Get scripts for URL mapping
     scripts_result = await db.execute(select(Script).where(Script.project_id == project_id))
     scripts = {s.id: s for s in scripts_result.scalars().all()}
 
-    # Get individual log entries (most recent first)
+    # Get individual log entries (most recent first) with pagination
     result = await db.execute(
         select(AccessLog)
         .where(AccessLog.project_id == project_id)
         .order_by(desc(AccessLog.created_at))
-        .limit(limit)
+        .offset(offset)
+        .limit(per_page)
     )
     logs = result.scalars().all()
 
@@ -965,11 +971,14 @@ async def get_analytics_logs(project_id: int, limit: int = 100, db: AsyncSession
             "last_access": log.created_at.isoformat() if log.created_at else None,
         })
 
-    # Summary stats
+    # Summary stats (total counts for entire project)
     total = await db.execute(select(func.count(AccessLog.id)).where(AccessLog.project_id == project_id))
     allowed = await db.execute(select(func.count(AccessLog.id)).where(and_(AccessLog.project_id == project_id, AccessLog.allowed == True)))
     total_val = total.scalar() or 0
     allowed_val = allowed.scalar() or 0
+    
+    # Calculate total pages
+    total_pages = (total_val + per_page - 1) // per_page if total_val > 0 else 1
 
     return {
         "logs": log_entries,
@@ -977,6 +986,14 @@ async def get_analytics_logs(project_id: int, limit: int = 100, db: AsyncSession
             "total": total_val,
             "allowed": allowed_val,
             "denied": total_val - allowed_val
+        },
+        "pagination": {
+            "page": page,
+            "per_page": per_page,
+            "total_pages": total_pages,
+            "total_items": total_val,
+            "has_next": page < total_pages,
+            "has_prev": page > 1
         }
     }
 
