@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_, desc, case
 from sqlalchemy.orm import selectinload
 import os
+import json
 import logging
 from pathlib import Path
 from pydantic import BaseModel, Field
