@@ -71,6 +71,7 @@ export const scriptAPI = {
   update: (projectId, id, data) => api.patch(`/projects/${projectId}/scripts/${id}`, data),
   delete: (projectId, id) => api.delete(`/projects/${projectId}/scripts/${id}`),
   analytics: (projectId, scriptId) => api.get(`/projects/${projectId}/scripts/${scriptId}/analytics`),
+  clearLogs: (projectId, scriptId) => api.delete(`/projects/${projectId}/scripts/${scriptId}/logs`),
 };
 
 // Dashboard
