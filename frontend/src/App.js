@@ -9,6 +9,7 @@ import ProjectsPage from "./pages/ProjectsPage";
 import ProjectDetailPage from "./pages/ProjectDetailPage";
 import SettingsPage from "./pages/SettingsPage";
 import UserManagementPage from "./pages/UserManagementPage";
+import CustomDomainsPage from "./pages/CustomDomainsPage";
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth();
