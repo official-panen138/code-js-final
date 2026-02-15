@@ -72,7 +72,7 @@ export default function PopundersPage() {
       name: '',
       url_list: '',
       timer: 0,
-      interval: 24,
+      frequency: 1,
       devices: ['desktop', 'mobile', 'tablet'],
       countries: [],
       floating_banner: '',
