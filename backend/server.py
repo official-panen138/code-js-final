@@ -792,23 +792,38 @@ async def test_domain(project_id: int, data: DomainTestRequest, db: AsyncSession
 POPUNDER_ENGINE_TEMPLATE = '''(function(){
 var c = __CONFIG__;
 
-// Storage key for interval tracking
+// Storage key for frequency tracking
 var sk = 'popunder_' + c.id;
 
-// Check if enough time has passed since last show (interval in hours)
-function checkInterval() {
+// Get today's date as string for daily cap
+function getToday() {
+    var d = new Date();
+    return d.getFullYear() + '-' + (d.getMonth()+1) + '-' + d.getDate();
+}
+
+// Check frequency cap (per user per day)
+function checkFrequency() {
     try {
-        var lastShow = localStorage.getItem(sk);
-        if (!lastShow) return true;
-        var elapsed = (Date.now() - parseInt(lastShow)) / (1000 * 60 * 60); // hours
-        return elapsed >= c.interval;
+        var data = JSON.parse(localStorage.getItem(sk) || '{}');
+        var today = getToday();
+        if (data.date !== today) {
+            data = { date: today, count: 0 };
+        }
+        if (data.count >= c.freq) return false;
+        return true;
     } catch(e) { return true; }
 }
 
-// Mark current time as last show
+// Mark show count
 function markShown() {
     try {
-        localStorage.setItem(sk, Date.now().toString());
+        var data = JSON.parse(localStorage.getItem(sk) || '{}');
+        var today = getToday();
+        if (data.date !== today) {
+            data = { date: today, count: 0 };
+        }
+        data.count++;
+        localStorage.setItem(sk, JSON.stringify(data));
     } catch(e) {}
 }
 
@@ -865,7 +880,7 @@ function checkCountry(callback) {
 function openPopunder() {
     var url = getUrl();
     if (!url) return;
-    if (!checkInterval()) return;
+    if (!checkFrequency()) return;
     if (!checkDevice()) return;
     
     var w = screen.width;
