@@ -1190,7 +1190,7 @@ async def deliver_js(project_slug: str, script_file: str, request: Request, db: 
     # Empty whitelist = deny (serve secondary script if configured)
     if not active_patterns:
         await _log_access(db, project.id, script.id, request, False, domain)
-        return secondary_response(project)
+        return secondary_response(script)
 
     # Match domain
     if is_domain_allowed(domain, active_patterns):
@@ -1199,7 +1199,7 @@ async def deliver_js(project_slug: str, script_file: str, request: Request, db: 
     else:
         # Domain not whitelisted - serve secondary response
         await _log_access(db, project.id, script.id, request, False, domain)
-        return secondary_response(project)
+        return secondary_response(script)
 
 
 async def _log_access(db: AsyncSession, project_id: int, script_id, request: Request, allowed: bool, domain: str = None):
