@@ -437,15 +437,15 @@ export default function PopunderDetailPage() {
                 <p className="text-xs text-muted-foreground">Delay before popunder opens</p>
               </div>
               <div className="space-y-2">
-                <Label className="label-caps">Interval (hours)</Label>
+                <Label className="label-caps">Frequency (per day)</Label>
                 <Input
                   type="number"
                   min="1"
-                  value={editForm.interval || 24}
-                  onChange={(e) => setEditForm({ ...editForm, interval: e.target.value })}
-                  data-testid="edit-interval-input"
+                  value={editForm.frequency || 1}
+                  onChange={(e) => setEditForm({ ...editForm, frequency: e.target.value })}
+                  data-testid="edit-frequency-input"
                 />
-                <p className="text-xs text-muted-foreground">Hours between shows for same user</p>
+                <p className="text-xs text-muted-foreground">Max shows per user per day</p>
               </div>
             </div>
 
