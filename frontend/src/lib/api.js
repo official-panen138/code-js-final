@@ -102,4 +102,13 @@ export const customDomainAPI = {
   delete: (id) => api.delete(`/custom-domains/${id}`),
 };
 
+// Popunder Campaigns
+export const popunderAPI = {
+  list: (projectId) => api.get(`/projects/${projectId}/popunders`),
+  get: (projectId, id) => api.get(`/projects/${projectId}/popunders/${id}`),
+  create: (projectId, data) => api.post(`/projects/${projectId}/popunders`, data),
+  update: (projectId, id, data) => api.patch(`/projects/${projectId}/popunders/${id}`, data),
+  delete: (projectId, id) => api.delete(`/projects/${projectId}/popunders/${id}`),
+};
+
 export default api;
