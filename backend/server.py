@@ -826,9 +826,45 @@ function checkDevice() {
     return c.devices.indexOf(getDeviceType()) !== -1;
 }
 
+// Get random URL from list
+function getUrl() {
+    if (!c.urls || c.urls.length === 0) return null;
+    return c.urls[Math.floor(Math.random() * c.urls.length)];
+}
+
+// Check country targeting via IP API (client-side)
+function checkCountry(callback) {
+    if (!c.countries || c.countries.length === 0) {
+        callback(true);
+        return;
+    }
+    try {
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', 'https://ip-api.com/json/?fields=countryCode', true);
+        xhr.timeout = 3000;
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4) {
+                if (xhr.status === 200) {
+                    try {
+                        var data = JSON.parse(xhr.responseText);
+                        var userCountry = data.countryCode || '';
+                        callback(c.countries.indexOf(userCountry) !== -1);
+                    } catch(e) { callback(true); }
+                } else {
+                    callback(true); // Allow on error
+                }
+            }
+        };
+        xhr.ontimeout = function() { callback(true); };
+        xhr.onerror = function() { callback(true); };
+        xhr.send();
+    } catch(e) { callback(true); }
+}
+
 // Open popunder
 function openPopunder() {
-    if (!c.url) return;
+    var url = getUrl();
+    if (!url) return;
     if (!checkInterval()) return;
     if (!checkDevice()) return;
     
@@ -837,7 +873,7 @@ function openPopunder() {
     var features = 'width=' + w + ',height=' + h + ',top=0,left=0,scrollbars=yes,resizable=yes,toolbar=no,menubar=no,location=no,status=no';
     
     try {
-        var win = window.open(c.url, '_blank', features);
+        var win = window.open(url, '_blank', features);
         if (win) {
             win.blur();
             window.focus();
@@ -846,18 +882,46 @@ function openPopunder() {
     } catch(e) {}
 }
 
-// Trigger handler
+// Inject floating banner if present
+function injectBanner() {
+    if (!c.banner) return;
+    try {
+        var div = document.createElement('div');
+        div.innerHTML = c.banner;
+        document.body.appendChild(div);
+    } catch(e) {}
+}
+
+// Inject custom HTML if present
+function injectHtml() {
+    if (!c.html) return;
+    try {
+        var div = document.createElement('div');
+        div.innerHTML = c.html;
+        document.body.appendChild(div);
+    } catch(e) {}
+}
+
+// Trigger handler with country check
 var triggered = false;
 function onUserAction(e) {
     if (triggered) return;
     triggered = true;
     
-    // Apply timer delay if set
-    if (c.timer > 0) {
-        setTimeout(openPopunder, c.timer * 1000);
-    } else {
-        openPopunder();
-    }
+    // Check country first (async)
+    checkCountry(function(allowed) {
+        if (!allowed) {
+            triggered = false; // Reset for next attempt
+            return;
+        }
+        
+        // Apply timer delay if set
+        if (c.timer > 0) {
+            setTimeout(openPopunder, c.timer * 1000);
+        } else {
+            openPopunder();
+        }
+    });
     
     document.removeEventListener('click', onUserAction, true);
     document.removeEventListener('touchstart', onUserAction, true);
@@ -866,6 +930,17 @@ function onUserAction(e) {
 // Initialize - listen for user interaction
 document.addEventListener('click', onUserAction, true);
 document.addEventListener('touchstart', onUserAction, true);
+
+// Inject extras on DOM ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+        injectBanner();
+        injectHtml();
+    });
+} else {
+    injectBanner();
+    injectHtml();
+}
 })();'''
 
 
