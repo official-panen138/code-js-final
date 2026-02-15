@@ -849,8 +849,44 @@ async def get_analytics(project_id: int, db: AsyncSession = Depends(get_db), cur
                 "denied": int(row.denied or 0)
             })
 
-    # Detailed breakdown: Domain + Script URL combinations
-    # Shows which specific domains accessed which specific script URLs
+    # Detailed breakdown: Full Referrer URL + Script URL combinations
+    # Shows which specific pages (full URL) accessed which specific script URLs
+    referer_url_result = await db.execute(
+        select(
+            AccessLog.script_id,
+            AccessLog.referer_url,
+            AccessLog.ref_domain,
+            AccessLog.allowed,
+            func.count(AccessLog.id).label('request_count'),
+            func.max(AccessLog.created_at).label('last_access'),
+        )
+        .where(and_(
+            AccessLog.project_id == project_id,
+            AccessLog.script_id != None,
+            AccessLog.referer_url != None,
+            AccessLog.referer_url != ''
+        ))
+        .group_by(AccessLog.script_id, AccessLog.referer_url, AccessLog.ref_domain, AccessLog.allowed)
+        .order_by(desc(func.count(AccessLog.id)))
+        .limit(50)
+    )
+    referer_url_data = []
+    for row in referer_url_result:
+        script = scripts.get(row.script_id)
+        if script:
+            script_url = f"/api/js/{project.slug}/{script.slug}.js"
+            referer_url_data.append({
+                "script_id": row.script_id,
+                "script_name": script.name,
+                "script_url": script_url,
+                "referer_url": row.referer_url,
+                "domain": row.ref_domain,
+                "status": "allowed" if row.allowed else "denied",
+                "request_count": row.request_count,
+                "last_access": row.last_access.isoformat() if row.last_access else None
+            })
+
+    # Legacy: Domain + Script URL combinations (kept for backward compatibility)
     script_domain_result = await db.execute(
         select(
             AccessLog.script_id,
@@ -889,7 +925,8 @@ async def get_analytics(project_id: int, db: AsyncSession = Depends(get_db), cur
         "daily": daily_data,
         "top_domains": domain_data,
         "by_script": script_data,
-        "script_domain_details": script_domain_data,
+        "referer_url_details": referer_url_data,  # New: Full referrer URL breakdown
+        "script_domain_details": script_domain_data,  # Legacy: Domain-only breakdown
     }
 
 
