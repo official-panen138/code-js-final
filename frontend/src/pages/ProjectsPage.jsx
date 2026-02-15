@@ -111,17 +111,48 @@ export default function ProjectsPage() {
           </Button>
         </div>
 
-        {/* Search */}
+        {/* Search and Filter */}
         {projects.length > 0 && (
-          <div className="relative max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              placeholder="Search projects..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-10"
-              data-testid="search-projects-input"
-            />
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1 max-w-sm">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="Search projects..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-10"
+                data-testid="search-projects-input"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <Filter className="w-4 h-4 text-muted-foreground" />
+              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                <SelectTrigger className="w-[180px]" data-testid="category-filter-select">
+                  <SelectValue placeholder="Filter by category" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all" data-testid="filter-all">
+                    All Categories ({projects.length})
+                  </SelectItem>
+                  {categories.map((cat) => (
+                    <SelectItem key={cat.id} value={String(cat.id)} data-testid={`filter-category-${cat.id}`}>
+                      {cat.name} ({categoryCounts[cat.id] || 0})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {categoryFilter !== 'all' && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setCategoryFilter('all')}
+                  className="h-8 w-8"
+                  data-testid="clear-filter-btn"
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              )}
+            </div>
           </div>
         )}
 
