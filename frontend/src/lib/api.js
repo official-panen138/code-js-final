@@ -109,12 +109,6 @@ export const popunderAPI = {
   create: (data) => api.post('/popunders', data),
   update: (id, data) => api.patch(`/popunders/${id}`, data),
   delete: (id) => api.delete(`/popunders/${id}`),
-  // Whitelist management
-  listWhitelist: (id) => api.get(`/popunders/${id}/whitelist`),
-  addWhitelist: (id, data) => api.post(`/popunders/${id}/whitelist`, data),
-  updateWhitelist: (id, whitelistId, data) => api.patch(`/popunders/${id}/whitelist/${whitelistId}`, data),
-  deleteWhitelist: (id, whitelistId) => api.delete(`/popunders/${id}/whitelist/${whitelistId}`),
-  testDomain: (id, domain) => api.post(`/popunders/${id}/test-domain`, { domain }),
 };
 
 export default api;
