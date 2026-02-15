@@ -983,6 +983,146 @@ async def update_user(user_id: int, data: UserUpdate, db: AsyncSession = Depends
     return {"user": user_to_dict(user)}
 
 
+# ─── Custom Domains ───
+import socket
+
+def resolve_domain_ip(domain: str) -> str:
+    """Resolve a domain to its A record IP address."""
+    try:
+        result = socket.getaddrinfo(domain, None, socket.AF_INET)
+        if result:
+            return result[0][4][0]
+    except (socket.gaierror, socket.herror, OSError):
+        pass
+    return None
+
+
+def get_platform_ip() -> str:
+    """Get the platform's public IP."""
+    try:
+        result = socket.getaddrinfo(socket.gethostname(), None, socket.AF_INET)
+        if result:
+            return result[0][4][0]
+    except Exception:
+        pass
+    # Fallback: try to get external IP
+    try:
+        import urllib.request
+        return urllib.request.urlopen('https://api.ipify.org', timeout=5).read().decode('utf-8')
+    except Exception:
+        return None
+
+
+@api_router.get("/custom-domains")
+async def list_custom_domains(db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
+    result = await db.execute(select(CustomDomain).order_by(desc(CustomDomain.created_at)))
+    domains = result.scalars().all()
+    return {"domains": [custom_domain_to_dict(d) for d in domains]}
+
+
+@api_router.get("/custom-domains/active")
+async def list_active_domains(db: AsyncSession = Depends(get_db)):
+    """Public endpoint: returns active verified domains for embed URL selection."""
+    result = await db.execute(
+        select(CustomDomain).where(and_(CustomDomain.is_active == True, CustomDomain.status == 'verified'))
+    )
+    domains = result.scalars().all()
+    return {"domains": [{"id": d.id, "domain": d.domain} for d in domains]}
+
+
+@api_router.post("/custom-domains")
+async def add_custom_domain(data: CustomDomainCreate, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
+    domain = data.domain.lower().strip()
+
+    # Validate domain format
+    if not domain or '/' in domain or ':' in domain or ' ' in domain:
+        raise HTTPException(status_code=400, detail="Invalid domain format")
+    if '.' not in domain:
+        raise HTTPException(status_code=400, detail="Domain must contain at least one dot")
+
+    # Check duplicate
+    result = await db.execute(select(CustomDomain).where(CustomDomain.domain == domain))
+    if result.scalar_one_or_none():
+        raise HTTPException(status_code=400, detail="Domain already added")
+
+    # Get platform IP
+    platform_ip = get_platform_ip()
+
+    entry = CustomDomain(
+        domain=domain,
+        status='pending',
+        platform_ip=platform_ip,
+        created_by=current_user['user_id'],
+    )
+    db.add(entry)
+    await db.commit()
+    await db.refresh(entry)
+    return {"domain": custom_domain_to_dict(entry)}
+
+
+@api_router.post("/custom-domains/{domain_id}/verify")
+async def verify_custom_domain(domain_id: int, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
+    result = await db.execute(select(CustomDomain).where(CustomDomain.id == domain_id))
+    entry = result.scalar_one_or_none()
+    if not entry:
+        raise HTTPException(status_code=404, detail="Domain not found")
+
+    # Resolve domain A record
+    resolved_ip = resolve_domain_ip(entry.domain)
+    platform_ip = get_platform_ip()
+
+    entry.resolved_ip = resolved_ip
+    entry.platform_ip = platform_ip
+
+    if resolved_ip and platform_ip and resolved_ip == platform_ip:
+        entry.status = 'verified'
+        entry.is_active = True
+        entry.verified_at = datetime.now(timezone.utc)
+    else:
+        entry.status = 'failed'
+        entry.is_active = False
+
+    await db.commit()
+    await db.refresh(entry)
+    return {
+        "domain": custom_domain_to_dict(entry),
+        "verification": {
+            "platform_ip": platform_ip,
+            "resolved_ip": resolved_ip,
+            "match": resolved_ip == platform_ip if (resolved_ip and platform_ip) else False,
+        }
+    }
+
+
+@api_router.patch("/custom-domains/{domain_id}")
+async def update_custom_domain(domain_id: int, data: CustomDomainUpdate, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
+    result = await db.execute(select(CustomDomain).where(CustomDomain.id == domain_id))
+    entry = result.scalar_one_or_none()
+    if not entry:
+        raise HTTPException(status_code=404, detail="Domain not found")
+
+    if data.is_active is not None:
+        if data.is_active and entry.status != 'verified':
+            raise HTTPException(status_code=400, detail="Cannot activate unverified domain. Verify DNS first.")
+        entry.is_active = data.is_active
+
+    await db.commit()
+    await db.refresh(entry)
+    return {"domain": custom_domain_to_dict(entry)}
+
+
+@api_router.delete("/custom-domains/{domain_id}")
+async def delete_custom_domain(domain_id: int, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
+    result = await db.execute(select(CustomDomain).where(CustomDomain.id == domain_id))
+    entry = result.scalar_one_or_none()
+    if not entry:
+        raise HTTPException(status_code=404, detail="Domain not found")
+
+    await db.delete(entry)
+    await db.commit()
+    return {"message": "Domain deleted"}
+
+
 # ─── Seed Data ───
 SEED_CATEGORIES = [
     {"name": "Website", "description": "General website scripts"},
