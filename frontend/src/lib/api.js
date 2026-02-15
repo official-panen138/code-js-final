@@ -85,6 +85,7 @@ export const logsAPI = {
 // Analytics
 export const analyticsAPI = {
   get: (projectId) => api.get(`/projects/${projectId}/analytics`),
+  getBlacklistedDomains: (projectId) => api.get(`/projects/${projectId}/blacklisted-domains`),
 };
 
 // Domain Tester
