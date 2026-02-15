@@ -237,16 +237,30 @@ async def get_user_project(db: AsyncSession, project_id: int, user_id: int) -> P
     return project
 
 
-async def generate_popunder_slug(db: AsyncSession, project_id: int, name: str) -> str:
+async def generate_popunder_slug(db: AsyncSession, name: str) -> str:
+    """Generate unique slug for popunder campaign (globally unique now)."""
     base = slugify(name, max_length=200)
     slug = base
     counter = 1
     while True:
-        result = await db.execute(select(PopunderCampaign).where(and_(PopunderCampaign.project_id == project_id, PopunderCampaign.slug == slug)))
+        result = await db.execute(select(PopunderCampaign).where(PopunderCampaign.slug == slug))
         if not result.scalar_one_or_none():
             return slug
         slug = f"{base}-{counter}"
         counter += 1
+
+
+async def get_user_campaign(db: AsyncSession, campaign_id: int, user_id: int) -> PopunderCampaign:
+    """Get a popunder campaign owned by the user."""
+    result = await db.execute(
+        select(PopunderCampaign)
+        .options(selectinload(PopunderCampaign.whitelists))
+        .where(and_(PopunderCampaign.id == campaign_id, PopunderCampaign.user_id == user_id))
+    )
+    campaign = result.scalar_one_or_none()
+    if not campaign:
+        raise HTTPException(status_code=404, detail="Popunder campaign not found")
+    return campaign
 
 
 # ─── Auth Routes ───
