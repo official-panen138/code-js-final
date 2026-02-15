@@ -1062,7 +1062,7 @@ async def add_custom_domain(data: CustomDomainCreate, db: AsyncSession = Depends
 
 
 @api_router.post("/custom-domains/{domain_id}/verify")
-async def verify_custom_domain(domain_id: int, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
+async def verify_custom_domain(domain_id: int, db: AsyncSession = Depends(get_db), current_user: dict = Depends(require_permission('custom_domains'))):
     result = await db.execute(select(CustomDomain).where(CustomDomain.id == domain_id))
     entry = result.scalar_one_or_none()
     if not entry:
