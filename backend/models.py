@@ -15,6 +15,7 @@ class User(Base):
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
 
     projects = relationship('Project', back_populates='user', cascade='all, delete-orphan')
+    popunder_campaigns = relationship('PopunderCampaign', back_populates='user', cascade='all, delete-orphan')
 
 
 class Role(Base):
