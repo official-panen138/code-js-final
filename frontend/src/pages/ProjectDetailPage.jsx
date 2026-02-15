@@ -371,6 +371,85 @@ function ScriptsTab({ projectId, scripts, onRefresh, getEmbedUrl, copied, copyTo
     setSecondaryLinks(updated);
   };
 
+  // Whitelist functions
+  const openWhitelistDialog = async (script) => {
+    setWhitelistScript(script);
+    setShowWhitelist(true);
+    setLoadingWhitelist(true);
+    setNewDomain('');
+    setTestDomain('');
+    setTestResult(null);
+    try {
+      const res = await whitelistAPI.list(projectId, script.id);
+      setWhitelistEntries(res.data.whitelists || []);
+    } catch (err) {
+      toast.error('Failed to load whitelist');
+      setWhitelistEntries([]);
+    } finally {
+      setLoadingWhitelist(false);
+    }
+  };
+
+  const handleAddDomain = async () => {
+    if (!newDomain.trim()) {
+      toast.error('Please enter a domain pattern');
+      return;
+    }
+    setAddingDomain(true);
+    try {
+      await whitelistAPI.add(projectId, whitelistScript.id, { domain_pattern: newDomain.trim() });
+      toast.success('Domain added to whitelist');
+      setNewDomain('');
+      // Reload whitelist
+      const res = await whitelistAPI.list(projectId, whitelistScript.id);
+      setWhitelistEntries(res.data.whitelists || []);
+      onRefresh();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Invalid domain pattern');
+    } finally {
+      setAddingDomain(false);
+    }
+  };
+
+  const handleDeleteDomain = async (whitelistId) => {
+    try {
+      await whitelistAPI.delete(projectId, whitelistScript.id, whitelistId);
+      toast.success('Domain removed');
+      setWhitelistEntries(prev => prev.filter(w => w.id !== whitelistId));
+      onRefresh();
+    } catch (err) {
+      toast.error('Failed to remove domain');
+    }
+  };
+
+  const handleToggleDomain = async (entry) => {
+    try {
+      await whitelistAPI.update(projectId, whitelistScript.id, entry.id, { is_active: !entry.is_active });
+      toast.success(entry.is_active ? 'Domain disabled' : 'Domain enabled');
+      setWhitelistEntries(prev => prev.map(w => w.id === entry.id ? { ...w, is_active: !w.is_active } : w));
+      onRefresh();
+    } catch (err) {
+      toast.error('Failed to update domain');
+    }
+  };
+
+  const handleTestDomain = async () => {
+    if (!testDomain.trim()) {
+      toast.error('Enter a domain to test');
+      return;
+    }
+    setTesting(true);
+    setTestResult(null);
+    try {
+      const res = await domainTestAPI.test(projectId, whitelistScript.id, testDomain.trim());
+      setTestResult(res.data);
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Test failed');
+    } finally {
+      setTesting(false);
+    }
+  };
+
   return (
     <div className="space-y-4" data-testid="scripts-section">
       <div className="flex items-center justify-between">
