@@ -142,6 +142,7 @@ class CategoryUpdate(BaseModel):
     is_active: Optional[bool] = None
 
 class UserUpdate(BaseModel):
+    name: Optional[str] = None
     role: Optional[str] = None
     is_active: Optional[bool] = None
 
