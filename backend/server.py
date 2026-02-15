@@ -84,6 +84,7 @@ async def cdn_domain_middleware(request: Request, call_next):
 
 # ─── Pydantic Schemas ───
 class UserRegister(BaseModel):
+    name: Optional[str] = None
     email: str
     password: str
 
