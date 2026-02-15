@@ -1411,6 +1411,7 @@ async def delete_single_log(project_id: int, log_id: int, db: AsyncSession = Dep
 # Self-contained popunder engine JavaScript template
 POPUNDER_ENGINE_TEMPLATE = '''(function(){
 var c = __CONFIG__;
+var apiBase = __API_BASE__;
 
 // Storage key for frequency tracking
 var sk = 'popunder_' + c.id;
@@ -1467,6 +1468,23 @@ function getUrl() {
     return c.urls[Math.floor(Math.random() * c.urls.length)];
 }
 
+// Track analytics event
+function trackEvent(eventType, targetUrl) {
+    try {
+        var data = {
+            campaign_id: c.id,
+            event_type: eventType,
+            referer_url: window.location.href,
+            target_url: targetUrl || '',
+            device_type: getDeviceType()
+        };
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', apiBase + '/api/popunder-analytics', true);
+        xhr.setRequestHeader('Content-Type', 'application/json');
+        xhr.send(JSON.stringify(data));
+    } catch(e) {}
+}
+
 // Check country targeting via IP API (client-side)
 function checkCountry(callback) {
     if (!c.countries || c.countries.length === 0) {
@@ -1496,25 +1514,62 @@ function checkCountry(callback) {
     } catch(e) { callback(true); }
 }
 
-// Open popunder
+// True popunder - opens behind the current window
 function openPopunder() {
     var url = getUrl();
     if (!url) return;
     if (!checkFrequency()) return;
     if (!checkDevice()) return;
     
-    var w = screen.width;
-    var h = screen.height;
-    var features = 'width=' + w + ',height=' + h + ',top=0,left=0,scrollbars=yes,resizable=yes,toolbar=no,menubar=no,location=no,status=no';
-    
     try {
-        var win = window.open(url, '_blank', features);
-        if (win) {
-            win.blur();
+        // Method 1: Use window.open with blur/focus technique
+        var popunder = window.open(url, '_blank');
+        
+        if (popunder) {
+            // Blur the popunder and focus back to main window
+            popunder.blur();
+            
+            // Multiple focus techniques for different browsers
             window.focus();
+            
+            // Create a temporary element and focus it
+            var ghost = document.createElement('a');
+            ghost.href = '#';
+            ghost.style.position = 'absolute';
+            ghost.style.left = '-9999px';
+            document.body.appendChild(ghost);
+            ghost.focus();
+            document.body.removeChild(ghost);
+            
+            // Additional focus for stubborn browsers
+            if (window.self !== window.top) {
+                window.top.focus();
+            }
+            
+            // Use setTimeout for async focus
+            setTimeout(function() {
+                window.focus();
+                if (document.hasFocus && !document.hasFocus()) {
+                    window.focus();
+                }
+            }, 0);
+            
             markShown();
+            trackEvent('click', url);
         }
-    } catch(e) {}
+    } catch(e) {
+        // Fallback: try with about:blank first, then redirect
+        try {
+            var pop = window.open('about:blank', '_blank');
+            if (pop) {
+                pop.blur();
+                window.focus();
+                pop.location.href = url;
+                markShown();
+                trackEvent('click', url);
+            }
+        } catch(e2) {}
+    }
 }
 
 // Inject floating banner if present
@@ -1565,6 +1620,9 @@ function onUserAction(e) {
 // Initialize - listen for user interaction
 document.addEventListener('click', onUserAction, true);
 document.addEventListener('touchstart', onUserAction, true);
+
+// Track impression on load
+trackEvent('impression', '');
 
 // Inject extras on DOM ready
 if (document.readyState === 'loading') {
