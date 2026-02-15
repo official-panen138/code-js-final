@@ -186,14 +186,6 @@ def popunder_campaign_to_dict(p: PopunderCampaign) -> dict:
     }
 
 
-def popunder_whitelist_to_dict(w: PopunderWhitelist) -> dict:
-    return {
-        "id": w.id, "campaign_id": w.campaign_id, "domain_pattern": w.domain_pattern,
-        "is_active": w.is_active,
-        "created_at": w.created_at.isoformat() if w.created_at else None,
-    }
-
-
 # System menu definitions - when new menus are added here, they auto-appear in role management
 SYSTEM_MENUS = [
     {"key": "dashboard", "label": "Dashboard", "description": "View dashboard and stats"},
