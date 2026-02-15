@@ -1445,7 +1445,7 @@ async def deliver_popunder_js(campaign_file: str, request: Request, db: AsyncSes
         return noop_response()
 
     campaign_slug = campaign_file[:-3]  # Remove .js extension
-    logger.warning(f"Popunder delivery: looking for campaign slug: {campaign_slug}")
+    print(f"DEBUG: Popunder delivery - looking for campaign slug: {campaign_slug}", flush=True)
 
     # 1. Resolve campaign by slug
     result = await db.execute(
