@@ -483,6 +483,11 @@ function ScriptsTab({ projectId, scripts, onRefresh, getEmbedUrl, copied, copyTo
                     <Badge className={script.status === 'active' ? 'status-active' : 'status-disabled'}>
                       {script.status}
                     </Badge>
+                    {script.whitelist_count > 0 && (
+                      <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                        <Shield className="w-3 h-3 mr-1" /> {script.whitelist_count} domain{script.whitelist_count !== 1 ? 's' : ''}
+                      </Badge>
+                    )}
                     {(script.secondary_script || (script.secondary_script_links && script.secondary_script_links.length > 0)) && (
                       <Badge variant="outline" className="text-xs">
                         {script.secondary_script_mode === 'links' ? 'Links' : 'JS'} Fallback
@@ -495,6 +500,9 @@ function ScriptsTab({ projectId, scripts, onRefresh, getEmbedUrl, copied, copyTo
                       onCheckedChange={() => toggleStatus(script)}
                       data-testid={`script-toggle-${script.id}`}
                     />
+                    <Button variant="ghost" size="sm" onClick={() => openWhitelistDialog(script)} data-testid={`whitelist-script-${script.id}`} title="Domain Whitelist">
+                      <Shield className="w-4 h-4" />
+                    </Button>
                     <Button variant="ghost" size="sm" onClick={() => openSecondaryDialog(script)} data-testid={`secondary-script-${script.id}`} title="Secondary Script">
                       <ExternalLink className="w-4 h-4" />
                     </Button>
@@ -517,6 +525,7 @@ function ScriptsTab({ projectId, scripts, onRefresh, getEmbedUrl, copied, copyTo
                     data-testid={`copy-embed-${script.id}`}
                   >
                     {copied === `script-${script.id}` ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
+                  </Button>
                   </Button>
                 </div>
               </CardContent>
