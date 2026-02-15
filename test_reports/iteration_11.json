@@ -1,0 +1,66 @@
+{
+  "summary": "Comprehensive testing of Secondary Script two-mode feature completed. All backend tests passed (14/14). Frontend UI tests passed - mode selector works, JS mode shows textarea, Links mode shows URL/keyword pairs UI, Add/Delete link buttons work, settings persist correctly.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Secondary Script Dialog", "issues": ["Console warning: Missing Description or aria-describedby for DialogContent - accessibility improvement recommended"]}
+    ]
+  },
+  "passed_tests": [
+    "Backend: Project returns secondary_script, secondary_script_mode, secondary_script_links fields",
+    "Backend: Update project to JS mode with script content",
+    "Backend: Update project to Links mode with URL/keyword pairs",
+    "Backend: Invalid mode value ('invalid_mode') returns 400 error",
+    "Backend: JS mode delivery - non-whitelisted domain receives secondary JS",
+    "Backend: Links mode delivery - non-whitelisted domain receives hidden link injection JS",
+    "Backend: Whitelisted domain always receives primary script",
+    "Backend: Empty links array returns noop response",
+    "Backend: Empty JS (whitespace only) returns noop response",
+    "Backend: Link injection format contains display:none div with a href",
+    "Backend: Multiple links all injected with correct content",
+    "Backend: Special characters in URLs/keywords properly escaped",
+    "Backend: Mode switch preserves data until save",
+    "Backend: Partial update preserves existing data",
+    "Frontend: Secondary Script button opens dialog",
+    "Frontend: Mode selector shows Full JS Script and Link Injection buttons",
+    "Frontend: JS mode displays textarea for JavaScript code input",
+    "Frontend: Links mode displays Add Link button and URL/keyword entry UI",
+    "Frontend: Add Link button creates new link entry with URL and keyword inputs",
+    "Frontend: Delete link button removes link entry",
+    "Frontend: Save Settings saves secondary script configuration",
+    "Frontend: Mode and link data persists after save and dialog reopen"
+  ],
+  "test_report_links": [
+    "/app/backend/tests/test_secondary_script.py",
+    "/app/test_reports/pytest/secondary_script_results.xml"
+  ],
+  "action_items": [
+    "Minor: Add aria-describedby to DialogContent for accessibility"
+  ],
+  "critical_code_review_comments": [
+    "ProjectUpdate schema correctly includes secondary_script_mode (js/links) and secondary_script_links (List[SecondaryScriptLink])",
+    "generate_link_injection_js() function properly creates hidden div with display:none style and anchor tags",
+    "deliver_js endpoint correctly checks mode and calls secondary_response() for non-whitelisted domains",
+    "Frontend ProjectSettings component properly manages state for both modes with mode switching",
+    "All interactive elements have proper data-testid attributes (mode-js-btn, mode-links-btn, add-link-btn, etc.)"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_secondary_script.py"
+  ],
+  "success_rate": {
+    "backend": "100% (14/14 pytest tests passed)",
+    "frontend": "100% (all UI flows working correctly)"
+  },
+  "test_credentials": {
+    "admin": "admin@jshost.com / Admin@123"
+  },
+  "seed_data_creation": "Test project 'TEST_SecondaryScript_Project' created with script and whitelist entry for testing. Cleaned up after tests.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Secondary Script feature fully implemented and tested. Two modes: 1) JS mode - raw JavaScript served to non-whitelisted domains via secondary_script field, 2) Links mode - generates hidden HTML links (<div style='display:none;'><a href='URL'>keyword</a></div>) via secondary_script_links JSON array. Test file at /app/backend/tests/test_secondary_script.py covers all API functionality. Frontend dialog at ProjectDetailPage.jsx lines 171-410 handles both modes with proper data-testid attributes."
+}
