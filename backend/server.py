@@ -152,9 +152,6 @@ def project_to_dict(p: Project, include_relations: bool = False) -> dict:
     d = {
         "id": p.id, "user_id": p.user_id, "category_id": p.category_id,
         "name": p.name, "slug": p.slug, "status": p.status,
-        "secondary_script": p.secondary_script or "",
-        "secondary_script_mode": p.secondary_script_mode or "js",
-        "secondary_script_links": p.secondary_script_links or [],
         "created_at": p.created_at.isoformat() if p.created_at else None,
     }
     if include_relations:
