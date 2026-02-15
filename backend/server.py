@@ -156,7 +156,7 @@ def project_to_dict(p: Project, include_relations: bool = False) -> dict:
     }
     if include_relations:
         d["category"] = category_to_dict(p.category) if p.category else None
-        d["scripts"] = [script_to_dict(s) for s in p.scripts] if p.scripts else []
+        d["scripts"] = [script_to_dict(s, include_whitelists=True) for s in p.scripts] if p.scripts else []
         d["script_count"] = len(p.scripts) if p.scripts else 0
     return d
 
