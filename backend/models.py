@@ -121,17 +121,26 @@ class PopunderCampaign(Base):
     __tablename__ = 'popunder_campaigns'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    project_id = Column(Integer, ForeignKey('projects.id', ondelete='CASCADE'), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey('users.id', ondelete='CASCADE'), nullable=False, index=True)
     name = Column(String(255), nullable=False)
-    slug = Column(String(255), nullable=False)
+    slug = Column(String(255), unique=True, nullable=False, index=True)
     status = Column(Enum('active', 'paused', name='popunder_status'), default='active', nullable=False)
     settings = Column(JSON, nullable=False, default=dict)  # target_url, frequency, delay, width, height
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)
 
-    project = relationship('Project', back_populates='popunder_campaigns')
+    user = relationship('User', back_populates='popunder_campaigns')
+    whitelists = relationship('PopunderWhitelist', back_populates='campaign', cascade='all, delete-orphan')
 
-    __table_args__ = (
-        UniqueConstraint('project_id', 'slug', name='uq_project_popunder_slug'),
-    )
+
+class PopunderWhitelist(Base):
+    __tablename__ = 'popunder_whitelists'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    campaign_id = Column(Integer, ForeignKey('popunder_campaigns.id', ondelete='CASCADE'), nullable=False, index=True)
+    domain_pattern = Column(String(255), nullable=False)
+    is_active = Column(Boolean, default=True, nullable=False)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+
+    campaign = relationship('PopunderCampaign', back_populates='whitelists')
 
