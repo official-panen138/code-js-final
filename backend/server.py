@@ -797,6 +797,148 @@ async def root():
     return {"message": "JSHost Platform API", "status": "running"}
 
 
+# ─── Menu System ───
+@api_router.get("/menus")
+async def get_system_menus(current_user: dict = Depends(get_current_user)):
+    """Return all available system menus."""
+    return {"menus": SYSTEM_MENUS}
+
+
+# ─── Role Management ───
+@api_router.get("/roles")
+async def list_roles(db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
+    result = await db.execute(select(Role).order_by(Role.name))
+    roles = result.scalars().all()
+    # Count users per role
+    role_list = []
+    for r in roles:
+        count_result = await db.execute(select(func.count(User.id)).where(User.role == r.name))
+        user_count = count_result.scalar() or 0
+        d = role_to_dict(r)
+        d["user_count"] = user_count
+        role_list.append(d)
+    return {"roles": role_list, "available_menus": SYSTEM_MENUS}
+
+
+@api_router.post("/roles")
+async def create_role(data: RoleCreate, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
+    if not data.name or not data.name.strip():
+        raise HTTPException(status_code=400, detail="Role name is required")
+
+    result = await db.execute(select(Role).where(Role.name == data.name.strip().lower()))
+    if result.scalar_one_or_none():
+        raise HTTPException(status_code=400, detail="Role name already exists")
+
+    # Validate permissions against system menus
+    valid_keys = {m["key"] for m in SYSTEM_MENUS}
+    for p in (data.permissions or []):
+        if p not in valid_keys:
+            raise HTTPException(status_code=400, detail=f"Invalid permission: {p}")
+
+    role = Role(name=data.name.strip().lower(), description=data.description, permissions=data.permissions or [])
+    db.add(role)
+    await db.commit()
+    await db.refresh(role)
+    return {"role": role_to_dict(role)}
+
+
+@api_router.patch("/roles/{role_id}")
+async def update_role(role_id: int, data: RoleUpdate, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
+    result = await db.execute(select(Role).where(Role.id == role_id))
+    role = result.scalar_one_or_none()
+    if not role:
+        raise HTTPException(status_code=404, detail="Role not found")
+
+    if data.name is not None:
+        name = data.name.strip().lower()
+        if not name:
+            raise HTTPException(status_code=400, detail="Role name cannot be empty")
+        dup = await db.execute(select(Role).where(and_(Role.name == name, Role.id != role_id)))
+        if dup.scalar_one_or_none():
+            raise HTTPException(status_code=400, detail="Role name already exists")
+        # Update users with old role name
+        if role.name != name:
+            await db.execute(
+                User.__table__.update().where(User.role == role.name).values(role=name)
+            )
+        role.name = name
+
+    if data.description is not None:
+        role.description = data.description
+
+    if data.permissions is not None:
+        valid_keys = {m["key"] for m in SYSTEM_MENUS}
+        for p in data.permissions:
+            if p not in valid_keys:
+                raise HTTPException(status_code=400, detail=f"Invalid permission: {p}")
+        role.permissions = data.permissions
+
+    await db.commit()
+    await db.refresh(role)
+    return {"role": role_to_dict(role)}
+
+
+@api_router.delete("/roles/{role_id}")
+async def delete_role(role_id: int, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
+    result = await db.execute(select(Role).where(Role.id == role_id))
+    role = result.scalar_one_or_none()
+    if not role:
+        raise HTTPException(status_code=404, detail="Role not found")
+
+    if role.is_system:
+        raise HTTPException(status_code=400, detail="Cannot delete system role")
+
+    # Check if any users have this role
+    count = await db.execute(select(func.count(User.id)).where(User.role == role.name))
+    if (count.scalar() or 0) > 0:
+        raise HTTPException(status_code=400, detail="Cannot delete: role is assigned to users")
+
+    await db.delete(role)
+    await db.commit()
+    return {"message": "Role deleted"}
+
+
+# ─── User Management ───
+@api_router.get("/users")
+async def list_users(db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
+    result = await db.execute(select(User).order_by(desc(User.created_at)))
+    users = result.scalars().all()
+
+    # Get all roles for reference
+    roles_result = await db.execute(select(Role).order_by(Role.name))
+    roles = roles_result.scalars().all()
+
+    return {
+        "users": [user_to_dict(u) for u in users],
+        "roles": [role_to_dict(r) for r in roles],
+    }
+
+
+@api_router.patch("/users/{user_id}")
+async def update_user(user_id: int, data: UserUpdate, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if data.role is not None:
+        # Verify role exists
+        role_check = await db.execute(select(Role).where(Role.name == data.role))
+        if not role_check.scalar_one_or_none():
+            raise HTTPException(status_code=400, detail=f"Role '{data.role}' does not exist")
+        user.role = data.role
+
+    if data.is_active is not None:
+        # Prevent deactivating self
+        if user.id == current_user['user_id'] and not data.is_active:
+            raise HTTPException(status_code=400, detail="Cannot deactivate your own account")
+        user.is_active = data.is_active
+
+    await db.commit()
+    await db.refresh(user)
+    return {"user": user_to_dict(user)}
+
+
 # ─── Seed Data ───
 SEED_CATEGORIES = [
     {"name": "Website", "description": "General website scripts"},
