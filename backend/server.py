@@ -112,12 +112,16 @@ class CustomDomainUpdate(BaseModel):
 
 
 class PopunderCampaignSettings(BaseModel):
-    target_url: str
-    frequency: Optional[int] = 1  # How often to show (per session/hour/day)
-    frequency_unit: Optional[str] = 'session'  # session, hour, day
-    delay: Optional[int] = 0  # Delay in ms before triggering
-    width: Optional[int] = 800  # Popunder window width
-    height: Optional[int] = 600  # Popunder window height
+    popunder_type: Optional[str] = 'popunder'  # popup or popunder
+    url_list: str  # newline-separated URLs
+    frequency_cap: Optional[int] = 1  # per user per day
+    rt_enable: Optional[bool] = False  # referer targeting enabled
+    referer_se: Optional[bool] = False  # search engine
+    referer_sm: Optional[bool] = False  # social media
+    referer_empty: Optional[bool] = False
+    referer_not_empty: Optional[bool] = False
+    floating_banner: Optional[str] = ''  # HTML code
+    html_body: Optional[str] = ''  # HTML to inject in body
 
 class PopunderCampaignCreate(BaseModel):
     name: str
