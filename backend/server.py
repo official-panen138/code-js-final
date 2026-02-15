@@ -1140,6 +1140,27 @@ async def clear_script_logs(project_id: int, script_id: int, db: AsyncSession = 
     return {"message": f"Access logs cleared for script '{script.name}'"}
 
 
+# ─── Delete Individual Log Entry ───
+@api_router.delete("/projects/{project_id}/logs/{log_id}")
+async def delete_single_log(project_id: int, log_id: int, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
+    """Delete a single access log entry by ID."""
+    # Verify project belongs to user
+    await get_user_project(db, project_id, current_user['user_id'])
+    
+    # Find the log entry
+    result = await db.execute(
+        select(AccessLog).where(and_(AccessLog.id == log_id, AccessLog.project_id == project_id))
+    )
+    log_entry = result.scalar_one_or_none()
+    if not log_entry:
+        raise HTTPException(status_code=404, detail="Log entry not found")
+    
+    await db.delete(log_entry)
+    await db.commit()
+    
+    return {"message": "Log entry deleted"}
+
+
 # ─── Public Popunder JS Delivery (must come before general JS delivery) ───
 
 # Self-contained popunder engine JavaScript template
