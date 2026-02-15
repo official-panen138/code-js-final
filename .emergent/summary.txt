@@ -1,148 +1,155 @@
 <analysis>**original_problem_statement:**
-The initial request was to build a Project-Based JavaScript Hosting Platform using FastAPI and React. The core feature was to allow users to create projects, add JavaScript snippets to them, and define a domain whitelist for each project. A public endpoint would serve the script only if the requesting domain was on the project's whitelist.
+The user's goal is to build a Project-Based JavaScript Hosting Platform. The platform has evolved to include features like user authentication, project/script management, popunder campaigns, a Secondary Script feature with multiple modes, and per-script domain whitelisting.
 
-This was followed by several incremental feature requests that have been completed:
--   **Analytics & Domain Tester**
--   **Category Management**
--   **Dynamic Role-Based Access Control (RBAC)**
--   **Global Custom Domains**
-
-The current feature is a **Popunder Campaign Module**. This has gone through several iterations:
-1.  **V1 (Completed):** Built as a sub-feature of Projects.
-2.  **V2 (Completed):** Refactored into a standalone, top-level feature with its own independent domain whitelist.
-3.  **V3 (In Progress):** A new request to completely overhaul the Popunder feature again. The user has requested to:
-    -   **Remove the domain whitelist functionality entirely.**
-    -   **Change the campaign settings** to match a provided UI mockup, including fields for , , , , and .
-    -   **Generate a complete, self-contained JavaScript payload** at the public delivery endpoint (), similar to a  file the user provided as an example.
+The most recent set of requests focused on enhancing the analytics and management capabilities:
+1.  Move domain whitelisting from a per-project to a per-script basis.
+2.  Add a Clear button for a project's Access Logs.
+3.  Display the specific script URL that was accessed in the Analytics logs.
+4.  Further refine analytics to show which domains are accessing which script URLs.
+5.  Make individual scripts in the UI clickable to show a modal with analytics specific to that script.
+6.  **Current Request:** The user is asking for more granular analytics. They want to see the full source URL (e.g., ) that initiated the script request, not just the domain ().
 
 **User's preferred language**: English
 
 **what currently exists?**
-A full-stack application with a FastAPI backend, React frontend, and MariaDB database. Core features like project management, script hosting, user/role management (RBAC), and custom domains are implemented and stable.
+A full-stack application with a FastAPI backend, React frontend, and MariaDB database. The frontend has been significantly refactored to align with backend changes that made whitelists and other settings script-specific.
 
-A standalone Popunder Campaign module exists as a top-level feature. It was recently refactored to be independent of Projects and have its own UI and whitelist functionality. The user has now requested another major refactor of this module.
+The UI now supports:
+- Managing domain whitelists for each script individually via a modal dialog.
+- A Clear Logs button in the main Analytics tab.
+- An Analytics tab that displays several data views: top domains, requests by script URL, and a new Script Access Details table showing which domain accessed which script.
+- A  tab where each script name is clickable, opening a new modal with analytics specific to that script.
+
+The primary blocker is that the current analytics implementation does not satisfy the user's latest, more granular requirement for tracking the full referrer URL.
 
 **Last working item**:
--   **Last item agent was working:** The agent was performing a major refactor of the backend to align with the user's latest request (V3 of the Popunder module). This involved removing all whitelist logic and changing the JS delivery mechanism. The last action was an attempt to replace a large section of code in  to implement the new JS generation logic, but this operation was interrupted and did not complete.
--   **Status:** IN PROGRESS
--   **Agent Testing Done:** N
+-   **Last item agent was working:** The agent implemented a feature where clicking a script's name opens a modal with script-specific analytics. The user responded that this is still insufficient because it doesn't show the full source URL (e.g., ). This indicates the user wants to track the full referrer URL path, not just the domain.
+-   **Status:** USER VERIFICATION PENDING
+-   **Agent Testing Done:** Y (Manual testing via API calls and screenshots for the script-specific analytics modal).
 -   **Which testing method agent to use?** both
--   **User Testing Done:** N
+-   **User Testing Done:** N (The user has seen the feature but is requesting a fundamental change to the data being logged and displayed, effectively rejecting the current implementation's scope).
 
 **All Pending/In progress Issue list**:
--   **Issue 1: The backend application is broken due to an incomplete file edit.**
-    -   **Priority:** P0 (BLOCKER)
-    -   **Description:** The last agent action was a  on  which was cut short. This has left the file in a syntactically invalid state, causing the backend service to fail.
-    -   **Status:** IN PROGRESS
-
-**Issues Detail:**
--   **Issue 1:** The backend application is broken.
-    -   **Attempted fixes:** The previous agent attempted to replace the popunder API routes and the JS delivery logic in a single, large operation, which failed.
+-   **Issue 1: Implement Full Referrer URL Tracking in Analytics (P0)**
+    -   **Description:** The user wants to see the full source URL (e.g., ) from which a script is accessed, not just the domain (). This provides context on which specific pages are generating script loads.
+    -   **Attempted fixes:** The agent implemented analytics that show the script and the domain separately, but not the full referrer path that connects them.
     -   **Next debug checklist:**
-        1.  Examine  to identify the syntax errors introduced by the incomplete code replacement.
-        2.  Fix the file by correctly implementing the new JS delivery endpoint (). This endpoint must generate a complete, self-contained JavaScript payload as requested by the user, and all whitelist logic must be removed.
-        3.  Remove all other references to  from the CRUD API endpoints in .
-        4.  Restart and test the backend service to ensure it runs correctly after the fix.
-    -   **Why fix this issue and what will be achieved with the fix?** This is a critical blocker. Fixing it will make the backend operational again and complete a major part of the backend refactoring task.
-    -   **Status:** IN PROGRESS
+        1.  **Clarify:** Confirm with the user that they want to capture the full  header from incoming requests.
+        2.  **DB Schema:** Add a new column to the  table in  to store the full referrer URL (e.g., ). Run an Alembic migration to apply this change.
+        3.  **Backend Logging:** In , modify the  endpoint to capture the  header from the request and save it to the new  column.
+        4.  **Backend Analytics:** Update the analytics endpoints ( and ) to aggregate and return this new  data.
+        5.  **Frontend Display:** Update the React components in  (specifically the  and the script-specific analytics modal) to display this new granular data.
+    -   **Why fix this issue and what will be achieved with the fix?** This will provide the user with the highly detailed analytics they require to understand exactly where their scripts are being used.
+    -   **Status:** NOT STARTED
     -   **Is recurring issue?** N
-    -   **Should Test frontend/backend/both after fix?** backend
-    -   **Blocked on other issue:** None. This is the primary blocker.
+    -   **Should Test frontend/backend/both after fix?** both
+    -   **Blocked on other issue:** None
+
+-   **Issue 2: MariaDB Service Instability (High Priority)**
+    -   **Description:** The MariaDB service in the environment is unstable and has failed multiple times, requiring a full re-installation and database re-initialization. This is a recurring environmental issue.
+    -   **Next debug checklist:** If the backend becomes unresponsive, the first step is to run backend                          RUNNING   pid 43, uptime 0:00:06
+code-server                      STOPPED   Not started
+frontend                         STOPPED   Feb 15 03:34 PM
+mongodb                          RUNNING   pid 46, uptime 0:00:06
+nginx-code-proxy                 RUNNING   pid 41, uptime 0:00:06 and check the  service status.
+    -   **Status:** RESOLVED (for now, but remains a high-risk recurring issue).
+    -   **Is recurring issue?** Y
 
 **In progress Task List**:
--   **Task 1: Complete Backend Refactor for New Popunder Logic (V3)**
-    -   **Priority:** P0
-    -   **Where to resume:** Start by resolving **Issue 1** (fixing ). After the server is running, proceed with the remaining backend changes.
-    -   **Remaining Actions:**
-        1.  Update  to remove the  model and its relationship to .
-        2.  Create a new Alembic migration (FAILED: No 'script_location' key found in configuration.) to generate the script that drops the  table.
-        3.  Apply the migration (FAILED: No 'script_location' key found in configuration.).
-        4.  Thoroughly test the new backend endpoints () and the public JS delivery endpoint () to confirm whitelisting is gone and the new JS payload is served correctly.
-    -   **What will be achieved with this?** The backend will be fully aligned with the user's latest requirements for the popunder module.
-    -   **Status:** IN PROGRESS
-    -   **Should Test frontend/backend/both after fix?** backend
-    -   **Blocked on something:** Blocked on **Issue 1**.
-
-**Upcoming and Future Tasks**
-**Upcoming Tasks:**
--   **P0: Frontend Refactor for New Popunder UI (V3)**
-    -   **Description:** Once the backend refactor is complete and tested, the frontend must be updated to match.
-    -   **Actions:**
-        1.  Update the popunder API functions in  to reflect the new backend API.
-        2.  Modify  to remove the Whitelist tab and update the Settings tab with the new fields (, , , , ).
-        3.  Update the Create Campaign and Edit Campaign dialogs to use these new fields.
-        4.  Ensure the Embed tab shows the correct, simplified URL.
--   **P1: Script Versioning (Backend Implementation)**
-    -   **Description:** Implement the backend logic for the Save as new version feature for scripts. The user previously selected a manual versioning approach.
-
-**Future Tasks:**
--   Platform-level Analytics enhancements.
-
-**Completed work in this session**
--   **Standalone Popunder Module (V2):** Successfully refactored the popunder feature from being a sub-component of Projects into its own top-level, independent module with its own UI and domain whitelist. This included major backend and frontend changes.
--   **FastAPI Route Conflict Resolution:** Debugged and fixed a critical routing issue where a generic route () was incorrectly handling requests intended for a more specific route (). The solution was to reorder the routes in .
--   **UI for Script Versioning:** A Save as New Version button was added to the script editor UI, though the backend functionality is not yet implemented.
-
-**Earlier issues found/mentioned but not fixed**
 -   None.
 
+**Upcoming and Future Tasks**
+-   **Upcoming Tasks:**
+    -   **P1: Script Versioning (Backend):** Implement the backend logic for the Save as new version feature for scripts.
+-   **Future Tasks:**
+    -   **Role-Based Features:** The user mentioned script details are not pro, hinting at a future need to gate certain features behind a premium/pro user role.
+    -   **Platform-level Analytics:** General enhancements to platform-wide analytics.
+
+**Completed work in this session**
+-   **Frontend-Backend Sync:** Major refactor of the frontend () to support per-script settings. The  was removed and its functionality was moved into a modal accessible for each script in the .
+-   **Feature: Clear Logs:** A Clear Logs button was added to the  and connected to the backend API ().
+-   **Feature: Granular Analytics UI:**
+    -   The  was updated to include a Requests by Script URL section.
+    -   A new Script Access Details table was added to show which domains access which scripts.
+    -   Implemented a new backend endpoint and frontend modal to show analytics for a single, specific script when its name is clicked.
+-   **Backend Bug Fixes:** Resolved  related to SQLAlchemy's lazy loading in an async context by ensuring relationships were correctly loaded within the session.
+-   **Environment Recovery:** Successfully diagnosed and recovered from a complete MariaDB service failure by re-installing the service and re-initializing the database.
+
 **Known issue recurrence from previous fork**
--   The MariaDB service can be unstable and may require a manual restart (mariadb: ERROR (no such process)) if the backend fails to connect to the database.
+-   **MariaDB Service Instability:** This issue from the previous fork recurred during this session. The agent was able to fix it by reinstalling .
+-   **Recurrence count:** 1 (in this session)
+-   **Status:** RESOLVED
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
--   **Backend:** FastAPI, SQLAlchemy, Alembic (for DB migrations), Pydantic.
--   **Frontend:** React, , Shadcn/UI.
--   **Core Logic:** The main challenge is the dynamic generation of a self-contained JavaScript file from the backend, based on settings stored in a JSON field in the database.
+-   **Backend:** FastAPI, SQLAlchemy (with async sessions), Alembic for migrations.
+-   **Frontend:** React, Shadcn/UI, Tailwind CSS, Recharts for graphs.
+-   **Key Challenge:** Correctly handling SQLAlchemy's async lazy-loading patterns to avoid .
+-   **UI Pattern:** Using modals ( component) in React to display context-specific information and forms without leaving the main page.
 
 **key DB schema**
--   **popunder_campaigns**: uid=0(root) gid=0(root) groups=0(root), , , , , . (The relationship is to ).
--   **popunder_campaign_whitelists**: This table and its model are being **removed** as part of the current task.
-
-**changes in tech stack**
--   None.
+-   **projects**: uid=0(root) gid=0(root) groups=0(root), , , , 
+-   **scripts**: uid=0(root) gid=0(root) groups=0(root), , , , , , , , 
+-   **script_whitelists**: uid=0(root) gid=0(root) groups=0(root), , 
+-   **project_access_logs**: uid=0(root) gid=0(root) groups=0(root), , , , , 
+    -   **Proposed Change:** Add  to this table.
 
 **All files of reference**
--   : **Currently broken.** Requires immediate attention to fix the incomplete code replacement and remove all whitelist logic.
--   : Needs the  model and its relationship removed.
--   : A new migration must be generated here to drop the whitelist table.
--   : Will require a major UI overhaul to remove the whitelist tab and add the new settings fields.
--   : The popunder API client functions need to be updated.
+-   : Contains all API logic, including script serving, analytics, and management endpoints. Will need modification for the referrer logging.
+-   : Defines the database schema. Will require a new column in .
+-   : The central React component that contains all the UI for tabs, modals, and analytics displays. Will need significant updates.
+-   : Contains all the frontend functions for making API calls to the backend.
+
+**key api endpoints**
+-   : The script serving endpoint. **Needs modification** to log the full referrer.
+-   : The main analytics endpoint. **Needs modification** to return referrer data.
+-   : The script-specific analytics endpoint. **Needs modification**.
+-   : Endpoint to clear access logs.
+-   : Endpoint to manage script whitelists.
 
 **Critical Info for New Agent**
--   Your first priority is to fix the broken backend. The file  is syntactically invalid due to an interrupted  command. You must repair this file.
--   The user's goal is to remove whitelisting from Popunder Campaigns entirely and replace it with new settings (, , , etc.). The public JS endpoint must now generate a full, self-contained JavaScript payload, not just a configuration object.
--   After fixing the models, you must create and apply a new Alembic database migration to drop the  table.
--   Remember the FastAPI route ordering lesson: specific routes must be defined *before* more generic, wildcard routes to ensure they are matched correctly.
+-   Your first task is to clarify the user's latest analytics requirement. Propose a plan to log the full  header and display it, as this appears to be their core need.
+-   The MariaDB service is unreliable. If you encounter backend errors or login failures, immediately check the MariaDB service status with backend                          RUNNING   pid 43, uptime 0:00:06
+code-server                      STOPPED   Not started
+frontend                         STOPPED   Feb 15 03:34 PM
+mongodb                          RUNNING   pid 46, uptime 0:00:06
+nginx-code-proxy                 RUNNING   pid 41, uptime 0:00:06. Be prepared to reinstall it.
+-   All recent frontend work has been consolidated into the  file. This is the primary file you will need to understand and modify for any UI changes.
 
 **documents and test reports created in this job**
--   
--   Multiple test reports in  from previous tasks.
+-    (Updated)
+-    (Passed, but for features that are now considered incomplete by the user).
 
 **Last 10 User Messages and any pending HUMAN messages**
--    - This is the primary and most recent user request, outlining the V3 refactor for the popunder module.
--    - The user approved the agent's plan to implement the V3 refactor.
--   Previous messages relate to the successful completion and user verification of the V2 refactor (making popunders a standalone feature).
+1.  **User:** Requests more detail, saying the current analytics don't explain the URL source. (IN PROGRESS)
+2.  **Agent:** Presents the working script-specific analytics modal. (COMPLETED)
+3.  **User:** Asks for analytics to be clickable from the Test Script name. (COMPLETED)
+4.  **Agent:** Asks for clarification on analytics appears on every click and script details are not pro. (AWAITING RESPONSE on this, but user pivoted).
+5.  **User:** Says analytics appears on every click and script details are not pro. (IN PROGRESS - ambiguous feedback).
+6.  **Agent:** Presents the Script Access Details table. (COMPLETED)
+7.  **User:** Asks for a list of target domains that use a specific link. (COMPLETED)
+8.  **Agent:** Implements the Script Access Details table. (COMPLETED)
+9.  **User:** Confirms that the agent understands the enhancement for detailed analytics. (COMPLETED)
+10. **Agent:** Proposes enhancement for a detailed domain/script URL breakdown. (COMPLETED)
 
 **Project Health Check:**
--   **Broken:** The backend service is down due to a broken  file.
--   **Mocked:** None
+-   **Broken:** The analytics feature, while functional, does not meet the user's latest and most critical requirement for tracking the full source/referrer URL of script requests.
+-   **Mocked:** None.
 
 **3rd Party Integrations**
--   None
+-   None.
 
 **Testing status**
--   **Testing agent used after significant changes:** YES (on previous, completed tasks)
--   **Troubleshoot agent used after agent stuck in loop:** NO
--   **Test files created:** Existing test files are in . They will need to be updated to remove whitelist tests and add tests for the new logic.
--   **Known regressions:** None from previous work, but the current work is in a broken state.
+-   **Testing agent used after significant changes:** YES, for the initial feature set in this session.
+-   **Test files created:** None in this session.
+-   **Known regressions:** None.
 
 **Credentials to test flow:**
 -   **Admin:**  / 
 -   **User:**  / 
+-   **Note:** If the database service fails, these users may need to be re-created via the registration endpoint after the database is restored.
 
 **What agent forgot to execute**
--   The previous agent did not complete the file modification on .
--   A database migration to remove the  table was not created or executed.</analysis>
+-   The agent did not ask clarifying questions early enough in the analytics implementation, leading to several iterations. The key takeaway is to confirm the user's exact data requirements before building the backend and UI.</analysis>
