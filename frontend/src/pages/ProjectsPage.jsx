@@ -162,8 +162,20 @@ export default function ProjectsPage() {
             <CardContent className="p-12 text-center">
               <FolderKanban className="w-10 h-10 text-muted-foreground mx-auto mb-3" strokeWidth={1.5} />
               <p className="text-muted-foreground">
-                {search ? 'No projects match your search.' : 'No projects yet. Create your first project to get started.'}
+                {search || categoryFilter !== 'all' 
+                  ? 'No projects match your filters.' 
+                  : 'No projects yet. Create your first project to get started.'}
               </p>
+              {(search || categoryFilter !== 'all') && (
+                <Button
+                  variant="link"
+                  onClick={() => { setSearch(''); setCategoryFilter('all'); }}
+                  className="mt-2"
+                  data-testid="clear-all-filters-btn"
+                >
+                  Clear all filters
+                </Button>
+              )}
             </CardContent>
           </Card>
         ) : (
