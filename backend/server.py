@@ -1167,7 +1167,9 @@ async def get_blacklisted_domains(project_id: int, db: AsyncSession = Depends(ge
 @api_router.get("/projects/{project_id}/scripts/{script_id}/analytics")
 async def get_script_analytics(project_id: int, script_id: int, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
     """Get analytics for a specific script - which domains and pages accessed it."""
-    project = await get_user_project(db, project_id, current_user['user_id'])
+    user_id = current_user['user_id']
+    is_admin = await is_user_admin(db, user_id)
+    project = await get_user_project(db, project_id, user_id, is_admin)
     
     # Get the script
     result = await db.execute(
