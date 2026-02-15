@@ -100,3 +100,18 @@ class AccessLog(Base):
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
 
     project = relationship('Project', back_populates='access_logs')
+
+
+class CustomDomain(Base):
+    __tablename__ = 'custom_domains'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    domain = Column(String(255), unique=True, nullable=False, index=True)
+    status = Column(String(50), default='pending', nullable=False)  # pending, verified, failed
+    is_active = Column(Boolean, default=False, nullable=False)
+    platform_ip = Column(String(45), nullable=True)
+    resolved_ip = Column(String(45), nullable=True)
+    verified_at = Column(DateTime, nullable=True)
+    created_by = Column(Integer, ForeignKey('users.id'), nullable=True)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+
