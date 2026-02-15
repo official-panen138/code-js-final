@@ -948,6 +948,11 @@ SEED_CATEGORIES = [
     {"name": "Internal", "description": "Internal tooling scripts"},
 ]
 
+SEED_ROLES = [
+    {"name": "admin", "description": "Full access to all features", "is_system": True, "permissions": ["dashboard", "projects", "settings", "user_management"]},
+    {"name": "user", "description": "Standard user with project access", "is_system": True, "permissions": ["dashboard", "projects"]},
+]
+
 
 async def seed_categories():
     async with async_session_maker() as db:
@@ -957,6 +962,21 @@ async def seed_categories():
                 db.add(Category(**cat_data))
         await db.commit()
         logger.info("Categories seeded successfully")
+
+
+async def seed_roles():
+    async with async_session_maker() as db:
+        for role_data in SEED_ROLES:
+            result = await db.execute(select(Role).where(Role.name == role_data['name']))
+            existing = result.scalar_one_or_none()
+            if not existing:
+                db.add(Role(**role_data))
+            else:
+                # Update permissions for system roles to include any new menus
+                if existing.is_system:
+                    existing.permissions = role_data['permissions']
+        await db.commit()
+        logger.info("Roles seeded successfully")
 
 
 # ─── Startup / Shutdown ───
