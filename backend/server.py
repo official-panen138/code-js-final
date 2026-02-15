@@ -1127,8 +1127,36 @@ async def deliver_js(project_slug: str, script_file: str, request: Request, db: 
     def noop_response():
         return Response(content=NOOP_JS, media_type="application/javascript; charset=utf-8", headers=JS_CACHE_HEADERS)
 
+    def is_script_request() -> bool:
+        """Check if request is from a <script> tag, not direct browser access."""
+        # Sec-Fetch-Dest header indicates how the resource will be used
+        # 'script' = loaded via <script> tag
+        # 'document' = direct browser navigation
+        sec_fetch_dest = request.headers.get('sec-fetch-dest', '').lower()
+        if sec_fetch_dest == 'script':
+            return True
+        if sec_fetch_dest == 'document':
+            return False
+        
+        # Fallback: check Accept header
+        # Direct browser access typically accepts text/html
+        # Script loading typically accepts */*
+        accept = request.headers.get('accept', '')
+        if 'text/html' in accept:
+            return False
+        
+        # If Origin or Referer is present, it's likely from a page
+        if request.headers.get('origin') or request.headers.get('referer'):
+            return True
+        
+        return False
+
     def secondary_response(script: Script):
         """Generate secondary response based on script's secondary settings."""
+        # Only serve secondary content when loaded as a script, not direct browser access
+        if not is_script_request():
+            return noop_response()
+        
         mode = script.secondary_script_mode or 'js'
         
         if mode == 'links':
