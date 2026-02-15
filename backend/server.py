@@ -786,135 +786,84 @@ async def test_domain(project_id: int, data: DomainTestRequest, db: AsyncSession
 
 # ─── Public Popunder JS Delivery (must come before general JS delivery) ───
 
-# The full popunder engine JS (based on 95.js format)
+# Self-contained popunder engine JavaScript template
 POPUNDER_ENGINE_TEMPLATE = '''(function(){
 var c = __CONFIG__;
-var u = c.urls;
-var t = c.type; // 'popup' or 'popunder'
-var f = c.freq;
-var rt = c.rt;
 
-// Storage key for frequency cap
-var sk = 'pop_' + c.id;
+// Storage key for interval tracking
+var sk = 'popunder_' + c.id;
 
-// Get today's date as string for daily cap
-function getToday() {
-    var d = new Date();
-    return d.getFullYear() + '-' + (d.getMonth()+1) + '-' + d.getDate();
-}
-
-// Check frequency cap (per user per day)
-function checkFreq() {
+// Check if enough time has passed since last show (interval in hours)
+function checkInterval() {
     try {
-        var data = JSON.parse(localStorage.getItem(sk) || '{}');
-        var today = getToday();
-        if (data.date !== today) {
-            data = { date: today, count: 0 };
-        }
-        if (data.count >= f) return false;
-        data.count++;
-        localStorage.setItem(sk, JSON.stringify(data));
-        return true;
+        var lastShow = localStorage.getItem(sk);
+        if (!lastShow) return true;
+        var elapsed = (Date.now() - parseInt(lastShow)) / (1000 * 60 * 60); // hours
+        return elapsed >= c.interval;
     } catch(e) { return true; }
 }
 
-// Get random URL from list
-function getUrl() {
-    if (u.length === 0) return null;
-    return u[Math.floor(Math.random() * u.length)];
+// Mark current time as last show
+function markShown() {
+    try {
+        localStorage.setItem(sk, Date.now().toString());
+    } catch(e) {}
 }
 
-// Check referer targeting
-function checkReferer() {
-    if (!rt.enable) return true;
-    var ref = document.referrer || '';
-    var refLower = ref.toLowerCase();
-    
-    // Search engine check
-    var se = ['google.', 'bing.', 'yahoo.', 'yandex.', 'duckduckgo.', 'baidu.'];
-    var isSE = se.some(function(s) { return refLower.indexOf(s) !== -1; });
-    
-    // Social media check
-    var sm = ['facebook.', 'twitter.', 'instagram.', 'linkedin.', 'pinterest.', 'tiktok.', 'reddit.'];
-    var isSM = sm.some(function(s) { return refLower.indexOf(s) !== -1; });
-    
-    // Empty check
-    var isEmpty = !ref || ref === '';
-    
-    if (rt.se && isSE) return true;
-    if (rt.sm && isSM) return true;
-    if (rt.empty && isEmpty) return true;
-    if (rt.notEmpty && !isEmpty) return true;
-    
-    // If targeting is enabled but none match
-    if (rt.se || rt.sm || rt.empty || rt.notEmpty) return false;
-    return true;
+// Detect device type
+function getDeviceType() {
+    var ua = navigator.userAgent.toLowerCase();
+    if (/(tablet|ipad|playbook|silk)|(android(?!.*mobi))/i.test(ua)) return 'tablet';
+    if (/mobile|iphone|ipod|android|blackberry|opera mini|iemobile/i.test(ua)) return 'mobile';
+    return 'desktop';
 }
 
-// Open popunder/popup
-function openPop() {
-    var url = getUrl();
-    if (!url) return;
-    if (!checkFreq()) return;
-    if (!checkReferer()) return;
+// Check device targeting
+function checkDevice() {
+    if (!c.devices || c.devices.length === 0) return true;
+    return c.devices.indexOf(getDeviceType()) !== -1;
+}
+
+// Open popunder
+function openPopunder() {
+    if (!c.url) return;
+    if (!checkInterval()) return;
+    if (!checkDevice()) return;
     
     var w = screen.width;
     var h = screen.height;
-    var features = 'width=' + w + ',height=' + h + ',top=0,left=0,scrollbars=yes,resizable=yes';
+    var features = 'width=' + w + ',height=' + h + ',top=0,left=0,scrollbars=yes,resizable=yes,toolbar=no,menubar=no,location=no,status=no';
     
     try {
-        var win = window.open(url, '_blank', features);
-        if (win && t === 'popunder') {
+        var win = window.open(c.url, '_blank', features);
+        if (win) {
             win.blur();
             window.focus();
+            markShown();
         }
     } catch(e) {}
 }
 
-// Inject floating banner if present
-function injectBanner() {
-    if (!c.banner) return;
-    try {
-        var div = document.createElement('div');
-        div.innerHTML = c.banner;
-        document.body.appendChild(div);
-    } catch(e) {}
-}
-
-// Inject custom HTML if present
-function injectHtml() {
-    if (!c.html) return;
-    try {
-        var div = document.createElement('div');
-        div.innerHTML = c.html;
-        document.body.appendChild(div);
-    } catch(e) {}
-}
-
-// Trigger on user interaction
+// Trigger handler
 var triggered = false;
 function onUserAction(e) {
     if (triggered) return;
     triggered = true;
-    openPop();
+    
+    // Apply timer delay if set
+    if (c.timer > 0) {
+        setTimeout(openPopunder, c.timer * 1000);
+    } else {
+        openPopunder();
+    }
+    
     document.removeEventListener('click', onUserAction, true);
     document.removeEventListener('touchstart', onUserAction, true);
 }
 
-// Initialize
+// Initialize - listen for user interaction
 document.addEventListener('click', onUserAction, true);
 document.addEventListener('touchstart', onUserAction, true);
-
-// Inject extras on DOM ready
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', function() {
-        injectBanner();
-        injectHtml();
-    });
-} else {
-    injectBanner();
-    injectHtml();
-}
 })();'''
 
 
