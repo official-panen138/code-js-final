@@ -14,7 +14,7 @@ from datetime import datetime, timezone
 from slugify import slugify
 
 from database import get_db, init_db, async_session_maker
-from models import User, Category, Project, ProjectWhitelist, Script, AccessLog
+from models import User, Category, Project, ProjectWhitelist, Script, AccessLog, Role
 from auth import hash_password, verify_password, create_token, get_current_user
 from validators import validate_domain_pattern, normalize_domain, is_domain_allowed
 
