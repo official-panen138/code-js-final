@@ -55,6 +55,7 @@ class ProjectUpdate(BaseModel):
     name: Optional[str] = None
     category_id: Optional[int] = None
     status: Optional[str] = None
+    secondary_script: Optional[str] = None
 
 class WhitelistCreate(BaseModel):
     domain_pattern: str
