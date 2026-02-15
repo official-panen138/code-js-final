@@ -11,9 +11,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../components/ui/dialog';
 import { Switch } from '../components/ui/switch';
 import { Checkbox } from '../components/ui/checkbox';
+import { Textarea } from '../components/ui/textarea';
 import {
   ArrowLeft, Copy, Check, Pencil, Layers, ExternalLink,
-  Settings2, Monitor, Smartphone, Tablet, Globe
+  Settings2, Monitor, Smartphone, Tablet, Globe, Link2, Code
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -89,11 +90,13 @@ export default function PopunderDetailPage() {
     const settings = campaign.settings || {};
     setEditForm({
       name: campaign.name,
-      direct_link: settings.direct_link || '',
+      url_list: settings.url_list || '',
       timer: settings.timer || 0,
       interval: settings.interval || 24,
       devices: settings.devices || ['desktop', 'mobile', 'tablet'],
       countries: settings.countries || [],
+      floating_banner: settings.floating_banner || '',
+      html_body: settings.html_body || '',
     });
     setShowEdit(true);
   };
@@ -124,8 +127,8 @@ export default function PopunderDetailPage() {
       toast.error('Campaign name is required');
       return;
     }
-    if (!editForm.direct_link?.trim()) {
-      toast.error('Direct link URL is required');
+    if (!editForm.url_list?.trim()) {
+      toast.error('At least one URL is required');
       return;
     }
 
@@ -134,11 +137,13 @@ export default function PopunderDetailPage() {
       const payload = {
         name: editForm.name.trim(),
         settings: {
-          direct_link: editForm.direct_link.trim(),
+          url_list: editForm.url_list.trim(),
           timer: parseInt(editForm.timer) || 0,
           interval: parseInt(editForm.interval) || 24,
           devices: editForm.devices || ['desktop', 'mobile', 'tablet'],
           countries: editForm.countries || [],
+          floating_banner: editForm.floating_banner || '',
+          html_body: editForm.html_body || '',
         },
       };
       await popunderAPI.update(campaignId, payload);
@@ -177,6 +182,9 @@ export default function PopunderDetailPage() {
 
   const embedTag = `<script src="${getEmbedUrl()}"></script>`;
   const settings = campaign.settings || {};
+  
+  // Parse URL list for display
+  const urlList = (settings.url_list || '').split('\n').filter(u => u.trim());
 
   return (
     <Layout>
@@ -230,30 +238,55 @@ export default function PopunderDetailPage() {
 
           {/* Settings Tab */}
           <TabsContent value="settings">
-            <Card className="border border-border bg-white">
-              <CardHeader>
-                <CardTitle className="text-lg">Campaign Settings</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-6">
+              {/* URLs & Timing */}
+              <Card className="border border-border bg-white">
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Link2 className="w-5 h-5" /> URLs & Timing
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
                   <div>
-                    <span className="label-caps block mb-1">Direct Link</span>
-                    <code className="text-sm text-slate-700 break-all" data-testid="direct-link-value">
-                      {settings.direct_link || '—'}
-                    </code>
+                    <span className="label-caps block mb-2">Target URLs</span>
+                    <div className="space-y-1" data-testid="url-list-value">
+                      {urlList.length > 0 ? urlList.map((url, i) => (
+                        <code key={i} className="text-sm text-slate-700 block bg-slate-50 p-2 rounded">
+                          {url}
+                        </code>
+                      )) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {urlList.length} URL(s) - Random selection on each trigger
+                    </p>
                   </div>
-                  <div>
-                    <span className="label-caps block mb-1">Timer</span>
-                    <span className="text-slate-700" data-testid="timer-value">
-                      {settings.timer || 0} seconds
-                    </span>
+                  <div className="grid grid-cols-2 gap-6">
+                    <div>
+                      <span className="label-caps block mb-1">Timer</span>
+                      <span className="text-slate-700" data-testid="timer-value">
+                        {settings.timer || 0} seconds delay
+                      </span>
+                    </div>
+                    <div>
+                      <span className="label-caps block mb-1">Interval</span>
+                      <span className="text-slate-700" data-testid="interval-value">
+                        {settings.interval || 24} hours between shows
+                      </span>
+                    </div>
                   </div>
-                  <div>
-                    <span className="label-caps block mb-1">Interval</span>
-                    <span className="text-slate-700" data-testid="interval-value">
-                      {settings.interval || 24} hours between shows
-                    </span>
-                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Targeting */}
+              <Card className="border border-border bg-white">
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Globe className="w-5 h-5" /> Targeting
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
                   <div>
                     <span className="label-caps block mb-1">Devices</span>
                     <div className="flex gap-2 flex-wrap" data-testid="devices-value">
@@ -268,7 +301,7 @@ export default function PopunderDetailPage() {
                       })}
                     </div>
                   </div>
-                  <div className="md:col-span-2">
+                  <div>
                     <span className="label-caps block mb-1">Countries</span>
                     <div className="flex gap-2 flex-wrap" data-testid="countries-value">
                       {(!settings.countries || settings.countries.length === 0) ? (
@@ -286,10 +319,44 @@ export default function PopunderDetailPage() {
                         })
                       )}
                     </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Country detection via IP (client-side)
+                    </p>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+
+              {/* Custom Code */}
+              <Card className="border border-border bg-white">
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Code className="w-5 h-5" /> Custom Code
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <span className="label-caps block mb-1">Floating Banner</span>
+                    {settings.floating_banner ? (
+                      <pre className="text-xs text-slate-700 bg-slate-50 p-3 rounded overflow-x-auto max-h-32" data-testid="floating-banner-value">
+                        {settings.floating_banner}
+                      </pre>
+                    ) : (
+                      <span className="text-muted-foreground text-sm">No floating banner configured</span>
+                    )}
+                  </div>
+                  <div>
+                    <span className="label-caps block mb-1">Custom HTML Body</span>
+                    {settings.html_body ? (
+                      <pre className="text-xs text-slate-700 bg-slate-50 p-3 rounded overflow-x-auto max-h-32" data-testid="html-body-value">
+                        {settings.html_body}
+                      </pre>
+                    ) : (
+                      <span className="text-muted-foreground text-sm">No custom HTML configured</span>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
 
           {/* Embed Tab */}
@@ -326,13 +393,14 @@ export default function PopunderDetailPage() {
 
       {/* Edit Dialog */}
       <Dialog open={showEdit} onOpenChange={(open) => setShowEdit(open)}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto" data-testid="edit-campaign-dialog">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" data-testid="edit-campaign-dialog">
           <DialogHeader>
             <DialogTitle style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
               Edit Campaign
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-2">
+          <div className="space-y-5 py-2">
+            {/* Campaign Name */}
             <div className="space-y-2">
               <Label className="label-caps">Campaign Name</Label>
               <Input
@@ -341,16 +409,21 @@ export default function PopunderDetailPage() {
                 data-testid="edit-name-input"
               />
             </div>
+
+            {/* URL List */}
             <div className="space-y-2">
-              <Label className="label-caps">Direct Link</Label>
-              <Input
-                value={editForm.direct_link || ''}
-                onChange={(e) => setEditForm({ ...editForm, direct_link: e.target.value })}
-                placeholder="https://example.com"
-                data-testid="edit-direct-link-input"
+              <Label className="label-caps">Target URLs (one per line)</Label>
+              <Textarea
+                value={editForm.url_list || ''}
+                onChange={(e) => setEditForm({ ...editForm, url_list: e.target.value })}
+                placeholder="https://example.com/offer1&#10;https://example.com/offer2&#10;https://example.com/offer3"
+                rows={4}
+                data-testid="edit-url-list-input"
               />
-              <p className="text-xs text-muted-foreground">URL to open in the popunder window</p>
+              <p className="text-xs text-muted-foreground">Enter multiple URLs, one per line. A random URL will be selected on each trigger.</p>
             </div>
+
+            {/* Timer & Interval */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="label-caps">Timer (seconds)</Label>
@@ -375,6 +448,8 @@ export default function PopunderDetailPage() {
                 <p className="text-xs text-muted-foreground">Hours between shows for same user</p>
               </div>
             </div>
+
+            {/* Devices */}
             <div className="space-y-2">
               <Label className="label-caps">Devices</Label>
               <div className="flex gap-4">
@@ -397,10 +472,12 @@ export default function PopunderDetailPage() {
                 })}
               </div>
             </div>
+
+            {/* Countries */}
             <div className="space-y-2">
-              <Label className="label-caps">Countries</Label>
+              <Label className="label-caps">Countries (IP-based detection)</Label>
               <p className="text-xs text-muted-foreground mb-2">Leave empty for all countries</p>
-              <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto p-2 border rounded-md">
+              <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto p-2 border rounded-md">
                 {COUNTRY_OPTIONS.map((country) => {
                   const isAllSelected = editForm.countries?.length === 0;
                   const isSelected = country.code === '' 
@@ -421,6 +498,34 @@ export default function PopunderDetailPage() {
                   );
                 })}
               </div>
+            </div>
+
+            {/* Floating Banner */}
+            <div className="space-y-2">
+              <Label className="label-caps">Floating Banner (HTML)</Label>
+              <Textarea
+                value={editForm.floating_banner || ''}
+                onChange={(e) => setEditForm({ ...editForm, floating_banner: e.target.value })}
+                placeholder='<div style="position:fixed;bottom:0;left:0;right:0;background:#000;color:#fff;padding:10px;text-align:center;">Your banner here</div>'
+                rows={3}
+                className="font-mono text-sm"
+                data-testid="edit-floating-banner-input"
+              />
+              <p className="text-xs text-muted-foreground">HTML code to inject as a floating element on the page</p>
+            </div>
+
+            {/* Custom HTML Body */}
+            <div className="space-y-2">
+              <Label className="label-caps">Custom HTML Body</Label>
+              <Textarea
+                value={editForm.html_body || ''}
+                onChange={(e) => setEditForm({ ...editForm, html_body: e.target.value })}
+                placeholder='<div id="my-custom-element">Custom content here</div>'
+                rows={3}
+                className="font-mono text-sm"
+                data-testid="edit-html-body-input"
+              />
+              <p className="text-xs text-muted-foreground">HTML code to inject into the page body</p>
             </div>
           </div>
           <DialogFooter>
