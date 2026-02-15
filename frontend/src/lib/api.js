@@ -92,4 +92,14 @@ export const domainTestAPI = {
   test: (projectId, domain) => api.post(`/projects/${projectId}/test-domain`, { domain }),
 };
 
+// Custom Domains
+export const customDomainAPI = {
+  list: () => api.get('/custom-domains'),
+  listActive: () => api.get('/custom-domains/active'),
+  add: (domain) => api.post('/custom-domains', { domain }),
+  verify: (id) => api.post(`/custom-domains/${id}/verify`),
+  update: (id, data) => api.patch(`/custom-domains/${id}`, data),
+  delete: (id) => api.delete(`/custom-domains/${id}`),
+};
+
 export default api;
