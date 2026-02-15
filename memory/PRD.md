@@ -104,9 +104,11 @@ Build a platform that allows users to create projects, add JavaScript scripts, c
 - GET/POST `/api/projects` - List/Create
 - GET/PATCH/DELETE `/api/projects/{id}` - CRUD
 - GET/POST `/api/projects/{id}/scripts` - Script management
-- GET `/api/projects/{id}/analytics` - Analytics with by_script section
+- GET `/api/projects/{id}/analytics` - Aggregated analytics (charts)
+- GET `/api/projects/{id}/analytics/logs` - Individual log entries with IDs (for Analytics tab)
 - GET `/api/projects/{id}/logs` - Access logs
 - DELETE `/api/projects/{id}/logs` - Clear all access logs
+- DELETE `/api/projects/{id}/logs/{log_id}` - Delete single log entry (NEW)
 - GET `/api/projects/{id}/blacklisted-domains` - Denied domains
 
 ### Per-Script Whitelist
