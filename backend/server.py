@@ -227,6 +227,18 @@ async def get_user_project(db: AsyncSession, project_id: int, user_id: int) -> P
     return project
 
 
+async def generate_popunder_slug(db: AsyncSession, project_id: int, name: str) -> str:
+    base = slugify(name, max_length=200)
+    slug = base
+    counter = 1
+    while True:
+        result = await db.execute(select(PopunderCampaign).where(and_(PopunderCampaign.project_id == project_id, PopunderCampaign.slug == slug)))
+        if not result.scalar_one_or_none():
+            return slug
+        slug = f"{base}-{counter}"
+        counter += 1
+
+
 # ─── Auth Routes ───
 @api_router.post("/auth/register")
 async def register(data: UserRegister, db: AsyncSession = Depends(get_db)):
