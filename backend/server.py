@@ -1055,7 +1055,7 @@ async def get_script_analytics(project_id: int, script_id: int, db: AsyncSession
     )
     allowed_val = allowed_result.scalar() or 0
     
-    # Domains that accessed this script
+    # Domains that accessed this script (include direct/unknown access)
     domain_result = await db.execute(
         select(
             AccessLog.ref_domain,
@@ -1063,11 +1063,7 @@ async def get_script_analytics(project_id: int, script_id: int, db: AsyncSession
             func.count(AccessLog.id).label('request_count'),
             func.max(AccessLog.created_at).label('last_access'),
         )
-        .where(and_(
-            AccessLog.script_id == script_id,
-            AccessLog.ref_domain != None,
-            AccessLog.ref_domain != ''
-        ))
+        .where(AccessLog.script_id == script_id)
         .group_by(AccessLog.ref_domain, AccessLog.allowed)
         .order_by(desc(func.count(AccessLog.id)))
         .limit(50)
@@ -1076,13 +1072,13 @@ async def get_script_analytics(project_id: int, script_id: int, db: AsyncSession
     domains = []
     for row in domain_result:
         domains.append({
-            "domain": row.ref_domain,
+            "domain": row.ref_domain if row.ref_domain else "Direct/Unknown",
             "status": "allowed" if row.allowed else "denied",
             "request_count": row.request_count,
             "last_access": row.last_access.isoformat() if row.last_access else None
         })
     
-    # Full referrer URLs that accessed this script
+    # Full referrer URLs that accessed this script (include direct/unknown access)
     referer_url_result = await db.execute(
         select(
             AccessLog.referer_url,
@@ -1091,11 +1087,7 @@ async def get_script_analytics(project_id: int, script_id: int, db: AsyncSession
             func.count(AccessLog.id).label('request_count'),
             func.max(AccessLog.created_at).label('last_access'),
         )
-        .where(and_(
-            AccessLog.script_id == script_id,
-            AccessLog.referer_url != None,
-            AccessLog.referer_url != ''
-        ))
+        .where(AccessLog.script_id == script_id)
         .group_by(AccessLog.referer_url, AccessLog.ref_domain, AccessLog.allowed)
         .order_by(desc(func.count(AccessLog.id)))
         .limit(50)
@@ -1104,8 +1096,8 @@ async def get_script_analytics(project_id: int, script_id: int, db: AsyncSession
     referer_urls = []
     for row in referer_url_result:
         referer_urls.append({
-            "referer_url": row.referer_url,
-            "domain": row.ref_domain,
+            "referer_url": row.referer_url if row.referer_url else "Direct/Unknown",
+            "domain": row.ref_domain if row.ref_domain else "Direct/Unknown",
             "status": "allowed" if row.allowed else "denied",
             "request_count": row.request_count,
             "last_access": row.last_access.isoformat() if row.last_access else None
