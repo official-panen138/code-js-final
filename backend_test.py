@@ -733,6 +733,24 @@ class JSHostAPITester:
         # NEW: Analytics
         print("\n📈 Analytics Tests")
         self.test_analytics_endpoint()
+
+        # Menu System  
+        print("\n📋 Menu System Tests")
+        self.test_menus_endpoint()
+        
+        # Role Management
+        print("\n👥 Role Management Tests")
+        self.test_roles_list()
+        self.test_role_create()
+        self.test_role_update()
+        self.test_role_delete_unused()
+        self.test_role_delete_system_role()
+        
+        # User Management
+        print("\n👤 User Management Tests")
+        self.test_users_list()
+        self.test_user_update_role()
+        self.test_user_update_status()
         
         # JS Delivery
         print("\n🚀 JS Delivery Tests")
