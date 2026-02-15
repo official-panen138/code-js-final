@@ -92,7 +92,7 @@ export default function PopunderDetailPage() {
       name: campaign.name,
       url_list: settings.url_list || '',
       timer: settings.timer || 0,
-      interval: settings.interval || 24,
+      frequency: settings.frequency || 1,
       devices: settings.devices || ['desktop', 'mobile', 'tablet'],
       countries: settings.countries || [],
       floating_banner: settings.floating_banner || '',
