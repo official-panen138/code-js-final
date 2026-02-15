@@ -115,3 +115,22 @@ class CustomDomain(Base):
     created_by = Column(Integer, ForeignKey('users.id'), nullable=True)
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
 
+
+class PopunderCampaign(Base):
+    __tablename__ = 'popunder_campaigns'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    project_id = Column(Integer, ForeignKey('projects.id', ondelete='CASCADE'), nullable=False, index=True)
+    name = Column(String(255), nullable=False)
+    slug = Column(String(255), nullable=False)
+    status = Column(Enum('active', 'paused', name='popunder_status'), default='active', nullable=False)
+    settings = Column(JSON, nullable=False, default=dict)  # target_url, frequency, delay, width, height
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)
+
+    project = relationship('Project', back_populates='popunder_campaigns')
+
+    __table_args__ = (
+        UniqueConstraint('project_id', 'slug', name='uq_project_popunder_slug'),
+    )
+
