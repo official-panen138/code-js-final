@@ -467,9 +467,24 @@ function ScriptsTab({ projectId, scripts, onRefresh, getEmbedUrl, copied, copyTo
     setShowScriptAnalytics(true);
     setLoadingScriptAnalytics(true);
     setScriptAnalyticsData(null);
+    setScriptLogPage(1);
     try {
-      const res = await scriptAPI.logs(projectId, script.id);
+      const res = await scriptAPI.logs(projectId, script.id, 1, 20);
       setScriptAnalyticsData(res.data);
+    } catch (err) {
+      toast.error('Failed to load script analytics');
+    } finally {
+      setLoadingScriptAnalytics(false);
+    }
+  };
+
+  const loadScriptLogsPage = async (page) => {
+    if (!analyticsScript) return;
+    setLoadingScriptAnalytics(true);
+    try {
+      const res = await scriptAPI.logs(projectId, analyticsScript.id, page, 20);
+      setScriptAnalyticsData(res.data);
+      setScriptLogPage(page);
     } catch (err) {
       toast.error('Failed to load script analytics');
     } finally {
@@ -481,20 +496,8 @@ function ScriptsTab({ projectId, scripts, onRefresh, getEmbedUrl, copied, copyTo
     setDeletingLogId(logId);
     try {
       await logsAPI.delete(projectId, logId);
-      // Update local state
-      setScriptAnalyticsData(prev => {
-        const deletedLog = prev.logs.find(l => l.id === logId);
-        const wasAllowed = deletedLog?.status === 'allowed';
-        return {
-          ...prev,
-          logs: prev.logs.filter(l => l.id !== logId),
-          summary: {
-            total: prev.summary.total - 1,
-            allowed: wasAllowed ? prev.summary.allowed - 1 : prev.summary.allowed,
-            denied: !wasAllowed ? prev.summary.denied - 1 : prev.summary.denied,
-          }
-        };
-      });
+      // Reload current page to get fresh data
+      await loadScriptLogsPage(scriptLogPage);
       toast.success('Log entry deleted');
     } catch (err) {
       toast.error('Failed to delete log entry');
