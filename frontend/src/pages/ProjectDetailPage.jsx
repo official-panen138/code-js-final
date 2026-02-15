@@ -171,6 +171,9 @@ export default function ProjectDetailPage() {
 /* ─── Project Settings ─── */
 function ProjectSettings({ project, onUpdate }) {
   const [showDelete, setShowDelete] = useState(false);
+  const [showSecondaryScript, setShowSecondaryScript] = useState(false);
+  const [secondaryScript, setSecondaryScript] = useState(project.secondary_script || '');
+  const [savingScript, setSavingScript] = useState(false);
   const navigate = useNavigate();
 
   const toggleStatus = async () => {
@@ -194,6 +197,20 @@ function ProjectSettings({ project, onUpdate }) {
     }
   };
 
+  const handleSaveSecondaryScript = async () => {
+    setSavingScript(true);
+    try {
+      await projectAPI.update(project.id, { secondary_script: secondaryScript });
+      toast.success('Secondary script saved');
+      setShowSecondaryScript(false);
+      onUpdate();
+    } catch (err) {
+      toast.error('Failed to save secondary script');
+    } finally {
+      setSavingScript(false);
+    }
+  };
+
   return (
     <div className="flex items-center gap-3">
       <div className="flex items-center gap-2">
@@ -204,10 +221,14 @@ function ProjectSettings({ project, onUpdate }) {
           data-testid="project-status-toggle"
         />
       </div>
+      <Button variant="outline" size="sm" onClick={() => { setSecondaryScript(project.secondary_script || ''); setShowSecondaryScript(true); }} data-testid="secondary-script-btn">
+        <FileCode className="w-4 h-4 mr-1" /> Secondary Script
+      </Button>
       <Button variant="outline" size="sm" className="text-destructive border-destructive/30 hover:bg-destructive/10" onClick={() => setShowDelete(true)} data-testid="delete-project-btn">
         <Trash2 className="w-4 h-4" />
       </Button>
 
+      {/* Delete Dialog */}
       <Dialog open={showDelete} onOpenChange={setShowDelete}>
         <DialogContent data-testid="delete-project-dialog">
           <DialogHeader>
@@ -219,6 +240,42 @@ function ProjectSettings({ project, onUpdate }) {
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowDelete(false)}>Cancel</Button>
             <Button variant="destructive" onClick={handleDelete} data-testid="confirm-delete-btn">Delete</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Secondary Script Dialog */}
+      <Dialog open={showSecondaryScript} onOpenChange={setShowSecondaryScript}>
+        <DialogContent className="max-w-2xl" data-testid="secondary-script-dialog">
+          <DialogHeader>
+            <DialogTitle style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>Secondary Script</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="p-3 bg-amber-50 border border-amber-200 rounded-md">
+              <p className="text-sm text-amber-800">
+                <AlertCircle className="w-4 h-4 inline mr-1" />
+                This script will be served to domains that are <strong>NOT whitelisted</strong>, instead of an empty noop response.
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label className="label-caps">JavaScript Code</Label>
+              <Textarea
+                value={secondaryScript}
+                onChange={(e) => setSecondaryScript(e.target.value)}
+                placeholder="// JavaScript code for non-whitelisted domains..."
+                rows={12}
+                className="font-mono text-sm"
+                style={{ fontFamily: 'JetBrains Mono, monospace' }}
+                data-testid="secondary-script-input"
+              />
+              <p className="text-xs text-muted-foreground">Leave empty to serve noop response (default behavior)</p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowSecondaryScript(false)}>Cancel</Button>
+            <Button onClick={handleSaveSecondaryScript} disabled={savingScript} className="bg-[#0F172A] hover:bg-[#1E293B] text-white" data-testid="save-secondary-script-btn">
+              {savingScript ? 'Saving...' : 'Save Script'}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
