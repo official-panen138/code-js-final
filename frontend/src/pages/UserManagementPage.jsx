@@ -56,6 +56,9 @@ function UsersSection() {
   const [users, setUsers] = useState([]);
   const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showCreate, setShowCreate] = useState(false);
+  const [form, setForm] = useState({ email: '', password: '', role: 'user' });
+  const [creating, setCreating] = useState(false);
   const { user: currentUser } = useAuth();
 
   const loadUsers = useCallback(async () => {
@@ -71,6 +74,23 @@ function UsersSection() {
   }, []);
 
   useEffect(() => { loadUsers(); }, [loadUsers]);
+
+  const handleCreate = async () => {
+    if (!form.email.trim()) { toast.error('Email is required'); return; }
+    if (!form.password || form.password.length < 6) { toast.error('Password must be at least 6 characters'); return; }
+    setCreating(true);
+    try {
+      await api.post('/users', { email: form.email.trim(), password: form.password, role: form.role });
+      toast.success('User created');
+      setShowCreate(false);
+      setForm({ email: '', password: '', role: 'user' });
+      loadUsers();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Failed to create user');
+    } finally {
+      setCreating(false);
+    }
+  };
 
   const updateRole = async (userId, newRole) => {
     try {
@@ -98,6 +118,16 @@ function UsersSection() {
 
   return (
     <div className="space-y-4" data-testid="users-section">
+      <div className="flex items-center justify-end">
+        <Button
+          onClick={() => setShowCreate(true)}
+          className="bg-[#0F172A] hover:bg-[#1E293B] text-white active:scale-95 transition-transform"
+          data-testid="add-user-btn"
+        >
+          <Plus className="w-4 h-4 mr-2" /> Add User
+        </Button>
+      </div>
+
       <Card className="border border-border bg-white shadow-sm">
         <CardContent className="p-0">
           <div className="overflow-x-auto">
