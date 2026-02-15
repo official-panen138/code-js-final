@@ -98,6 +98,7 @@ class AccessLog(Base):
     project_id = Column(Integer, ForeignKey('projects.id', ondelete='CASCADE'), nullable=False, index=True)
     script_id = Column(Integer, ForeignKey('scripts.id', ondelete='SET NULL'), nullable=True)
     ref_domain = Column(String(255), nullable=True)
+    referer_url = Column(String(2048), nullable=True)  # Full referrer URL (e.g., https://example.com/page.html)
     allowed = Column(Boolean, nullable=False)
     ip = Column(String(45), nullable=True)
     user_agent = Column(Text, nullable=True)
