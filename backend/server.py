@@ -1685,7 +1685,11 @@ async def deliver_popunder_js(campaign_file: str, request: Request, db: AsyncSes
         "html": settings.get("html_body", ""),
     }
 
+    # Get the API base URL from the request
+    api_base = str(request.base_url).rstrip('/')
+    
     js_code = POPUNDER_ENGINE_TEMPLATE.replace('__CONFIG__', json.dumps(config))
+    js_code = js_code.replace('__API_BASE__', json.dumps(api_base))
     return Response(content=js_code, media_type="application/javascript; charset=utf-8", headers=JS_CACHE_HEADERS)
 
 
