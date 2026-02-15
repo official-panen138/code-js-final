@@ -88,6 +88,11 @@ class UserUpdate(BaseModel):
     role: Optional[str] = None
     is_active: Optional[bool] = None
 
+class UserCreate(BaseModel):
+    email: str
+    password: str
+    role: Optional[str] = 'user'
+
 class RoleCreate(BaseModel):
     name: str
     description: Optional[str] = None
