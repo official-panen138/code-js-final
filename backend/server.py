@@ -849,11 +849,47 @@ async def get_analytics(project_id: int, db: AsyncSession = Depends(get_db), cur
                 "denied": int(row.denied or 0)
             })
 
+    # Detailed breakdown: Domain + Script URL combinations
+    # Shows which specific domains accessed which specific script URLs
+    script_domain_result = await db.execute(
+        select(
+            AccessLog.script_id,
+            AccessLog.ref_domain,
+            AccessLog.allowed,
+            func.count(AccessLog.id).label('request_count'),
+            func.max(AccessLog.created_at).label('last_access'),
+        )
+        .where(and_(
+            AccessLog.project_id == project_id,
+            AccessLog.script_id != None,
+            AccessLog.ref_domain != None,
+            AccessLog.ref_domain != ''
+        ))
+        .group_by(AccessLog.script_id, AccessLog.ref_domain, AccessLog.allowed)
+        .order_by(desc(func.count(AccessLog.id)))
+        .limit(50)
+    )
+    script_domain_data = []
+    for row in script_domain_result:
+        script = scripts.get(row.script_id)
+        if script:
+            script_url = f"/api/js/{project.slug}/{script.slug}.js"
+            script_domain_data.append({
+                "script_id": row.script_id,
+                "script_name": script.name,
+                "script_url": script_url,
+                "domain": row.ref_domain,
+                "status": "allowed" if row.allowed else "denied",
+                "request_count": row.request_count,
+                "last_access": row.last_access.isoformat() if row.last_access else None
+            })
+
     return {
         "summary": {"total": total_val, "allowed": allowed_val, "denied": total_val - allowed_val},
         "daily": daily_data,
         "top_domains": domain_data,
         "by_script": script_data,
+        "script_domain_details": script_domain_data,
     }
 
 
