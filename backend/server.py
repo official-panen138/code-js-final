@@ -114,7 +114,7 @@ class CustomDomainUpdate(BaseModel):
 class PopunderCampaignSettings(BaseModel):
     url_list: str  # newline-separated URLs to open in popunder (random selection)
     timer: Optional[int] = 0  # delay in seconds before popunder opens
-    interval: Optional[int] = 24  # hours between popunder shows for same user
+    frequency: Optional[int] = 1  # max shows per user per day
     devices: Optional[List[str]] = ["desktop", "mobile", "tablet"]  # targeted devices
     countries: Optional[List[str]] = []  # targeted countries (ISO codes), empty = all
     floating_banner: Optional[str] = ""  # HTML code for floating banner
