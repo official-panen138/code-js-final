@@ -467,6 +467,8 @@ async def update_project(project_id: int, data: ProjectUpdate, db: AsyncSession 
         if data.status not in ('active', 'paused'):
             raise HTTPException(status_code=400, detail="Status must be 'active' or 'paused'")
         project.status = data.status
+    if data.secondary_script is not None:
+        project.secondary_script = data.secondary_script if data.secondary_script.strip() else None
 
     await db.commit()
     await db.refresh(project)
