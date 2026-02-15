@@ -63,15 +63,25 @@ class WhitelistUpdate(BaseModel):
     domain_pattern: Optional[str] = None
     is_active: Optional[bool] = None
 
+class SecondaryScriptLink(BaseModel):
+    url: str
+    keyword: str
+
 class ScriptCreate(BaseModel):
     name: str
     js_code: str
     status: Optional[str] = 'active'
+    secondary_script: Optional[str] = None
+    secondary_script_mode: Optional[str] = 'js'
+    secondary_script_links: Optional[List[SecondaryScriptLink]] = None
 
 class ScriptUpdate(BaseModel):
     name: Optional[str] = None
     js_code: Optional[str] = None
     status: Optional[str] = None
+    secondary_script: Optional[str] = None
+    secondary_script_mode: Optional[str] = None
+    secondary_script_links: Optional[List[SecondaryScriptLink]] = None
 
 class DomainTestRequest(BaseModel):
     domain: str
