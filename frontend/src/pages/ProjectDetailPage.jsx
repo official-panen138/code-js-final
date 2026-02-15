@@ -232,11 +232,20 @@ function ProjectSettings({ project, onUpdate }) {
 function ScriptsTab({ projectId, scripts, onRefresh, getEmbedUrl, copied, copyToClipboard }) {
   const [showCreate, setShowCreate] = useState(false);
   const [editScript, setEditScript] = useState(null);
-  const [form, setForm] = useState({ name: '', js_code: '' });
+  const [form, setForm] = useState({ name: '', js_code: '', secondary_script_mode: 'js', secondary_script: '', secondary_script_links: [] });
   const [saving, setSaving] = useState(false);
   const [savingVersion, setSavingVersion] = useState(false);
+  const [showSecondary, setShowSecondary] = useState(false);
+  const [secondaryScript, setSecondaryScript] = useState(null);
+  const [secondaryMode, setSecondaryMode] = useState('js');
+  const [secondaryCode, setSecondaryCode] = useState('');
+  const [secondaryLinks, setSecondaryLinks] = useState([]);
+  const [savingSecondary, setSavingSecondary] = useState(false);
 
-  const resetForm = () => { setForm({ name: '', js_code: '' }); setEditScript(null); };
+  const resetForm = () => { 
+    setForm({ name: '', js_code: '', secondary_script_mode: 'js', secondary_script: '', secondary_script_links: [] }); 
+    setEditScript(null); 
+  };
 
   const handleSave = async () => {
     if (!form.name.trim() || !form.js_code.trim()) {
@@ -269,8 +278,7 @@ function ScriptsTab({ projectId, scripts, onRefresh, getEmbedUrl, copied, copyTo
     }
     setSavingVersion(true);
     try {
-      // Create as a new script with versioned name
-      const baseName = form.name.replace(/\s*\(v\d+\)$/, ''); // Remove existing version suffix
+      const baseName = form.name.replace(/\s*\(v\d+\)$/, '');
       const existingVersions = scripts.filter(s => 
         s.name === baseName || s.name.match(new RegExp(`^${baseName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*\\(v\\d+\\)$`))
       );
@@ -314,6 +322,54 @@ function ScriptsTab({ projectId, scripts, onRefresh, getEmbedUrl, copied, copyTo
     setEditScript(script);
     setForm({ name: script.name, js_code: script.js_code });
     setShowCreate(true);
+  };
+
+  const openSecondaryDialog = (script) => {
+    setSecondaryScript(script);
+    setSecondaryMode(script.secondary_script_mode || 'js');
+    setSecondaryCode(script.secondary_script || '');
+    setSecondaryLinks(script.secondary_script_links || []);
+    setShowSecondary(true);
+  };
+
+  const handleSaveSecondary = async () => {
+    setSavingSecondary(true);
+    try {
+      const updateData = {
+        secondary_script_mode: secondaryMode,
+      };
+      
+      if (secondaryMode === 'js') {
+        updateData.secondary_script = secondaryCode;
+        updateData.secondary_script_links = [];
+      } else {
+        updateData.secondary_script = '';
+        updateData.secondary_script_links = secondaryLinks.filter(l => l.url && l.keyword);
+      }
+
+      await scriptAPI.update(projectId, secondaryScript.id, updateData);
+      toast.success('Secondary script settings saved');
+      setShowSecondary(false);
+      onRefresh();
+    } catch (err) {
+      toast.error('Failed to save secondary script settings');
+    } finally {
+      setSavingSecondary(false);
+    }
+  };
+
+  const addLink = () => {
+    setSecondaryLinks([...secondaryLinks, { url: '', keyword: '' }]);
+  };
+
+  const removeLink = (index) => {
+    setSecondaryLinks(secondaryLinks.filter((_, i) => i !== index));
+  };
+
+  const updateLink = (index, field, value) => {
+    const updated = [...secondaryLinks];
+    updated[index] = { ...updated[index], [field]: value };
+    setSecondaryLinks(updated);
   };
 
   return (
