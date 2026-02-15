@@ -53,21 +53,20 @@ class Project(Base):
 
     user = relationship('User', back_populates='projects')
     category = relationship('Category', back_populates='projects')
-    whitelists = relationship('ProjectWhitelist', back_populates='project', cascade='all, delete-orphan')
     scripts = relationship('Script', back_populates='project', cascade='all, delete-orphan')
     access_logs = relationship('AccessLog', back_populates='project', cascade='all, delete-orphan')
 
 
-class ProjectWhitelist(Base):
-    __tablename__ = 'project_whitelists'
+class ScriptWhitelist(Base):
+    __tablename__ = 'script_whitelists'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    project_id = Column(Integer, ForeignKey('projects.id', ondelete='CASCADE'), nullable=False, index=True)
+    script_id = Column(Integer, ForeignKey('scripts.id', ondelete='CASCADE'), nullable=False, index=True)
     domain_pattern = Column(String(255), nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
 
-    project = relationship('Project', back_populates='whitelists')
+    script = relationship('Script', back_populates='whitelists')
 
 
 class Script(Base):
