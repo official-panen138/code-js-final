@@ -144,12 +144,18 @@ export default function CustomDomainsPage() {
                 <p className="text-sm font-medium text-blue-800">How to connect your custom domain:</p>
                 <ol className="text-xs text-blue-700 space-y-1 list-decimal list-inside">
                   <li>Add your domain below (e.g. <code className="bg-blue-100 px-1 rounded">cdn.yourdomain.com</code>)</li>
-                  <li>Go to your DNS provider and create an <strong>A record</strong> pointing to the platform IP shown</li>
-                  <li>Click <strong>Verify DNS</strong> to check the A record matches</li>
+                  <li>Go to your DNS provider and create a <strong>CNAME record</strong> pointing to:
+                    <code className="bg-blue-100 px-1 rounded block mt-1">log-manager-3.preview.emergentagent.com</code>
+                    <span className="text-blue-600 text-[10px]">(Or use an A record to the platform IP if CNAME is not supported)</span>
+                  </li>
+                  <li>Click <strong>Verify DNS</strong> to check the record is configured</li>
                   <li>Once verified, use the custom domain in your embed URLs:
                     <code className="bg-blue-100 px-1 rounded block mt-1">&lt;script src="https://cdn.yourdomain.com/api/js/project/script.js"&gt;&lt;/script&gt;</code>
                   </li>
                 </ol>
+                <p className="text-[10px] text-blue-600 mt-2">
+                  <strong>Note:</strong> For HTTPS to work on your CDN domain, you may need to configure SSL through Cloudflare or similar CDN service.
+                </p>
               </div>
             </div>
           </CardContent>
