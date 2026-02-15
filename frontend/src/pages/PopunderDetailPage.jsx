@@ -447,6 +447,233 @@ export default function PopunderDetailPage() {
               </CardContent>
             </Card>
           </TabsContent>
+
+          {/* Analytics Tab */}
+          <TabsContent value="analytics">
+            <div className="space-y-6">
+              {/* Summary Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <Card className="border border-border bg-white">
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                        <Eye className="w-5 h-5 text-blue-600" />
+                      </div>
+                      <div>
+                        <p className="text-2xl font-semibold">{analytics?.summary?.total_impressions || 0}</p>
+                        <p className="text-xs text-muted-foreground">Total Impressions</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card className="border border-border bg-white">
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center">
+                        <Eye className="w-5 h-5 text-purple-600" />
+                      </div>
+                      <div>
+                        <p className="text-2xl font-semibold">{analytics?.summary?.unique_impressions || 0}</p>
+                        <p className="text-xs text-muted-foreground">Unique Visitors</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card className="border border-border bg-white">
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
+                        <MousePointerClick className="w-5 h-5 text-green-600" />
+                      </div>
+                      <div>
+                        <p className="text-2xl font-semibold">{analytics?.summary?.total_clicks || 0}</p>
+                        <p className="text-xs text-muted-foreground">Total Clicks</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card className="border border-border bg-white">
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center">
+                        <Percent className="w-5 h-5 text-amber-600" />
+                      </div>
+                      <div>
+                        <p className="text-2xl font-semibold">{analytics?.summary?.ctr || 0}%</p>
+                        <p className="text-xs text-muted-foreground">Click Rate (CTR)</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Clicks by Device & Top Referers */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Card className="border border-border bg-white">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base">Clicks by Device</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {analytics?.clicks_by_device && Object.keys(analytics.clicks_by_device).length > 0 ? (
+                      <div className="space-y-2">
+                        {Object.entries(analytics.clicks_by_device).map(([device, count]) => {
+                          const Icon = device === 'desktop' ? Monitor : device === 'mobile' ? Smartphone : Tablet;
+                          const total = analytics?.summary?.total_clicks || 1;
+                          const percent = Math.round((count / total) * 100);
+                          return (
+                            <div key={device} className="flex items-center gap-3">
+                              <Icon className="w-4 h-4 text-muted-foreground" />
+                              <span className="text-sm capitalize w-16">{device}</span>
+                              <div className="flex-1 bg-slate-100 rounded-full h-2">
+                                <div 
+                                  className="bg-slate-600 h-2 rounded-full" 
+                                  style={{ width: `${percent}%` }}
+                                />
+                              </div>
+                              <span className="text-sm text-muted-foreground w-16 text-right">{count} ({percent}%)</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">No click data yet</p>
+                    )}
+                  </CardContent>
+                </Card>
+
+                <Card className="border border-border bg-white">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base">Top Referrers</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {analytics?.top_referers && analytics.top_referers.length > 0 ? (
+                      <div className="space-y-2 max-h-40 overflow-y-auto">
+                        {analytics.top_referers.slice(0, 5).map((ref, i) => (
+                          <div key={i} className="flex items-center justify-between text-sm">
+                            <span className="truncate text-muted-foreground max-w-[200px]" title={ref.url}>
+                              {ref.url}
+                            </span>
+                            <Badge variant="secondary">{ref.count}</Badge>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">No referrer data yet</p>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Logs Table */}
+              <Card className="border border-border bg-white">
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-base">Activity Log</CardTitle>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={clearAllAnalytics}
+                    className="text-red-600 hover:text-red-700"
+                    data-testid="clear-analytics-btn"
+                  >
+                    <Trash2 className="w-4 h-4 mr-1" /> Clear All
+                  </Button>
+                </CardHeader>
+                <CardContent className="p-0">
+                  {analyticsLoading ? (
+                    <div className="flex items-center justify-center h-32">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-slate-900" />
+                    </div>
+                  ) : analyticsLogs.length > 0 ? (
+                    <>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="border-b border-border bg-slate-50/80">
+                              <th className="text-left px-4 py-2 table-header">Type</th>
+                              <th className="text-left px-4 py-2 table-header">Referrer</th>
+                              <th className="text-left px-4 py-2 table-header">Target</th>
+                              <th className="text-left px-4 py-2 table-header">Device</th>
+                              <th className="text-left px-4 py-2 table-header">Time</th>
+                              <th className="text-right px-4 py-2 table-header">Action</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {analyticsLogs.map((log) => (
+                              <tr key={log.id} className="border-b border-border/50 hover:bg-slate-50/50">
+                                <td className="px-4 py-2">
+                                  <Badge className={log.event_type === 'click' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}>
+                                    {log.event_type}
+                                  </Badge>
+                                </td>
+                                <td className="px-4 py-2">
+                                  <span className="text-xs text-muted-foreground truncate block max-w-[150px]" title={log.referer_url}>
+                                    {log.referer_url || '—'}
+                                  </span>
+                                </td>
+                                <td className="px-4 py-2">
+                                  <span className="text-xs text-muted-foreground truncate block max-w-[150px]" title={log.target_url}>
+                                    {log.target_url || '—'}
+                                  </span>
+                                </td>
+                                <td className="px-4 py-2">
+                                  <span className="text-xs capitalize">{log.device_type || '—'}</span>
+                                </td>
+                                <td className="px-4 py-2">
+                                  <span className="text-xs text-muted-foreground">
+                                    {log.created_at ? new Date(log.created_at).toLocaleString() : '—'}
+                                  </span>
+                                </td>
+                                <td className="px-4 py-2 text-right">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => deleteAnalyticsLog(log.id)}
+                                    className="text-red-500 hover:text-red-700 h-7 w-7 p-0"
+                                    data-testid={`delete-log-${log.id}`}
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                      {/* Pagination */}
+                      <div className="flex items-center justify-between px-4 py-3 border-t border-border">
+                        <span className="text-xs text-muted-foreground">
+                          Showing {((analyticsPage - 1) * 20) + 1} - {Math.min(analyticsPage * 20, analyticsPagination.total || 0)} of {analyticsPagination.total || 0}
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => loadAnalyticsLogs(analyticsPage - 1)}
+                            disabled={analyticsPage <= 1}
+                          >
+                            <ChevronLeft className="w-4 h-4" />
+                          </Button>
+                          <span className="text-sm">Page {analyticsPage} of {analyticsPagination.total_pages || 1}</span>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => loadAnalyticsLogs(analyticsPage + 1)}
+                            disabled={analyticsPage >= (analyticsPagination.total_pages || 1)}
+                          >
+                            <ChevronRight className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="flex items-center justify-center h-32 text-muted-foreground">
+                      No analytics data yet. Impressions and clicks will appear here.
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
         </Tabs>
       </div>
 
