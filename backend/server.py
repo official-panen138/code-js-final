@@ -213,7 +213,13 @@ async def get_me(db: AsyncSession = Depends(get_db), current_user: dict = Depend
     user = result.scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    return {"user": user_to_dict(user)}
+    # Get role permissions
+    role_result = await db.execute(select(Role).where(Role.name == user.role))
+    role = role_result.scalar_one_or_none()
+    permissions = role.permissions if role else []
+    user_dict = user_to_dict(user)
+    user_dict["permissions"] = permissions
+    return {"user": user_dict}
 
 
 # ─── Category Routes ───
