@@ -1031,7 +1031,7 @@ async def list_active_domains(db: AsyncSession = Depends(get_db)):
     return {"domains": [{"id": d.id, "domain": d.domain} for d in domains]}
 
 
-@api_router.post("/custom-domains")
+@api_router.post("/custom-domains", status_code=status.HTTP_201_CREATED)
 async def add_custom_domain(data: CustomDomainCreate, db: AsyncSession = Depends(get_db), current_user: dict = Depends(require_permission('custom_domains'))):
     domain = data.domain.lower().strip()
 
