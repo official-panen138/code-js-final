@@ -1527,6 +1527,7 @@ function AnalyticsTab({ logs, logStats, analytics, projectId, onRefresh }) {
             <table className="w-full text-sm" data-testid="access-logs-table">
               <thead>
                 <tr className="border-b border-border bg-slate-50/80">
+                  <th className="text-left px-4 py-3 table-header">Source URL</th>
                   <th className="text-left px-4 py-3 table-header">Domain</th>
                   <th className="text-left px-4 py-3 table-header">Status</th>
                   <th className="text-left px-4 py-3 table-header">IP</th>
@@ -1536,6 +1537,15 @@ function AnalyticsTab({ logs, logStats, analytics, projectId, onRefresh }) {
               <tbody>
                 {logs.map((log) => (
                   <tr key={log.id} className="border-b border-border/50 hover:bg-slate-50/50 transition-colors">
+                    <td className="px-4 py-3 max-w-[200px]">
+                      {log.referer_url ? (
+                        <code className="text-xs font-mono text-blue-700 break-all block" style={{ fontFamily: 'JetBrains Mono, monospace' }} title={log.referer_url}>
+                          {log.referer_url.length > 40 ? log.referer_url.substring(0, 40) + '...' : log.referer_url}
+                        </code>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      )}
+                    </td>
                     <td className="px-4 py-3 font-mono text-xs" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
                       {log.ref_domain || '—'}
                     </td>
