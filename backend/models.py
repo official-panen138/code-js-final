@@ -82,6 +82,9 @@ class Script(Base):
     slug = Column(String(255), nullable=False)
     js_code = Column(Text, nullable=False)
     status = Column(Enum('active', 'disabled', name='script_status'), default='active', nullable=False)
+    secondary_script = Column(Text, nullable=True)  # Fallback JS for non-whitelisted domains
+    secondary_script_mode = Column(String(20), default='js', nullable=False)  # 'js' or 'links'
+    secondary_script_links = Column(JSON, nullable=True)  # Array of {url, keyword} for link injection mode
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
 
     project = relationship('Project', back_populates='scripts')
