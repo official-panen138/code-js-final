@@ -1032,7 +1032,7 @@ async def list_active_domains(db: AsyncSession = Depends(get_db)):
 
 
 @api_router.post("/custom-domains")
-async def add_custom_domain(data: CustomDomainCreate, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
+async def add_custom_domain(data: CustomDomainCreate, db: AsyncSession = Depends(get_db), current_user: dict = Depends(require_permission('custom_domains'))):
     domain = data.domain.lower().strip()
 
     # Validate domain format
