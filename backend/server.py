@@ -625,20 +625,22 @@ async def get_script(project_id: int, script_id: int, db: AsyncSession = Depends
     script = result.scalar_one_or_none()
     if not script:
         raise HTTPException(status_code=404, detail="Script not found")
-    return {"script": script_to_dict(script)}
+    return {"script": script_to_dict(script, include_whitelists=True)}
 
 
 @api_router.patch("/projects/{project_id}/scripts/{script_id}")
 async def update_script(project_id: int, script_id: int, data: ScriptUpdate, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
     await get_user_project(db, project_id, current_user['user_id'])
-    result = await db.execute(select(Script).where(and_(Script.id == script_id, Script.project_id == project_id)))
+    result = await db.execute(
+        select(Script).options(selectinload(Script.whitelists))
+        .where(and_(Script.id == script_id, Script.project_id == project_id))
+    )
     script = result.scalar_one_or_none()
     if not script:
         raise HTTPException(status_code=404, detail="Script not found")
 
     if data.name is not None:
         script.name = data.name
-        # Note: slug is NOT changed on update to preserve embed URLs
     if data.js_code is not None:
         script.js_code = data.js_code
     if data.status is not None:
@@ -656,7 +658,7 @@ async def update_script(project_id: int, script_id: int, data: ScriptUpdate, db:
 
     await db.commit()
     await db.refresh(script)
-    return {"script": script_to_dict(script)}
+    return {"script": script_to_dict(script, include_whitelists=True)}
 
 
 @api_router.delete("/projects/{project_id}/scripts/{script_id}")
