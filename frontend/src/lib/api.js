@@ -83,11 +83,13 @@ export const dashboardAPI = {
 export const logsAPI = {
   list: (projectId, limit = 50) => api.get(`/projects/${projectId}/logs?limit=${limit}`),
   clear: (projectId) => api.delete(`/projects/${projectId}/logs`),
+  delete: (projectId, logId) => api.delete(`/projects/${projectId}/logs/${logId}`),
 };
 
 // Analytics
 export const analyticsAPI = {
   get: (projectId) => api.get(`/projects/${projectId}/analytics`),
+  getLogs: (projectId, limit = 100) => api.get(`/projects/${projectId}/analytics/logs?limit=${limit}`),
   getBlacklistedDomains: (projectId) => api.get(`/projects/${projectId}/blacklisted-domains`),
 };
 
