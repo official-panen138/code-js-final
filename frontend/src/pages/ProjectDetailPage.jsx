@@ -112,9 +112,6 @@ export default function ProjectDetailPage() {
             <TabsTrigger value="scripts" data-testid="scripts-tab">
               <FileCode className="w-4 h-4 mr-2" /> Scripts
             </TabsTrigger>
-            <TabsTrigger value="whitelist" data-testid="whitelist-tab">
-              <Shield className="w-4 h-4 mr-2" /> Whitelist
-            </TabsTrigger>
             <TabsTrigger value="embed" data-testid="embed-tab">
               <ExternalLink className="w-4 h-4 mr-2" /> Embed
             </TabsTrigger>
@@ -135,14 +132,6 @@ export default function ProjectDetailPage() {
             />
           </TabsContent>
 
-          {/* Whitelist Tab */}
-          <TabsContent value="whitelist">
-            <WhitelistTab projectId={projectId} whitelists={whitelists} onRefresh={loadProject} />
-            <div className="mt-6">
-              <DomainTester projectId={projectId} />
-            </div>
-          </TabsContent>
-
           {/* Embed Tab */}
           <TabsContent value="embed">
             <EmbedTab 
@@ -156,7 +145,7 @@ export default function ProjectDetailPage() {
 
           {/* Analytics Tab */}
           <TabsContent value="analytics">
-            <AnalyticsTab logs={logs} logStats={logStats} analytics={analytics} projectId={projectId} />
+            <AnalyticsTab logs={logs} logStats={logStats} analytics={analytics} projectId={projectId} onRefresh={loadProject} />
           </TabsContent>
         </Tabs>
       </div>
