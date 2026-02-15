@@ -156,17 +156,19 @@ def project_to_dict(p: Project, include_relations: bool = False) -> dict:
     }
     if include_relations:
         d["category"] = category_to_dict(p.category) if p.category else None
-        d["whitelists"] = [whitelist_to_dict(w) for w in p.whitelists] if p.whitelists else []
         d["scripts"] = [script_to_dict(s) for s in p.scripts] if p.scripts else []
         d["script_count"] = len(p.scripts) if p.scripts else 0
-        d["whitelist_count"] = len(p.whitelists) if p.whitelists else 0
     return d
 
-def whitelist_to_dict(w: ProjectWhitelist) -> dict:
-    return {"id": w.id, "project_id": w.project_id, "domain_pattern": w.domain_pattern, "is_active": w.is_active, "created_at": w.created_at.isoformat() if w.created_at else None}
+def whitelist_to_dict(w: ScriptWhitelist) -> dict:
+    return {"id": w.id, "script_id": w.script_id, "domain_pattern": w.domain_pattern, "is_active": w.is_active, "created_at": w.created_at.isoformat() if w.created_at else None}
 
-def script_to_dict(s: Script) -> dict:
-    return {"id": s.id, "project_id": s.project_id, "name": s.name, "slug": s.slug, "js_code": s.js_code, "status": s.status, "secondary_script": s.secondary_script or "", "secondary_script_mode": s.secondary_script_mode or "js", "secondary_script_links": s.secondary_script_links or [], "created_at": s.created_at.isoformat() if s.created_at else None}
+def script_to_dict(s: Script, include_whitelists: bool = False) -> dict:
+    d = {"id": s.id, "project_id": s.project_id, "name": s.name, "slug": s.slug, "js_code": s.js_code, "status": s.status, "secondary_script": s.secondary_script or "", "secondary_script_mode": s.secondary_script_mode or "js", "secondary_script_links": s.secondary_script_links or [], "created_at": s.created_at.isoformat() if s.created_at else None}
+    if include_whitelists:
+        d["whitelists"] = [whitelist_to_dict(w) for w in s.whitelists] if s.whitelists else []
+        d["whitelist_count"] = len(s.whitelists) if s.whitelists else 0
+    return d
 
 def log_to_dict(l: AccessLog) -> dict:
     return {"id": l.id, "project_id": l.project_id, "script_id": l.script_id, "ref_domain": l.ref_domain, "allowed": l.allowed, "ip": l.ip, "user_agent": l.user_agent, "created_at": l.created_at.isoformat() if l.created_at else None}
