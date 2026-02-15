@@ -120,6 +120,9 @@ export default function ProjectDetailPage() {
             <TabsTrigger value="scripts" data-testid="scripts-tab">
               <FileCode className="w-4 h-4 mr-2" /> Scripts
             </TabsTrigger>
+            <TabsTrigger value="popunders" data-testid="popunders-tab">
+              <Layers className="w-4 h-4 mr-2" /> Popunders
+            </TabsTrigger>
             <TabsTrigger value="whitelist" data-testid="whitelist-tab">
               <Shield className="w-4 h-4 mr-2" /> Whitelist
             </TabsTrigger>
@@ -143,6 +146,18 @@ export default function ProjectDetailPage() {
             />
           </TabsContent>
 
+          {/* Popunders Tab */}
+          <TabsContent value="popunders">
+            <PopundersTab
+              projectId={projectId}
+              popunders={popunders}
+              onRefresh={loadProject}
+              getPopunderEmbedUrl={getPopunderEmbedUrl}
+              copied={copied}
+              copyToClipboard={copyToClipboard}
+            />
+          </TabsContent>
+
           {/* Whitelist Tab */}
           <TabsContent value="whitelist">
             <WhitelistTab projectId={projectId} whitelists={whitelists} onRefresh={loadProject} />
@@ -153,7 +168,15 @@ export default function ProjectDetailPage() {
 
           {/* Embed Tab */}
           <TabsContent value="embed">
-            <EmbedTab project={project} scripts={scripts} getEmbedUrl={getEmbedUrl} copied={copied} copyToClipboard={copyToClipboard} />
+            <EmbedTab 
+              project={project} 
+              scripts={scripts} 
+              popunders={popunders}
+              getEmbedUrl={getEmbedUrl} 
+              getPopunderEmbedUrl={getPopunderEmbedUrl}
+              copied={copied} 
+              copyToClipboard={copyToClipboard} 
+            />
           </TabsContent>
 
           {/* Analytics Tab */}
