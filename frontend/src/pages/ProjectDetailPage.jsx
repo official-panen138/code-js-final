@@ -405,6 +405,11 @@ function ScriptsTab({ projectId, scripts, onRefresh, getEmbedUrl, copied, copyTo
                     <Badge className={script.status === 'active' ? 'status-active' : 'status-disabled'}>
                       {script.status}
                     </Badge>
+                    {(script.secondary_script || (script.secondary_script_links && script.secondary_script_links.length > 0)) && (
+                      <Badge variant="outline" className="text-xs">
+                        {script.secondary_script_mode === 'links' ? 'Links' : 'JS'} Fallback
+                      </Badge>
+                    )}
                   </div>
                   <div className="flex items-center gap-2">
                     <Switch
@@ -412,6 +417,9 @@ function ScriptsTab({ projectId, scripts, onRefresh, getEmbedUrl, copied, copyTo
                       onCheckedChange={() => toggleStatus(script)}
                       data-testid={`script-toggle-${script.id}`}
                     />
+                    <Button variant="ghost" size="sm" onClick={() => openSecondaryDialog(script)} data-testid={`secondary-script-${script.id}`} title="Secondary Script">
+                      <ExternalLink className="w-4 h-4" />
+                    </Button>
                     <Button variant="ghost" size="sm" onClick={() => openEdit(script)} data-testid={`edit-script-${script.id}`}>
                       <Pencil className="w-4 h-4" />
                     </Button>
