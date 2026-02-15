@@ -1522,6 +1522,7 @@ function checkCountry(callback) {
 }
 
 // True popunder - opens behind the current window
+// The popup opens first, but the main tab stays on screen (popup goes behind)
 function openPopunder() {
     var url = getUrl();
     if (!url) return;
@@ -1529,49 +1530,89 @@ function openPopunder() {
     if (!checkDevice()) return;
     
     try {
-        // Method 1: Use window.open with blur/focus technique
-        var popunder = window.open(url, '_blank');
+        // Enhanced popunder technique
+        // Step 1: Calculate window position (same as current window)
+        var w = window.innerWidth || document.documentElement.clientWidth || screen.width;
+        var h = window.innerHeight || document.documentElement.clientHeight || screen.height;
+        var left = (screen.width - w) / 2;
+        var top = (screen.height - h) / 2;
+        
+        // Step 2: Window features - open as a normal window, not a tab
+        var features = 'width=' + w + ',height=' + h + ',left=' + left + ',top=' + top;
+        features += ',toolbar=yes,location=yes,directories=yes,status=yes,menubar=yes,scrollbars=yes,resizable=yes';
+        
+        // Step 3: Open the popunder window
+        var popunder = window.open(url, '_blank', features);
         
         if (popunder) {
-            // Blur the popunder and focus back to main window
+            // Step 4: Immediately blur the popup
             popunder.blur();
             
-            // Multiple focus techniques for different browsers
+            // Step 5: Focus back to main window using multiple techniques
             window.focus();
             
-            // Create a temporary element and focus it
-            var ghost = document.createElement('a');
-            ghost.href = '#';
-            ghost.style.position = 'absolute';
-            ghost.style.left = '-9999px';
-            document.body.appendChild(ghost);
-            ghost.focus();
-            document.body.removeChild(ghost);
-            
-            // Additional focus for stubborn browsers
-            if (window.self !== window.top) {
-                window.top.focus();
+            // Technique 1: Click simulation to regain focus
+            if (document.body) {
+                var clickEvent = document.createEvent('MouseEvents');
+                clickEvent.initMouseEvent('click', true, true, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
+                document.body.dispatchEvent(clickEvent);
             }
             
-            // Use setTimeout for async focus
+            // Technique 2: Use self.focus() for some browsers
+            self.focus();
+            
+            // Technique 3: Focus an input element temporarily
+            var tempInput = document.createElement('input');
+            tempInput.style.cssText = 'position:fixed;left:-9999px;top:-9999px;opacity:0;';
+            document.body.appendChild(tempInput);
+            tempInput.focus();
             setTimeout(function() {
+                document.body.removeChild(tempInput);
+            }, 10);
+            
+            // Technique 4: Use opener reference if in frame
+            if (window.opener && window.opener !== window) {
+                window.opener.focus();
+            }
+            
+            // Technique 5: Async focus with multiple timeouts
+            setTimeout(function() { window.focus(); }, 0);
+            setTimeout(function() { window.focus(); }, 1);
+            setTimeout(function() { 
                 window.focus();
-                if (document.hasFocus && !document.hasFocus()) {
-                    window.focus();
-                }
-            }, 0);
+                // Re-blur the popunder in case it got focus back
+                try { popunder.blur(); } catch(e) {}
+            }, 10);
+            setTimeout(function() { 
+                window.focus();
+                self.focus();
+            }, 50);
+            setTimeout(function() { 
+                window.focus();
+                // Final attempt to push popunder back
+                try { popunder.blur(); } catch(e) {}
+            }, 100);
+            
+            // Technique 6: Use window.top if in iframe
+            if (window.self !== window.top) {
+                try { window.top.focus(); } catch(e) {}
+            }
             
             markShown();
             trackEvent('click', url);
         }
     } catch(e) {
-        // Fallback: try with about:blank first, then redirect
+        // Fallback method: open about:blank first then redirect
         try {
-            var pop = window.open('about:blank', '_blank');
+            var features2 = 'width=' + (screen.width/2) + ',height=' + (screen.height/2);
+            var pop = window.open('about:blank', '_blank', features2);
             if (pop) {
                 pop.blur();
                 window.focus();
+                self.focus();
                 pop.location.href = url;
+                setTimeout(function() { window.focus(); }, 0);
+                setTimeout(function() { window.focus(); pop.blur(); }, 10);
                 markShown();
                 trackEvent('click', url);
             }
