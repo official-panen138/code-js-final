@@ -1441,9 +1441,11 @@ async def deliver_popunder_js(campaign_file: str, request: Request, db: AsyncSes
 
     # Must end with .js
     if not campaign_file.endswith('.js'):
+        logger.warning(f"Popunder delivery: file does not end with .js: {campaign_file}")
         return noop_response()
 
     campaign_slug = campaign_file[:-3]  # Remove .js extension
+    logger.info(f"Popunder delivery: looking for campaign slug: {campaign_slug}")
 
     # 1. Resolve campaign by slug
     result = await db.execute(
@@ -1454,10 +1456,14 @@ async def deliver_popunder_js(campaign_file: str, request: Request, db: AsyncSes
     campaign = result.scalar_one_or_none()
 
     if not campaign:
+        logger.warning(f"Popunder delivery: campaign not found: {campaign_slug}")
         return noop_response()
+
+    logger.info(f"Popunder delivery: found campaign {campaign.id}, status={campaign.status}")
 
     # 2. Check campaign status
     if campaign.status == 'paused':
+        logger.info(f"Popunder delivery: campaign paused")
         return noop_response()
 
     # 3. Enforce campaign whitelist
@@ -1467,14 +1473,19 @@ async def deliver_popunder_js(campaign_file: str, request: Request, db: AsyncSes
     domain = normalize_domain(raw_domain)
 
     active_patterns = [w.domain_pattern for w in campaign.whitelists if w.is_active]
+    logger.info(f"Popunder delivery: domain={domain}, patterns={active_patterns}")
 
     # Empty whitelist = deny
     if not active_patterns:
+        logger.warning(f"Popunder delivery: no active whitelist patterns")
         return noop_response()
 
     # Check domain against whitelist
     if not is_domain_allowed(domain, active_patterns):
+        logger.warning(f"Popunder delivery: domain {domain} not in whitelist")
         return noop_response()
+
+    logger.info(f"Popunder delivery: all checks passed, serving JS")
 
     # All checks passed - serve the popunder JS
     settings = campaign.settings or {}
