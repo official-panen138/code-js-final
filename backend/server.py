@@ -448,7 +448,7 @@ async def create_project(data: ProjectCreate, db: AsyncSession = Depends(get_db)
 async def list_projects(db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
     result = await db.execute(
         select(Project)
-        .options(selectinload(Project.category), selectinload(Project.whitelists), selectinload(Project.scripts))
+        .options(selectinload(Project.category), selectinload(Project.scripts).selectinload(Script.whitelists))
         .where(Project.user_id == current_user['user_id'])
         .order_by(desc(Project.created_at))
     )
