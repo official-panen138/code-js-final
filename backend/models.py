@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, Boolean, Enum, ForeignKey, DateTime, UniqueConstraint
+from sqlalchemy import Column, Integer, String, Text, Boolean, Enum, ForeignKey, DateTime, UniqueConstraint, JSON
 from sqlalchemy.orm import relationship
 from sqlalchemy import func
 from database import Base
@@ -10,11 +10,22 @@ class User(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     email = Column(String(255), unique=True, nullable=False, index=True)
     password_hash = Column(String(255), nullable=False)
-    role = Column(Enum('user', 'admin', name='user_role'), default='user', nullable=False)
+    role = Column(String(50), default='user', nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
 
     projects = relationship('Project', back_populates='user', cascade='all, delete-orphan')
+
+
+class Role(Base):
+    __tablename__ = 'roles'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String(50), unique=True, nullable=False)
+    description = Column(Text, nullable=True)
+    is_system = Column(Boolean, default=False, nullable=False)
+    permissions = Column(JSON, nullable=False, default=list)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
 
 
 class Category(Base):
