@@ -500,6 +500,174 @@ class JSHostAPITester:
         else:
             self.log_test("Analytics Endpoint", False, f"Status {status}, Response: {data}")
             return False
+
+    def test_menus_endpoint(self) -> bool:
+        """Test GET /api/menus endpoint"""
+        success, status, data = self.make_request('GET', '/menus')
+        
+        if success and 'menus' in data:
+            menus = data['menus']
+            expected_keys = ['dashboard', 'projects', 'settings', 'user_management']
+            found_keys = [menu['key'] for menu in menus]
+            has_all_keys = all(key in found_keys for key in expected_keys)
+            
+            self.log_test("Menus Endpoint", has_all_keys)
+            print(f"    Found menu keys: {found_keys}")
+            return has_all_keys
+        else:
+            self.log_test("Menus Endpoint", False, f"Status {status}, Response: {data}")
+            return False
+
+    def test_roles_list(self) -> bool:
+        """Test GET /api/roles endpoint"""
+        success, status, data = self.make_request('GET', '/roles')
+        
+        if success and 'roles' in data and 'available_menus' in data:
+            roles = data['roles']
+            has_admin = any(role['name'] == 'admin' for role in roles)
+            has_user = any(role['name'] == 'user' for role in roles)
+            has_user_count = all('user_count' in role for role in roles)
+            
+            all_checks = has_admin and has_user and has_user_count
+            self.log_test("Roles List", all_checks)
+            print(f"    Found {len(roles)} roles: {[r['name'] for r in roles]}")
+            return all_checks
+        else:
+            self.log_test("Roles List", False, f"Status {status}, Response: {data}")
+            return False
+
+    def test_role_create(self) -> bool:
+        """Test POST /api/roles endpoint"""
+        test_role_name = f"test_role_{datetime.now().strftime('%H%M%S')}"
+        
+        success, status, data = self.make_request('POST', '/roles', {
+            'name': test_role_name,
+            'description': 'Test role for API testing',
+            'permissions': ['dashboard', 'projects']
+        })
+        
+        if success and 'role' in data:
+            self.created_role_id = data['role']['id']
+            self.log_test("Role Create", True)
+            print(f"    Created role ID: {self.created_role_id}")
+            return True
+        else:
+            self.log_test("Role Create", False, f"Status {status}, Response: {data}")
+            return False
+
+    def test_role_update(self) -> bool:
+        """Test PATCH /api/roles/{id} endpoint"""
+        if not hasattr(self, 'created_role_id') or not self.created_role_id:
+            self.log_test("Role Update", False, "No created role ID available")
+            return False
+            
+        success, status, data = self.make_request('PATCH', f'/roles/{self.created_role_id}', {
+            'description': 'Updated test role description',
+            'permissions': ['dashboard', 'projects', 'settings']
+        })
+        
+        if success and 'role' in data:
+            updated_perms = data['role'].get('permissions', [])
+            has_settings = 'settings' in updated_perms
+            self.log_test("Role Update", has_settings)
+            return has_settings
+        else:
+            self.log_test("Role Update", False, f"Status {status}, Response: {data}")
+            return False
+
+    def test_role_delete_unused(self) -> bool:
+        """Test DELETE /api/roles/{id} for unused role"""
+        if not hasattr(self, 'created_role_id') or not self.created_role_id:
+            self.log_test("Role Delete (unused)", False, "No created role ID available")
+            return False
+            
+        success, status, data = self.make_request('DELETE', f'/roles/{self.created_role_id}', expected_status=200)
+        
+        if success:
+            self.log_test("Role Delete (unused)", True)
+            return True
+        else:
+            self.log_test("Role Delete (unused)", False, f"Status {status}, Response: {data}")
+            return False
+
+    def test_role_delete_system_role(self) -> bool:
+        """Test DELETE /api/roles/{id} for system role (should fail)"""
+        # Try to delete admin role (system role, should fail with 400)
+        success, status, data = self.make_request('DELETE', '/roles/1', expected_status=400)
+        
+        if status == 400:
+            self.log_test("Role Delete (system role, should fail)", True)
+            print(f"    Expected 400 error: {data.get('detail', 'No detail')}")
+            return True
+        else:
+            self.log_test("Role Delete (system role, should fail)", False, f"Expected 400, got {status}")
+            return False
+
+    def test_users_list(self) -> bool:
+        """Test GET /api/users endpoint"""
+        success, status, data = self.make_request('GET', '/users')
+        
+        if success and 'users' in data and 'roles' in data:
+            users = data['users']
+            roles = data['roles']
+            has_users = len(users) > 0
+            has_roles = len(roles) > 0
+            
+            all_checks = has_users and has_roles
+            self.log_test("Users List", all_checks)
+            print(f"    Found {len(users)} users, {len(roles)} roles")
+            return all_checks
+        else:
+            self.log_test("Users List", False, f"Status {status}, Response: {data}")
+            return False
+
+    def test_user_update_role(self) -> bool:
+        """Test PATCH /api/users/{id} endpoint for role update"""
+        if not self.user_id:
+            self.log_test("User Update Role", False, "No user ID available")
+            return False
+            
+        # Get current user info first
+        success, status, data = self.make_request('GET', '/auth/me')
+        if not success:
+            self.log_test("User Update Role", False, "Could not get current user info")
+            return False
+            
+        current_role = data['user']['role']
+        new_role = 'admin' if current_role == 'user' else 'user'
+        
+        success, status, data = self.make_request('PATCH', f'/users/{self.user_id}', {
+            'role': new_role
+        })
+        
+        if success and 'user' in data:
+            updated_role = data['user']['role']
+            role_updated = updated_role == new_role
+            self.log_test("User Update Role", role_updated)
+            print(f"    Role updated from {current_role} to {updated_role}")
+            return role_updated
+        else:
+            self.log_test("User Update Role", False, f"Status {status}, Response: {data}")
+            return False
+
+    def test_user_update_status(self) -> bool:
+        """Test PATCH /api/users/{id} endpoint for status update"""
+        if not self.user_id:
+            self.log_test("User Update Status", False, "No user ID available")
+            return False
+            
+        # Try to deactivate self (should fail)
+        success, status, data = self.make_request('PATCH', f'/users/{self.user_id}', {
+            'is_active': False
+        }, expected_status=400)
+        
+        if status == 400:
+            self.log_test("User Update Status (self-deactivate, should fail)", True)
+            print(f"    Expected 400 error: {data.get('detail', 'No detail')}")
+            return True
+        else:
+            self.log_test("User Update Status (self-deactivate, should fail)", False, f"Expected 400, got {status}")
+            return False
     
     def run_all_tests(self) -> Dict[str, Any]:
         """Run all API tests"""
