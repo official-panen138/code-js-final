@@ -10,20 +10,48 @@ import { Badge } from '../components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../components/ui/dialog';
 import { Switch } from '../components/ui/switch';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
+import { Checkbox } from '../components/ui/checkbox';
 import {
-  ArrowLeft, Copy, Check, Plus, Trash2, Pencil, Layers, Shield, ExternalLink,
-  Settings2, Globe, AlertCircle, CheckCircle, XCircle, Search
+  ArrowLeft, Copy, Check, Pencil, Layers, ExternalLink,
+  Settings2, Monitor, Smartphone, Tablet, Globe
 } from 'lucide-react';
 import { toast } from 'sonner';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
+const DEVICE_OPTIONS = [
+  { value: 'desktop', label: 'Desktop', icon: Monitor },
+  { value: 'mobile', label: 'Mobile', icon: Smartphone },
+  { value: 'tablet', label: 'Tablet', icon: Tablet },
+];
+
+const COUNTRY_OPTIONS = [
+  { code: '', label: 'All Countries' },
+  { code: 'US', label: 'United States' },
+  { code: 'GB', label: 'United Kingdom' },
+  { code: 'CA', label: 'Canada' },
+  { code: 'AU', label: 'Australia' },
+  { code: 'DE', label: 'Germany' },
+  { code: 'FR', label: 'France' },
+  { code: 'IT', label: 'Italy' },
+  { code: 'ES', label: 'Spain' },
+  { code: 'BR', label: 'Brazil' },
+  { code: 'IN', label: 'India' },
+  { code: 'JP', label: 'Japan' },
+  { code: 'KR', label: 'South Korea' },
+  { code: 'ID', label: 'Indonesia' },
+  { code: 'MX', label: 'Mexico' },
+  { code: 'PH', label: 'Philippines' },
+  { code: 'TH', label: 'Thailand' },
+  { code: 'VN', label: 'Vietnam' },
+  { code: 'RU', label: 'Russia' },
+  { code: 'PL', label: 'Poland' },
+];
+
 export default function PopunderDetailPage() {
   const { campaignId } = useParams();
   const navigate = useNavigate();
   const [campaign, setCampaign] = useState(null);
-  const [whitelists, setWhitelists] = useState([]);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(null);
 
@@ -32,20 +60,10 @@ export default function PopunderDetailPage() {
   const [editForm, setEditForm] = useState({});
   const [saving, setSaving] = useState(false);
 
-  // Whitelist form
-  const [newDomain, setNewDomain] = useState('');
-  const [addingDomain, setAddingDomain] = useState(false);
-
-  // Domain tester
-  const [testDomain, setTestDomain] = useState('');
-  const [testResult, setTestResult] = useState(null);
-  const [testing, setTesting] = useState(false);
-
   const loadCampaign = useCallback(async () => {
     try {
       const res = await popunderAPI.get(campaignId);
       setCampaign(res.data.popunder);
-      setWhitelists(res.data.whitelists || []);
     } catch (err) {
       toast.error('Failed to load campaign');
       navigate('/popunders');
@@ -68,16 +86,37 @@ export default function PopunderDetailPage() {
   const getEmbedUrl = () => `${BACKEND_URL}/api/js/popunder/${campaign?.slug}.js`;
 
   const openEditDialog = () => {
+    const settings = campaign.settings || {};
     setEditForm({
       name: campaign.name,
-      target_url: campaign.settings?.target_url || '',
-      frequency: campaign.settings?.frequency || 1,
-      frequency_unit: campaign.settings?.frequency_unit || 'session',
-      delay: campaign.settings?.delay || 0,
-      width: campaign.settings?.width || 800,
-      height: campaign.settings?.height || 600,
+      direct_link: settings.direct_link || '',
+      timer: settings.timer || 0,
+      interval: settings.interval || 24,
+      devices: settings.devices || ['desktop', 'mobile', 'tablet'],
+      countries: settings.countries || [],
     });
     setShowEdit(true);
+  };
+
+  const handleDeviceToggle = (device) => {
+    const current = editForm.devices || [];
+    if (current.includes(device)) {
+      setEditForm({ ...editForm, devices: current.filter(d => d !== device) });
+    } else {
+      setEditForm({ ...editForm, devices: [...current, device] });
+    }
+  };
+
+  const handleCountryToggle = (countryCode) => {
+    const current = editForm.countries || [];
+    if (countryCode === '') {
+      // "All Countries" selected - clear the list
+      setEditForm({ ...editForm, countries: [] });
+    } else if (current.includes(countryCode)) {
+      setEditForm({ ...editForm, countries: current.filter(c => c !== countryCode) });
+    } else {
+      setEditForm({ ...editForm, countries: [...current, countryCode] });
+    }
   };
 
   const handleUpdate = async () => {
@@ -85,8 +124,8 @@ export default function PopunderDetailPage() {
       toast.error('Campaign name is required');
       return;
     }
-    if (!editForm.target_url?.trim()) {
-      toast.error('Target URL is required');
+    if (!editForm.direct_link?.trim()) {
+      toast.error('Direct link URL is required');
       return;
     }
 
@@ -95,12 +134,11 @@ export default function PopunderDetailPage() {
       const payload = {
         name: editForm.name.trim(),
         settings: {
-          target_url: editForm.target_url.trim(),
-          frequency: parseInt(editForm.frequency) || 1,
-          frequency_unit: editForm.frequency_unit,
-          delay: parseInt(editForm.delay) || 0,
-          width: parseInt(editForm.width) || 800,
-          height: parseInt(editForm.height) || 600,
+          direct_link: editForm.direct_link.trim(),
+          timer: parseInt(editForm.timer) || 0,
+          interval: parseInt(editForm.interval) || 24,
+          devices: editForm.devices || ['desktop', 'mobile', 'tablet'],
+          countries: editForm.countries || [],
         },
       };
       await popunderAPI.update(campaignId, payload);
@@ -125,61 +163,6 @@ export default function PopunderDetailPage() {
     }
   };
 
-  const handleAddDomain = async () => {
-    if (!newDomain.trim()) {
-      toast.error('Enter a domain pattern');
-      return;
-    }
-    setAddingDomain(true);
-    try {
-      await popunderAPI.addWhitelist(campaignId, { domain_pattern: newDomain.trim() });
-      toast.success('Domain added');
-      setNewDomain('');
-      loadCampaign();
-    } catch (err) {
-      toast.error(err.response?.data?.detail || 'Failed to add domain');
-    } finally {
-      setAddingDomain(false);
-    }
-  };
-
-  const toggleWhitelistStatus = async (whitelist) => {
-    try {
-      await popunderAPI.updateWhitelist(campaignId, whitelist.id, { is_active: !whitelist.is_active });
-      toast.success(whitelist.is_active ? 'Domain disabled' : 'Domain enabled');
-      loadCampaign();
-    } catch (err) {
-      toast.error('Failed to update domain');
-    }
-  };
-
-  const handleDeleteWhitelist = async (id) => {
-    try {
-      await popunderAPI.deleteWhitelist(campaignId, id);
-      toast.success('Domain removed');
-      loadCampaign();
-    } catch (err) {
-      toast.error('Failed to remove domain');
-    }
-  };
-
-  const handleTestDomain = async () => {
-    if (!testDomain.trim()) {
-      toast.error('Enter a domain to test');
-      return;
-    }
-    setTesting(true);
-    setTestResult(null);
-    try {
-      const res = await popunderAPI.testDomain(campaignId, testDomain.trim());
-      setTestResult(res.data);
-    } catch (err) {
-      toast.error('Failed to test domain');
-    } finally {
-      setTesting(false);
-    }
-  };
-
   if (loading) {
     return (
       <Layout>
@@ -193,6 +176,7 @@ export default function PopunderDetailPage() {
   if (!campaign) return null;
 
   const embedTag = `<script src="${getEmbedUrl()}"></script>`;
+  const settings = campaign.settings || {};
 
   return (
     <Layout>
@@ -239,9 +223,6 @@ export default function PopunderDetailPage() {
             <TabsTrigger value="settings" data-testid="settings-tab">
               <Settings2 className="w-4 h-4 mr-2" /> Settings
             </TabsTrigger>
-            <TabsTrigger value="whitelist" data-testid="whitelist-tab">
-              <Shield className="w-4 h-4 mr-2" /> Whitelist
-            </TabsTrigger>
             <TabsTrigger value="embed" data-testid="embed-tab">
               <ExternalLink className="w-4 h-4 mr-2" /> Embed
             </TabsTrigger>
@@ -253,130 +234,62 @@ export default function PopunderDetailPage() {
               <CardHeader>
                 <CardTitle className="text-lg">Campaign Settings</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-6">
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <span className="label-caps block mb-1">Target URL</span>
-                    <code className="text-sm text-slate-700 break-all">{campaign.settings?.target_url || '—'}</code>
+                    <span className="label-caps block mb-1">Direct Link</span>
+                    <code className="text-sm text-slate-700 break-all" data-testid="direct-link-value">
+                      {settings.direct_link || '—'}
+                    </code>
                   </div>
                   <div>
-                    <span className="label-caps block mb-1">Frequency</span>
-                    <span className="text-slate-700">{campaign.settings?.frequency || 1} per {campaign.settings?.frequency_unit || 'session'}</span>
+                    <span className="label-caps block mb-1">Timer</span>
+                    <span className="text-slate-700" data-testid="timer-value">
+                      {settings.timer || 0} seconds
+                    </span>
                   </div>
                   <div>
-                    <span className="label-caps block mb-1">Delay</span>
-                    <span className="text-slate-700">{campaign.settings?.delay || 0} ms</span>
+                    <span className="label-caps block mb-1">Interval</span>
+                    <span className="text-slate-700" data-testid="interval-value">
+                      {settings.interval || 24} hours between shows
+                    </span>
                   </div>
                   <div>
-                    <span className="label-caps block mb-1">Window Size</span>
-                    <span className="text-slate-700">{campaign.settings?.width || 800} x {campaign.settings?.height || 600}</span>
+                    <span className="label-caps block mb-1">Devices</span>
+                    <div className="flex gap-2 flex-wrap" data-testid="devices-value">
+                      {(settings.devices || ['desktop', 'mobile', 'tablet']).map((device) => {
+                        const opt = DEVICE_OPTIONS.find(d => d.value === device);
+                        const Icon = opt?.icon || Monitor;
+                        return (
+                          <Badge key={device} variant="secondary" className="flex items-center gap-1">
+                            <Icon className="w-3 h-3" /> {opt?.label || device}
+                          </Badge>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  <div className="md:col-span-2">
+                    <span className="label-caps block mb-1">Countries</span>
+                    <div className="flex gap-2 flex-wrap" data-testid="countries-value">
+                      {(!settings.countries || settings.countries.length === 0) ? (
+                        <Badge variant="secondary" className="flex items-center gap-1">
+                          <Globe className="w-3 h-3" /> All Countries
+                        </Badge>
+                      ) : (
+                        settings.countries.map((code) => {
+                          const country = COUNTRY_OPTIONS.find(c => c.code === code);
+                          return (
+                            <Badge key={code} variant="secondary">
+                              {country?.label || code}
+                            </Badge>
+                          );
+                        })
+                      )}
+                    </div>
                   </div>
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
-
-          {/* Whitelist Tab */}
-          <TabsContent value="whitelist">
-            <div className="space-y-6">
-              <Card className="border border-border bg-white">
-                <CardHeader>
-                  <CardTitle className="text-lg">Domain Whitelist</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="example.com or *.example.com"
-                      value={newDomain}
-                      onChange={(e) => setNewDomain(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && handleAddDomain()}
-                      data-testid="add-domain-input"
-                    />
-                    <Button onClick={handleAddDomain} disabled={addingDomain} className="bg-[#0F172A] hover:bg-[#1E293B] text-white" data-testid="add-domain-btn">
-                      <Plus className="w-4 h-4 mr-2" /> Add
-                    </Button>
-                  </div>
-
-                  {whitelists.length === 0 ? (
-                    <div className="text-center py-6 text-muted-foreground">
-                      <Shield className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                      <p className="text-sm">No domains whitelisted. Add at least one domain to enable the popunder.</p>
-                    </div>
-                  ) : (
-                    <div className="divide-y">
-                      {whitelists.map((w) => (
-                        <div key={w.id} className="flex items-center justify-between py-3" data-testid={`whitelist-item-${w.id}`}>
-                          <div className="flex items-center gap-3">
-                            <Globe className="w-4 h-4 text-muted-foreground" />
-                            <code className="text-sm">{w.domain_pattern}</code>
-                            <Badge variant={w.is_active ? 'default' : 'secondary'} className="text-xs">
-                              {w.is_active ? 'Active' : 'Disabled'}
-                            </Badge>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Switch
-                              checked={w.is_active}
-                              onCheckedChange={() => toggleWhitelistStatus(w)}
-                              data-testid={`whitelist-toggle-${w.id}`}
-                            />
-                            <Button variant="ghost" size="sm" onClick={() => handleDeleteWhitelist(w.id)} className="text-destructive" data-testid={`whitelist-delete-${w.id}`}>
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              {/* Domain Tester */}
-              <Card className="border border-border bg-white">
-                <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <Search className="w-5 h-5" /> Domain Tester
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <p className="text-sm text-muted-foreground">Test if a domain would be allowed by your whitelist.</p>
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="https://test.example.com"
-                      value={testDomain}
-                      onChange={(e) => setTestDomain(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && handleTestDomain()}
-                      data-testid="test-domain-input"
-                    />
-                    <Button onClick={handleTestDomain} disabled={testing} variant="outline" data-testid="test-domain-btn">
-                      {testing ? 'Testing...' : 'Test'}
-                    </Button>
-                  </div>
-
-                  {testResult && (
-                    <div className={`p-4 rounded-lg ${testResult.allowed ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`} data-testid="test-result">
-                      <div className="flex items-center gap-2 mb-2">
-                        {testResult.allowed ? (
-                          <CheckCircle className="w-5 h-5 text-green-600" />
-                        ) : (
-                          <XCircle className="w-5 h-5 text-red-600" />
-                        )}
-                        <span className={`font-medium ${testResult.allowed ? 'text-green-700' : 'text-red-700'}`}>
-                          {testResult.allowed ? 'Allowed' : 'Denied'}
-                        </span>
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        Normalized: <code>{testResult.domain}</code>
-                      </p>
-                      {testResult.matched_patterns?.length > 0 && (
-                        <p className="text-sm text-green-700 mt-1">
-                          Matched: {testResult.matched_patterns.join(', ')}
-                        </p>
-                      )}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
           </TabsContent>
 
           {/* Embed Tab */}
@@ -387,7 +300,7 @@ export default function PopunderDetailPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <p className="text-sm text-muted-foreground">
-                  Add this script tag to pages on your whitelisted domains to enable the popunder.
+                  Add this script tag to any page to enable the popunder.
                 </p>
                 <div className="bg-[#0F172A] rounded-lg p-4 flex items-center justify-between gap-3">
                   <code className="text-sm text-slate-300 break-all" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
@@ -405,13 +318,6 @@ export default function PopunderDetailPage() {
                 <p className="text-xs text-muted-foreground">
                   Direct URL: <code className="text-xs">{getEmbedUrl()}</code>
                 </p>
-
-                {whitelists.length === 0 && (
-                  <div className="flex items-center gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg text-amber-800 text-sm">
-                    <AlertCircle className="w-4 h-4" />
-                    <span>Add at least one domain to your whitelist for the popunder to work.</span>
-                  </div>
-                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -420,7 +326,7 @@ export default function PopunderDetailPage() {
 
       {/* Edit Dialog */}
       <Dialog open={showEdit} onOpenChange={(open) => setShowEdit(open)}>
-        <DialogContent className="max-w-lg" data-testid="edit-campaign-dialog">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto" data-testid="edit-campaign-dialog">
           <DialogHeader>
             <DialogTitle style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
               Edit Campaign
@@ -436,64 +342,84 @@ export default function PopunderDetailPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label className="label-caps">Target URL</Label>
+              <Label className="label-caps">Direct Link</Label>
               <Input
-                value={editForm.target_url || ''}
-                onChange={(e) => setEditForm({ ...editForm, target_url: e.target.value })}
-                data-testid="edit-url-input"
+                value={editForm.direct_link || ''}
+                onChange={(e) => setEditForm({ ...editForm, direct_link: e.target.value })}
+                placeholder="https://example.com"
+                data-testid="edit-direct-link-input"
               />
+              <p className="text-xs text-muted-foreground">URL to open in the popunder window</p>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label className="label-caps">Frequency</Label>
+                <Label className="label-caps">Timer (seconds)</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  value={editForm.timer || 0}
+                  onChange={(e) => setEditForm({ ...editForm, timer: e.target.value })}
+                  data-testid="edit-timer-input"
+                />
+                <p className="text-xs text-muted-foreground">Delay before popunder opens</p>
+              </div>
+              <div className="space-y-2">
+                <Label className="label-caps">Interval (hours)</Label>
                 <Input
                   type="number"
                   min="1"
-                  value={editForm.frequency || 1}
-                  onChange={(e) => setEditForm({ ...editForm, frequency: e.target.value })}
+                  value={editForm.interval || 24}
+                  onChange={(e) => setEditForm({ ...editForm, interval: e.target.value })}
+                  data-testid="edit-interval-input"
                 />
-              </div>
-              <div className="space-y-2">
-                <Label className="label-caps">Per</Label>
-                <Select value={editForm.frequency_unit || 'session'} onValueChange={(v) => setEditForm({ ...editForm, frequency_unit: v })}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="session">Session</SelectItem>
-                    <SelectItem value="hour">Hour</SelectItem>
-                    <SelectItem value="day">Day</SelectItem>
-                  </SelectContent>
-                </Select>
+                <p className="text-xs text-muted-foreground">Hours between shows for same user</p>
               </div>
             </div>
             <div className="space-y-2">
-              <Label className="label-caps">Delay (ms)</Label>
-              <Input
-                type="number"
-                min="0"
-                value={editForm.delay || 0}
-                onChange={(e) => setEditForm({ ...editForm, delay: e.target.value })}
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="label-caps">Width</Label>
-                <Input
-                  type="number"
-                  min="200"
-                  value={editForm.width || 800}
-                  onChange={(e) => setEditForm({ ...editForm, width: e.target.value })}
-                />
+              <Label className="label-caps">Devices</Label>
+              <div className="flex gap-4">
+                {DEVICE_OPTIONS.map((opt) => {
+                  const Icon = opt.icon;
+                  const isSelected = (editForm.devices || []).includes(opt.value);
+                  return (
+                    <div key={opt.value} className="flex items-center gap-2">
+                      <Checkbox
+                        id={`device-${opt.value}`}
+                        checked={isSelected}
+                        onCheckedChange={() => handleDeviceToggle(opt.value)}
+                        data-testid={`device-checkbox-${opt.value}`}
+                      />
+                      <label htmlFor={`device-${opt.value}`} className="flex items-center gap-1 text-sm cursor-pointer">
+                        <Icon className="w-4 h-4" /> {opt.label}
+                      </label>
+                    </div>
+                  );
+                })}
               </div>
-              <div className="space-y-2">
-                <Label className="label-caps">Height</Label>
-                <Input
-                  type="number"
-                  min="200"
-                  value={editForm.height || 600}
-                  onChange={(e) => setEditForm({ ...editForm, height: e.target.value })}
-                />
+            </div>
+            <div className="space-y-2">
+              <Label className="label-caps">Countries</Label>
+              <p className="text-xs text-muted-foreground mb-2">Leave empty for all countries</p>
+              <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto p-2 border rounded-md">
+                {COUNTRY_OPTIONS.map((country) => {
+                  const isAllSelected = editForm.countries?.length === 0;
+                  const isSelected = country.code === '' 
+                    ? isAllSelected 
+                    : (editForm.countries || []).includes(country.code);
+                  return (
+                    <div key={country.code || 'all'} className="flex items-center gap-2">
+                      <Checkbox
+                        id={`country-${country.code || 'all'}`}
+                        checked={isSelected}
+                        onCheckedChange={() => handleCountryToggle(country.code)}
+                        data-testid={`country-checkbox-${country.code || 'all'}`}
+                      />
+                      <label htmlFor={`country-${country.code || 'all'}`} className="text-sm cursor-pointer">
+                        {country.label}
+                      </label>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>
