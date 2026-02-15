@@ -158,7 +158,7 @@ export default function ProjectDetailPage() {
 
           {/* Analytics Tab */}
           <TabsContent value="analytics">
-            <AnalyticsTab logs={logs} logStats={logStats} analytics={analytics} />
+            <AnalyticsTab logs={logs} logStats={logStats} analytics={analytics} projectId={projectId} />
           </TabsContent>
         </Tabs>
       </div>
