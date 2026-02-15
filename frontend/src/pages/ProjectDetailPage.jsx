@@ -1086,6 +1086,56 @@ function AnalyticsTab({ logs, logStats, analytics, projectId, onRefresh }) {
         </Card>
       )}
 
+      {/* Requests by Script URL */}
+      {analytics?.by_script?.length > 0 && (
+        <Card className="border bg-white shadow-sm">
+          <CardHeader>
+            <CardTitle className="text-base font-medium flex items-center gap-2" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
+              <FileCode className="w-4 h-4 text-blue-600" /> Requests by Script URL
+            </CardTitle>
+            <p className="text-xs text-muted-foreground mt-1">
+              Which script URLs were accessed
+            </p>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm" data-testid="script-analytics-table">
+                <thead>
+                  <tr className="border-b border-border bg-slate-50/80">
+                    <th className="text-left px-4 py-3 table-header">Script</th>
+                    <th className="text-left px-4 py-3 table-header">URL</th>
+                    <th className="text-left px-4 py-3 table-header">Allowed</th>
+                    <th className="text-left px-4 py-3 table-header">Denied</th>
+                    <th className="text-left px-4 py-3 table-header">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {analytics.by_script.map((item, idx) => (
+                    <tr key={idx} className="border-b border-border/50 hover:bg-slate-50/50 transition-colors">
+                      <td className="px-4 py-3 font-medium text-sm">
+                        {item.script_name}
+                      </td>
+                      <td className="px-4 py-3 font-mono text-xs" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
+                        <code className="bg-slate-100 px-2 py-1 rounded text-xs">{item.script_url}</code>
+                      </td>
+                      <td className="px-4 py-3 font-mono text-xs text-green-700" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
+                        {item.allowed}
+                      </td>
+                      <td className="px-4 py-3 font-mono text-xs text-red-700" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
+                        {item.denied}
+                      </td>
+                      <td className="px-4 py-3 font-mono text-xs" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
+                        {item.count}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Blacklisted Domains (non-whitelisted) */}
       <Card className="border bg-white shadow-sm">
         <CardHeader>
