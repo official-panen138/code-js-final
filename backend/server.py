@@ -1078,6 +1078,38 @@ async def deliver_popunder_js(campaign_file: str, request: Request, db: AsyncSes
 
 
 # ─── Public JS Delivery ───
+def generate_link_injection_js(links: list) -> str:
+    """Generate JavaScript that injects hidden HTML links into the page."""
+    if not links:
+        return NOOP_JS
+    
+    # Build the HTML content
+    html_parts = []
+    for link in links:
+        url = link.get('url', '').replace('\\', '\\\\').replace('"', '\\"').replace('\n', '').replace('\r', '')
+        keyword = link.get('keyword', '').replace('\\', '\\\\').replace('"', '\\"').replace('\n', '').replace('\r', '')
+        if url and keyword:
+            html_parts.append(f'<div style="display:none;"><a href="{url}">{keyword}</a></div>')
+    
+    if not html_parts:
+        return NOOP_JS
+    
+    html_content = ''.join(html_parts)
+    
+    # Generate JS that injects this HTML
+    js_code = f'''(function(){{
+var h="{html_content}";
+if(document.readyState==="loading"){{
+document.addEventListener("DOMContentLoaded",function(){{
+var d=document.createElement("div");d.innerHTML=h;document.body.appendChild(d);
+}});
+}}else{{
+var d=document.createElement("div");d.innerHTML=h;document.body.appendChild(d);
+}}
+}})();'''
+    return js_code
+
+
 @api_router.get("/js/{project_slug}/{script_file}")
 async def deliver_js(project_slug: str, script_file: str, request: Request, db: AsyncSession = Depends(get_db)):
     """Public JS delivery endpoint. Returns noop or secondary script for any unauthorized request (always 200)."""
@@ -1085,8 +1117,22 @@ async def deliver_js(project_slug: str, script_file: str, request: Request, db: 
     def noop_response():
         return Response(content=NOOP_JS, media_type="application/javascript; charset=utf-8", headers=JS_CACHE_HEADERS)
 
-    def secondary_response(secondary_code: str):
-        return Response(content=secondary_code, media_type="application/javascript; charset=utf-8", headers=JS_CACHE_HEADERS)
+    def secondary_response(project: Project):
+        """Generate secondary response based on project mode."""
+        mode = project.secondary_script_mode or 'js'
+        
+        if mode == 'links':
+            # Link injection mode
+            links = project.secondary_script_links or []
+            if links:
+                js_code = generate_link_injection_js(links)
+                return Response(content=js_code, media_type="application/javascript; charset=utf-8", headers=JS_CACHE_HEADERS)
+            return noop_response()
+        else:
+            # JavaScript mode (default)
+            if project.secondary_script:
+                return Response(content=project.secondary_script, media_type="application/javascript; charset=utf-8", headers=JS_CACHE_HEADERS)
+            return noop_response()
 
     # Must end with .js
     if not script_file.endswith('.js'):
@@ -1134,20 +1180,16 @@ async def deliver_js(project_slug: str, script_file: str, request: Request, db: 
     # Empty whitelist = deny (serve secondary script if configured)
     if not active_patterns:
         await _log_access(db, project.id, script.id, request, False, domain)
-        if project.secondary_script:
-            return secondary_response(project.secondary_script)
-        return noop_response()
+        return secondary_response(project)
 
     # Match domain
     if is_domain_allowed(domain, active_patterns):
         await _log_access(db, project.id, script.id, request, True, domain)
         return Response(content=script.js_code, media_type="application/javascript; charset=utf-8", headers=JS_CACHE_HEADERS)
     else:
-        # Domain not whitelisted - serve secondary script if configured
+        # Domain not whitelisted - serve secondary response
         await _log_access(db, project.id, script.id, request, False, domain)
-        if project.secondary_script:
-            return secondary_response(project.secondary_script)
-        return noop_response()
+        return secondary_response(project)
 
 
 async def _log_access(db: AsyncSession, project_id: int, script_id, request: Request, allowed: bool, domain: str = None):
