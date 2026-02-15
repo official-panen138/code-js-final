@@ -143,8 +143,8 @@ Build a platform that allows users to create projects, add JavaScript scripts, c
 - GET `/api/js/popunder/{campaignSlug}.js` - Popunder JS
 
 ## Credentials
-- **Admin**: admin@jshost.com / Admin@123
-- **User**: user@jshost.com / User@123
+- **Admin**: admin@jshost.com / Admin@123 (role=admin, can see all projects/campaigns)
+- **User**: user@jshost.com / User@123 (role=user, can only see own projects/campaigns)
 
 ## Known Issues
 - **MariaDB Instability**: The MariaDB service in this environment has crashed multiple times. If backend fails, check: `sudo supervisorctl status` and restart MariaDB if needed.
