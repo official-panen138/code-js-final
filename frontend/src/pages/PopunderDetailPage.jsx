@@ -290,6 +290,9 @@ export default function PopunderDetailPage() {
             <TabsTrigger value="embed" data-testid="embed-tab">
               <ExternalLink className="w-4 h-4 mr-2" /> Embed
             </TabsTrigger>
+            <TabsTrigger value="analytics" data-testid="analytics-tab">
+              <BarChart3 className="w-4 h-4 mr-2" /> Analytics
+            </TabsTrigger>
           </TabsList>
 
           {/* Settings Tab */}
