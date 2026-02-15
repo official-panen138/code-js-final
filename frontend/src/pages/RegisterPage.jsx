@@ -9,6 +9,7 @@ import { Code2, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function RegisterPage() {
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -32,7 +33,7 @@ export default function RegisterPage() {
     }
     setLoading(true);
     try {
-      await register(email, password);
+      await register(name.trim() || null, email, password);
       toast.success('Account created successfully!');
       navigate('/dashboard');
     } catch (err) {
@@ -86,6 +87,17 @@ export default function RegisterPage() {
             </CardHeader>
             <CardContent className="px-0">
               <form onSubmit={handleSubmit} className="space-y-5">
+                <div className="space-y-2">
+                  <Label htmlFor="name" className="label-caps">Name (optional)</Label>
+                  <Input
+                    id="name"
+                    type="text"
+                    placeholder="Your name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    data-testid="register-name-input"
+                  />
+                </div>
                 <div className="space-y-2">
                   <Label htmlFor="email" className="label-caps">Email</Label>
                   <Input
