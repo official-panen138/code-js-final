@@ -1015,7 +1015,7 @@ def get_platform_ip() -> str:
 
 
 @api_router.get("/custom-domains")
-async def list_custom_domains(db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
+async def list_custom_domains(db: AsyncSession = Depends(get_db), current_user: dict = Depends(require_permission('custom_domains'))):
     result = await db.execute(select(CustomDomain).order_by(desc(CustomDomain.created_at)))
     domains = result.scalars().all()
     return {"domains": [custom_domain_to_dict(d) for d in domains]}
