@@ -790,15 +790,145 @@ async def test_domain(project_id: int, data: DomainTestRequest, db: AsyncSession
 
 
 # ─── Public Popunder JS Delivery (must come before general JS delivery) ───
+
+# The full popunder engine JS (based on 95.js format)
+POPUNDER_ENGINE_TEMPLATE = '''(function(){
+var c = __CONFIG__;
+var u = c.urls;
+var t = c.type; // 'popup' or 'popunder'
+var f = c.freq;
+var rt = c.rt;
+
+// Storage key for frequency cap
+var sk = 'pop_' + c.id;
+
+// Get today's date as string for daily cap
+function getToday() {
+    var d = new Date();
+    return d.getFullYear() + '-' + (d.getMonth()+1) + '-' + d.getDate();
+}
+
+// Check frequency cap (per user per day)
+function checkFreq() {
+    try {
+        var data = JSON.parse(localStorage.getItem(sk) || '{}');
+        var today = getToday();
+        if (data.date !== today) {
+            data = { date: today, count: 0 };
+        }
+        if (data.count >= f) return false;
+        data.count++;
+        localStorage.setItem(sk, JSON.stringify(data));
+        return true;
+    } catch(e) { return true; }
+}
+
+// Get random URL from list
+function getUrl() {
+    if (u.length === 0) return null;
+    return u[Math.floor(Math.random() * u.length)];
+}
+
+// Check referer targeting
+function checkReferer() {
+    if (!rt.enable) return true;
+    var ref = document.referrer || '';
+    var refLower = ref.toLowerCase();
+    
+    // Search engine check
+    var se = ['google.', 'bing.', 'yahoo.', 'yandex.', 'duckduckgo.', 'baidu.'];
+    var isSE = se.some(function(s) { return refLower.indexOf(s) !== -1; });
+    
+    // Social media check
+    var sm = ['facebook.', 'twitter.', 'instagram.', 'linkedin.', 'pinterest.', 'tiktok.', 'reddit.'];
+    var isSM = sm.some(function(s) { return refLower.indexOf(s) !== -1; });
+    
+    // Empty check
+    var isEmpty = !ref || ref === '';
+    
+    if (rt.se && isSE) return true;
+    if (rt.sm && isSM) return true;
+    if (rt.empty && isEmpty) return true;
+    if (rt.notEmpty && !isEmpty) return true;
+    
+    // If targeting is enabled but none match
+    if (rt.se || rt.sm || rt.empty || rt.notEmpty) return false;
+    return true;
+}
+
+// Open popunder/popup
+function openPop() {
+    var url = getUrl();
+    if (!url) return;
+    if (!checkFreq()) return;
+    if (!checkReferer()) return;
+    
+    var w = screen.width;
+    var h = screen.height;
+    var features = 'width=' + w + ',height=' + h + ',top=0,left=0,scrollbars=yes,resizable=yes';
+    
+    try {
+        var win = window.open(url, '_blank', features);
+        if (win && t === 'popunder') {
+            win.blur();
+            window.focus();
+        }
+    } catch(e) {}
+}
+
+// Inject floating banner if present
+function injectBanner() {
+    if (!c.banner) return;
+    try {
+        var div = document.createElement('div');
+        div.innerHTML = c.banner;
+        document.body.appendChild(div);
+    } catch(e) {}
+}
+
+// Inject custom HTML if present
+function injectHtml() {
+    if (!c.html) return;
+    try {
+        var div = document.createElement('div');
+        div.innerHTML = c.html;
+        document.body.appendChild(div);
+    } catch(e) {}
+}
+
+// Trigger on user interaction
+var triggered = false;
+function onUserAction(e) {
+    if (triggered) return;
+    triggered = true;
+    openPop();
+    document.removeEventListener('click', onUserAction, true);
+    document.removeEventListener('touchstart', onUserAction, true);
+}
+
+// Initialize
+document.addEventListener('click', onUserAction, true);
+document.addEventListener('touchstart', onUserAction, true);
+
+// Inject extras on DOM ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+        injectBanner();
+        injectHtml();
+    });
+} else {
+    injectBanner();
+    injectHtml();
+}
+})();'''
+
+
 @api_router.get("/js/popunder/{campaign_file}")
 async def deliver_popunder_js(campaign_file: str, request: Request, db: AsyncSession = Depends(get_db)):
     """
     Public Popunder JS delivery endpoint.
-    Strict validation order:
-    1. Resolve campaign by slug
-    2. Check campaign status
-    3. Enforce campaign's own whitelist
-    Returns noop JS (200) for any failure.
+    Delivers the full popunder engine with campaign configuration.
+    No whitelist check - serves to any domain.
     """
 
     def noop_response():
@@ -810,50 +940,43 @@ async def deliver_popunder_js(campaign_file: str, request: Request, db: AsyncSes
 
     campaign_slug = campaign_file[:-3]  # Remove .js extension
 
-    # 1. Resolve campaign by slug
+    # Resolve campaign by slug
     result = await db.execute(
-        select(PopunderCampaign)
-        .options(selectinload(PopunderCampaign.whitelists))
-        .where(PopunderCampaign.slug == campaign_slug)
+        select(PopunderCampaign).where(PopunderCampaign.slug == campaign_slug)
     )
     campaign = result.scalar_one_or_none()
 
     if not campaign:
         return noop_response()
 
-    # 2. Check campaign status
+    # Check campaign status
     if campaign.status == 'paused':
         return noop_response()
 
-    # 3. Enforce campaign whitelist
-    origin = request.headers.get('origin', '')
-    referer = request.headers.get('referer', '')
-    raw_domain = origin if origin else referer
-    domain = normalize_domain(raw_domain)
-
-    active_patterns = [w.domain_pattern for w in campaign.whitelists if w.is_active]
-
-    # Empty whitelist = deny
-    if not active_patterns:
-        return noop_response()
-
-    # Check domain against whitelist
-    if not is_domain_allowed(domain, active_patterns):
-        return noop_response()
-
-    # All checks passed - serve the popunder JS
+    # Build configuration from campaign settings
     settings = campaign.settings or {}
+    
+    # Parse URL list (newline separated)
+    url_list_str = settings.get("url_list", "")
+    urls = [u.strip() for u in url_list_str.split('\n') if u.strip()]
+    
     config = {
-        "campaignSlug": campaign.slug,
-        "targetUrl": settings.get("target_url", ""),
-        "frequency": settings.get("frequency", 1),
-        "frequencyUnit": settings.get("frequency_unit", "session"),
-        "delay": settings.get("delay", 0),
-        "width": settings.get("width", 800),
-        "height": settings.get("height", 600),
+        "id": campaign.id,
+        "type": settings.get("popunder_type", "popunder"),
+        "urls": urls,
+        "freq": settings.get("frequency_cap", 1),
+        "rt": {
+            "enable": settings.get("rt_enable", False),
+            "se": settings.get("referer_se", False),
+            "sm": settings.get("referer_sm", False),
+            "empty": settings.get("referer_empty", False),
+            "notEmpty": settings.get("referer_not_empty", False),
+        },
+        "banner": settings.get("floating_banner", ""),
+        "html": settings.get("html_body", ""),
     }
 
-    js_code = POPUNDER_ENGINE_JS.replace('__CONFIG__', json.dumps(config))
+    js_code = POPUNDER_ENGINE_TEMPLATE.replace('__CONFIG__', json.dumps(config))
     return Response(content=js_code, media_type="application/javascript; charset=utf-8", headers=JS_CACHE_HEADERS)
 
 
