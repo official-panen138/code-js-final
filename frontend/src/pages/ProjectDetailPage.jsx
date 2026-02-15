@@ -26,7 +26,6 @@ export default function ProjectDetailPage() {
   const navigate = useNavigate();
   const [project, setProject] = useState(null);
   const [scripts, setScripts] = useState([]);
-  const [whitelists, setWhitelists] = useState([]);
   const [logs, setLogs] = useState([]);
   const [logStats, setLogStats] = useState(null);
   const [analytics, setAnalytics] = useState(null);
@@ -35,16 +34,14 @@ export default function ProjectDetailPage() {
 
   const loadProject = useCallback(async () => {
     try {
-      const [projRes, scriptRes, whiteRes, logRes, analyticsRes] = await Promise.all([
+      const [projRes, scriptRes, logRes, analyticsRes] = await Promise.all([
         projectAPI.get(projectId),
         scriptAPI.list(projectId),
-        whitelistAPI.list(projectId),
         logsAPI.list(projectId),
         analyticsAPI.get(projectId),
       ]);
       setProject(projRes.data.project);
       setScripts(scriptRes.data.scripts);
-      setWhitelists(whiteRes.data.whitelists);
       setLogs(logRes.data.logs);
       setLogStats(logRes.data.stats);
       setAnalytics(analyticsRes.data);
