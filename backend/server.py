@@ -1118,6 +1118,28 @@ async def test_domain(project_id: int, script_id: int, data: DomainTestRequest, 
     }
 
 
+# ─── Clear Script Logs ───
+@api_router.delete("/projects/{project_id}/scripts/{script_id}/logs")
+async def clear_script_logs(project_id: int, script_id: int, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
+    """Clear all access logs for a specific script."""
+    await get_user_project(db, project_id, current_user['user_id'])
+    
+    # Verify script belongs to project
+    result = await db.execute(
+        select(Script).where(and_(Script.id == script_id, Script.project_id == project_id))
+    )
+    script = result.scalar_one_or_none()
+    if not script:
+        raise HTTPException(status_code=404, detail="Script not found")
+    
+    await db.execute(
+        AccessLog.__table__.delete().where(AccessLog.script_id == script_id)
+    )
+    await db.commit()
+    
+    return {"message": f"Access logs cleared for script '{script.name}'"}
+
+
 # ─── Public Popunder JS Delivery (must come before general JS delivery) ───
 
 # Self-contained popunder engine JavaScript template
