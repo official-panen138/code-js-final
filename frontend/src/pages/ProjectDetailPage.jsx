@@ -1135,6 +1135,63 @@ function AnalyticsTab({ logs, logStats, analytics, projectId, onRefresh }) {
         </Card>
       )}
 
+      {/* Script Access Details - Domain + Script URL combinations */}
+      {analytics?.script_domain_details?.length > 0 && (
+        <Card className="border bg-white shadow-sm">
+          <CardHeader>
+            <CardTitle className="text-base font-medium flex items-center gap-2" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
+              <Globe className="w-4 h-4 text-purple-600" /> Script Access Details
+            </CardTitle>
+            <p className="text-xs text-muted-foreground mt-1">
+              Which domains accessed which script URLs
+            </p>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm" data-testid="script-access-details-table">
+                <thead>
+                  <tr className="border-b border-border bg-slate-50/80">
+                    <th className="text-left px-4 py-3 table-header">Script URL</th>
+                    <th className="text-left px-4 py-3 table-header">Domain</th>
+                    <th className="text-left px-4 py-3 table-header">Status</th>
+                    <th className="text-left px-4 py-3 table-header">Requests</th>
+                    <th className="text-left px-4 py-3 table-header">Last Access</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {analytics.script_domain_details.map((item, idx) => (
+                    <tr key={idx} className={`border-b border-border/50 transition-colors ${item.status === 'allowed' ? 'hover:bg-green-50/30' : 'hover:bg-red-50/30'}`}>
+                      <td className="px-4 py-3">
+                        <div className="flex flex-col">
+                          <span className="text-xs font-medium text-slate-700">{item.script_name}</span>
+                          <code className="text-xs font-mono text-slate-500 mt-0.5" style={{ fontFamily: 'JetBrains Mono, monospace' }}>{item.script_url}</code>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 font-mono text-xs" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
+                        {item.domain}
+                      </td>
+                      <td className="px-4 py-3">
+                        <Badge className={item.status === 'allowed' ? 'status-active' : 'status-disabled'}>
+                          {item.status === 'allowed' ? 'Allowed' : 'Denied'}
+                        </Badge>
+                      </td>
+                      <td className="px-4 py-3 font-mono text-xs" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
+                        <span className={item.status === 'allowed' ? 'text-green-700' : 'text-red-700'}>
+                          {item.request_count}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-xs text-muted-foreground">
+                        {item.last_access ? new Date(item.last_access).toLocaleString() : '—'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Blacklisted Domains (non-whitelisted) */}
       <Card className="border bg-white shadow-sm">
         <CardHeader>
