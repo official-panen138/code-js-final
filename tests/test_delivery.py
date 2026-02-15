@@ -6,7 +6,7 @@ import pytest
 import requests
 import os
 
-API_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://log-manager-3.preview.emergentagent.com')
+API_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://owner-dashboard-8.preview.emergentagent.com')
 API = f"{API_URL}/api"
 
 # ── Test fixtures ──
