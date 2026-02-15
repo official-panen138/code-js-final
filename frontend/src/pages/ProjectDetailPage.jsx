@@ -526,7 +526,6 @@ function ScriptsTab({ projectId, scripts, onRefresh, getEmbedUrl, copied, copyTo
                   >
                     {copied === `script-${script.id}` ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
                   </Button>
-                  </Button>
                 </div>
               </CardContent>
             </Card>
