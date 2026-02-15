@@ -752,6 +752,19 @@ async def get_access_logs(project_id: int, limit: int = 50, db: AsyncSession = D
     }
 
 
+@api_router.delete("/projects/{project_id}/logs")
+async def clear_access_logs(project_id: int, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
+    """Clear all access logs for a project."""
+    await get_user_project(db, project_id, current_user['user_id'])
+    
+    await db.execute(
+        AccessLog.__table__.delete().where(AccessLog.project_id == project_id)
+    )
+    await db.commit()
+    
+    return {"message": "Access logs cleared"}
+
+
 # ─── Analytics ───
 @api_router.get("/projects/{project_id}/analytics")
 async def get_analytics(project_id: int, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
