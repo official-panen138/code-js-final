@@ -204,9 +204,10 @@ Build a platform that allows users to create projects, add JavaScript scripts, c
 
 ### P1 (Next)
 - Script versioning backend ("Save as new version" feature)
-- Campaign analytics (impressions, clicks)
+- SSL Certificate Support for custom CDN domains
 
 ### P2 (Future)
 - Server-side geo-targeting
 - Rate limiting
 - Bulk domain import
+- Role-based premium/pro features
