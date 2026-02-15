@@ -1260,7 +1260,9 @@ async def get_script_analytics(project_id: int, script_id: int, db: AsyncSession
 # ─── Domain Tester (for scripts) ───
 @api_router.post("/projects/{project_id}/scripts/{script_id}/test-domain")
 async def test_domain(project_id: int, script_id: int, data: DomainTestRequest, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
-    await get_user_project(db, project_id, current_user['user_id'])
+    user_id = current_user['user_id']
+    is_admin = await is_user_admin(db, user_id)
+    await get_user_project(db, project_id, user_id, is_admin)
     
     result = await db.execute(
         select(Script).options(selectinload(Script.whitelists))
@@ -1302,7 +1304,9 @@ async def test_domain(project_id: int, script_id: int, data: DomainTestRequest, 
 @api_router.delete("/projects/{project_id}/scripts/{script_id}/logs")
 async def clear_script_logs(project_id: int, script_id: int, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
     """Clear all access logs for a specific script."""
-    await get_user_project(db, project_id, current_user['user_id'])
+    user_id = current_user['user_id']
+    is_admin = await is_user_admin(db, user_id)
+    await get_user_project(db, project_id, user_id, is_admin)
     
     # Verify script belongs to project
     result = await db.execute(
