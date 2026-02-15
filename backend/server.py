@@ -984,6 +984,7 @@ async def seed_roles():
 async def startup():
     await init_db()
     await seed_categories()
+    await seed_roles()
     logger.info("Database initialized and seeded")
 
 
