@@ -15,7 +15,7 @@ from datetime import datetime, timezone
 from slugify import slugify
 
 from database import get_db, init_db, async_session_maker
-from models import User, Category, Project, Script, ScriptWhitelist, AccessLog, Role, CustomDomain, PopunderCampaign
+from models import User, Category, Project, Script, ScriptWhitelist, AccessLog, Role, CustomDomain, PopunderCampaign, CampaignAnalytics
 from auth import hash_password, verify_password, create_token, get_current_user, require_permission
 from validators import validate_domain_pattern, normalize_domain, is_domain_allowed
 
