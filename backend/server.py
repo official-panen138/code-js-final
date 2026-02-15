@@ -550,7 +550,9 @@ async def get_project(project_id: int, db: AsyncSession = Depends(get_db), curre
 
 @api_router.patch("/projects/{project_id}")
 async def update_project(project_id: int, data: ProjectUpdate, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
-    project = await get_user_project(db, project_id, current_user['user_id'])
+    user_id = current_user['user_id']
+    is_admin = await is_user_admin(db, user_id)
+    project = await get_user_project(db, project_id, user_id, is_admin)
 
     if data.name is not None:
         project.name = data.name
