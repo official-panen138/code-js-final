@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { projectAPI, scriptAPI, whitelistAPI, logsAPI, analyticsAPI, domainTestAPI } from '../lib/api';
+import { projectAPI, scriptAPI, whitelistAPI, logsAPI, analyticsAPI, domainTestAPI, customDomainAPI } from '../lib/api';
 import Layout from '../components/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Switch } from '../components/ui/switch';
 import { Separator } from '../components/ui/separator';
 import { Textarea } from '../components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import {
   ArrowLeft, Copy, Check, Plus, Trash2, Pencil, FileCode, Globe,
   Shield, Activity, ExternalLink, AlertCircle, CheckCircle, XCircle, Search, SaveAll,
