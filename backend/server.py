@@ -172,6 +172,15 @@ def custom_domain_to_dict(d: CustomDomain) -> dict:
     }
 
 
+def popunder_campaign_to_dict(p: PopunderCampaign) -> dict:
+    return {
+        "id": p.id, "project_id": p.project_id, "name": p.name,
+        "slug": p.slug, "status": p.status, "settings": p.settings or {},
+        "created_at": p.created_at.isoformat() if p.created_at else None,
+        "updated_at": p.updated_at.isoformat() if p.updated_at else None,
+    }
+
+
 # System menu definitions - when new menus are added here, they auto-appear in role management
 SYSTEM_MENUS = [
     {"key": "dashboard", "label": "Dashboard", "description": "View dashboard and stats"},
