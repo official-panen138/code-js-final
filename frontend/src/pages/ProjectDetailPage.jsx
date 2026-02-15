@@ -255,6 +255,7 @@ function ScriptsTab({ projectId, scripts, onRefresh, getEmbedUrl, copied, copyTo
   const [editScript, setEditScript] = useState(null);
   const [form, setForm] = useState({ name: '', js_code: '' });
   const [saving, setSaving] = useState(false);
+  const [savingVersion, setSavingVersion] = useState(false);
 
   const resetForm = () => { setForm({ name: '', js_code: '' }); setEditScript(null); };
 
@@ -279,6 +280,33 @@ function ScriptsTab({ projectId, scripts, onRefresh, getEmbedUrl, copied, copyTo
       toast.error(err.response?.data?.detail || 'Failed to save script');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleSaveAsNewVersion = async () => {
+    if (!form.name.trim() || !form.js_code.trim()) {
+      toast.error('Name and code are required');
+      return;
+    }
+    setSavingVersion(true);
+    try {
+      // Create as a new script with versioned name
+      const baseName = form.name.replace(/\s*\(v\d+\)$/, ''); // Remove existing version suffix
+      const existingVersions = scripts.filter(s => 
+        s.name === baseName || s.name.match(new RegExp(`^${baseName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*\\(v\\d+\\)$`))
+      );
+      const nextVersion = existingVersions.length + 1;
+      const newName = `${baseName} (v${nextVersion})`;
+      
+      await scriptAPI.create(projectId, { name: newName, js_code: form.js_code });
+      toast.success(`Saved as new version: ${newName}`);
+      setShowCreate(false);
+      resetForm();
+      onRefresh();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Failed to save new version');
+    } finally {
+      setSavingVersion(false);
     }
   };
 
