@@ -1,12 +1,19 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Code2, LayoutDashboard, FolderKanban, LogOut, ChevronLeft, ChevronRight, Settings } from 'lucide-react';
+import { Code2, LayoutDashboard, FolderKanban, LogOut, ChevronLeft, ChevronRight, Settings, Users } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Separator } from '../components/ui/separator';
 import { useState } from 'react';
 
+const ALL_LINKS = [
+  { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', permission: 'dashboard' },
+  { to: '/projects', icon: FolderKanban, label: 'Projects', permission: 'projects' },
+  { to: '/settings', icon: Settings, label: 'Settings', permission: 'settings' },
+  { to: '/users', icon: Users, label: 'Users', permission: 'user_management' },
+];
+
 function Sidebar() {
-  const { user, logout } = useAuth();
+  const { user, logout, hasPermission } = useAuth();
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
 
@@ -15,11 +22,8 @@ function Sidebar() {
     navigate('/login');
   };
 
-  const links = [
-    { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-    { to: '/projects', icon: FolderKanban, label: 'Projects' },
-    { to: '/settings', icon: Settings, label: 'Settings' },
-  ];
+  // Filter links based on user permissions
+  const links = ALL_LINKS.filter(link => hasPermission(link.permission));
 
   return (
     <aside
@@ -46,7 +50,7 @@ function Sidebar() {
           <NavLink
             key={link.to}
             to={link.to}
-            data-testid={`nav-${link.label.toLowerCase()}`}
+            data-testid={`nav-${link.label.toLowerCase().replace(/\s/g, '-')}`}
             className={({ isActive }) =>
               `sidebar-link ${isActive ? 'active' : ''}`
             }
