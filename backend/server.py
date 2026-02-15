@@ -1968,7 +1968,12 @@ async def create_user(data: UserCreate, db: AsyncSession = Depends(get_db), curr
     if not role_check.scalar_one_or_none():
         raise HTTPException(status_code=400, detail=f"Role '{role_name}' does not exist")
 
-    user = User(email=email, password_hash=hash_password(data.password), role=role_name)
+    user = User(
+        name=data.name.strip() if data.name else None,
+        email=email, 
+        password_hash=hash_password(data.password), 
+        role=role_name
+    )
     db.add(user)
     await db.commit()
     await db.refresh(user)
@@ -1981,6 +1986,9 @@ async def update_user(user_id: int, data: UserUpdate, db: AsyncSession = Depends
     user = result.scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+
+    if data.name is not None:
+        user.name = data.name.strip() if data.name else None
 
     if data.role is not None:
         # Verify role exists
