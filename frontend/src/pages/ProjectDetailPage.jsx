@@ -1361,6 +1361,38 @@ function AnalyticsLogsTab({ projectId }) {
               </table>
             </div>
           )}
+          
+          {/* Pagination Controls */}
+          {pagination.total_pages > 1 && (
+            <div className="flex items-center justify-between mt-4 pt-4 border-t border-border">
+              <p className="text-sm text-muted-foreground">
+                Showing {((pagination.page - 1) * pagination.per_page) + 1} - {Math.min(pagination.page * pagination.per_page, pagination.total_items)} of {pagination.total_items} logs
+              </p>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => goToPage(pagination.page - 1)}
+                  disabled={!pagination.has_prev || loading}
+                  data-testid="analytics-prev-page"
+                >
+                  <ChevronLeft className="w-4 h-4 mr-1" /> Prev
+                </Button>
+                <span className="text-sm px-3 py-1 bg-slate-100 rounded font-mono" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
+                  {pagination.page} / {pagination.total_pages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => goToPage(pagination.page + 1)}
+                  disabled={!pagination.has_next || loading}
+                  data-testid="analytics-next-page"
+                >
+                  Next <ChevronRight className="w-4 h-4 ml-1" />
+                </Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
