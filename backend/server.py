@@ -1164,6 +1164,265 @@ async def delete_custom_domain(domain_id: int, db: AsyncSession = Depends(get_db
     return {"message": "Domain deleted"}
 
 
+# ─── Popunder Campaign Routes ───
+@api_router.get("/projects/{project_id}/popunders")
+async def list_popunder_campaigns(project_id: int, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
+    """List all popunder campaigns for a project."""
+    await get_user_project(db, project_id, current_user['user_id'])
+    result = await db.execute(
+        select(PopunderCampaign).where(PopunderCampaign.project_id == project_id).order_by(desc(PopunderCampaign.created_at))
+    )
+    campaigns = result.scalars().all()
+    return {"popunders": [popunder_campaign_to_dict(c) for c in campaigns]}
+
+
+@api_router.post("/projects/{project_id}/popunders")
+async def create_popunder_campaign(project_id: int, data: PopunderCampaignCreate, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
+    """Create a new popunder campaign for a project."""
+    project = await get_user_project(db, project_id, current_user['user_id'])
+
+    if not data.name or not data.name.strip():
+        raise HTTPException(status_code=400, detail="Campaign name is required")
+
+    if not data.settings or not data.settings.target_url:
+        raise HTTPException(status_code=400, detail="Target URL is required in settings")
+
+    if data.status and data.status not in ('active', 'paused'):
+        raise HTTPException(status_code=400, detail="Status must be 'active' or 'paused'")
+
+    slug = await generate_popunder_slug(db, project_id, data.name.strip())
+    settings_dict = data.settings.model_dump() if data.settings else {}
+
+    campaign = PopunderCampaign(
+        project_id=project_id,
+        name=data.name.strip(),
+        slug=slug,
+        status=data.status or 'active',
+        settings=settings_dict,
+    )
+    db.add(campaign)
+    await db.commit()
+    await db.refresh(campaign)
+    return {"popunder": popunder_campaign_to_dict(campaign)}
+
+
+@api_router.get("/projects/{project_id}/popunders/{campaign_id}")
+async def get_popunder_campaign(project_id: int, campaign_id: int, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
+    """Get a specific popunder campaign."""
+    await get_user_project(db, project_id, current_user['user_id'])
+    result = await db.execute(select(PopunderCampaign).where(and_(PopunderCampaign.id == campaign_id, PopunderCampaign.project_id == project_id)))
+    campaign = result.scalar_one_or_none()
+    if not campaign:
+        raise HTTPException(status_code=404, detail="Popunder campaign not found")
+    return {"popunder": popunder_campaign_to_dict(campaign)}
+
+
+@api_router.patch("/projects/{project_id}/popunders/{campaign_id}")
+async def update_popunder_campaign(project_id: int, campaign_id: int, data: PopunderCampaignUpdate, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
+    """Update a popunder campaign."""
+    await get_user_project(db, project_id, current_user['user_id'])
+    result = await db.execute(select(PopunderCampaign).where(and_(PopunderCampaign.id == campaign_id, PopunderCampaign.project_id == project_id)))
+    campaign = result.scalar_one_or_none()
+    if not campaign:
+        raise HTTPException(status_code=404, detail="Popunder campaign not found")
+
+    if data.name is not None:
+        name = data.name.strip()
+        if not name:
+            raise HTTPException(status_code=400, detail="Campaign name cannot be empty")
+        campaign.name = name
+        campaign.slug = await generate_popunder_slug(db, project_id, name)
+
+    if data.settings is not None:
+        if not data.settings.target_url:
+            raise HTTPException(status_code=400, detail="Target URL is required in settings")
+        campaign.settings = data.settings.model_dump()
+
+    if data.status is not None:
+        if data.status not in ('active', 'paused'):
+            raise HTTPException(status_code=400, detail="Status must be 'active' or 'paused'")
+        campaign.status = data.status
+
+    await db.commit()
+    await db.refresh(campaign)
+    return {"popunder": popunder_campaign_to_dict(campaign)}
+
+
+@api_router.delete("/projects/{project_id}/popunders/{campaign_id}")
+async def delete_popunder_campaign(project_id: int, campaign_id: int, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
+    """Delete a popunder campaign."""
+    await get_user_project(db, project_id, current_user['user_id'])
+    result = await db.execute(select(PopunderCampaign).where(and_(PopunderCampaign.id == campaign_id, PopunderCampaign.project_id == project_id)))
+    campaign = result.scalar_one_or_none()
+    if not campaign:
+        raise HTTPException(status_code=404, detail="Popunder campaign not found")
+
+    await db.delete(campaign)
+    await db.commit()
+    return {"message": "Popunder campaign deleted"}
+
+
+# ─── Public Popunder JS Delivery ───
+POPUNDER_ENGINE_JS = '''
+(function() {
+  var config = __CONFIG__;
+  var storageKey = 'popunder_' + config.campaignSlug;
+  var now = Date.now();
+
+  function getStoredData() {
+    try {
+      var data = localStorage.getItem(storageKey);
+      return data ? JSON.parse(data) : { count: 0, lastShown: 0 };
+    } catch(e) { return { count: 0, lastShown: 0 }; }
+  }
+
+  function setStoredData(data) {
+    try { localStorage.setItem(storageKey, JSON.stringify(data)); } catch(e) {}
+  }
+
+  function shouldShow() {
+    var data = getStoredData();
+    var freq = config.frequency || 1;
+    var unit = config.frequencyUnit || 'session';
+    
+    if (unit === 'session') {
+      return data.count < freq;
+    } else if (unit === 'hour') {
+      var hourAgo = now - 3600000;
+      return data.lastShown < hourAgo || data.count < freq;
+    } else if (unit === 'day') {
+      var dayAgo = now - 86400000;
+      return data.lastShown < dayAgo || data.count < freq;
+    }
+    return true;
+  }
+
+  function openPopunder() {
+    var data = getStoredData();
+    if (!shouldShow()) return;
+    
+    var w = config.width || 800;
+    var h = config.height || 600;
+    var left = (screen.width - w) / 2;
+    var top = (screen.height - h) / 2;
+    var features = 'width=' + w + ',height=' + h + ',left=' + left + ',top=' + top + ',scrollbars=yes,resizable=yes';
+    
+    setTimeout(function() {
+      var win = window.open(config.targetUrl, '_blank', features);
+      if (win) {
+        win.blur();
+        window.focus();
+        data.count++;
+        data.lastShown = now;
+        setStoredData(data);
+      }
+    }, config.delay || 0);
+  }
+
+  // Trigger on first user interaction
+  var triggered = false;
+  function onUserAction() {
+    if (triggered) return;
+    triggered = true;
+    openPopunder();
+    document.removeEventListener('click', onUserAction);
+    document.removeEventListener('keydown', onUserAction);
+  }
+  
+  document.addEventListener('click', onUserAction);
+  document.addEventListener('keydown', onUserAction);
+})();
+'''
+
+
+@api_router.get("/js/popunder/{project_slug}/{campaign_file}")
+async def deliver_popunder_js(project_slug: str, campaign_file: str, request: Request, db: AsyncSession = Depends(get_db)):
+    """
+    Public Popunder JS delivery endpoint.
+    Strict validation order:
+    1. Resolve project
+    2. Check project status
+    3. Enforce project whitelist
+    4. Resolve campaign
+    5. Check campaign status
+    Returns noop JS (200) for any failure.
+    """
+
+    def noop_response():
+        return Response(content=NOOP_JS, media_type="application/javascript; charset=utf-8", headers=JS_CACHE_HEADERS)
+
+    # Must end with .js
+    if not campaign_file.endswith('.js'):
+        return noop_response()
+
+    campaign_slug = campaign_file[:-3]
+
+    # 1. Resolve project
+    result = await db.execute(
+        select(Project).options(selectinload(Project.whitelists)).where(Project.slug == project_slug)
+    )
+    project = result.scalar_one_or_none()
+
+    if not project:
+        return noop_response()
+
+    # 2. Check project status
+    if project.status == 'paused':
+        await _log_access(db, project.id, None, request, False)
+        return noop_response()
+
+    # 3. Enforce project whitelist
+    origin = request.headers.get('origin', '')
+    referer = request.headers.get('referer', '')
+    raw_domain = origin if origin else referer
+    domain = normalize_domain(raw_domain)
+
+    active_patterns = [w.domain_pattern for w in project.whitelists if w.is_active]
+
+    # Empty whitelist = deny
+    if not active_patterns:
+        await _log_access(db, project.id, None, request, False, domain)
+        return noop_response()
+
+    # Check domain against whitelist
+    if not is_domain_allowed(domain, active_patterns):
+        await _log_access(db, project.id, None, request, False, domain)
+        return noop_response()
+
+    # 4. Resolve campaign
+    result = await db.execute(
+        select(PopunderCampaign).where(and_(PopunderCampaign.project_id == project.id, PopunderCampaign.slug == campaign_slug))
+    )
+    campaign = result.scalar_one_or_none()
+
+    if not campaign:
+        await _log_access(db, project.id, None, request, False, domain)
+        return noop_response()
+
+    # 5. Check campaign status
+    if campaign.status == 'paused':
+        await _log_access(db, project.id, None, request, False, domain)
+        return noop_response()
+
+    # All checks passed - serve the popunder JS
+    await _log_access(db, project.id, None, request, True, domain)
+
+    settings = campaign.settings or {}
+    config = {
+        "campaignSlug": campaign.slug,
+        "targetUrl": settings.get("target_url", ""),
+        "frequency": settings.get("frequency", 1),
+        "frequencyUnit": settings.get("frequency_unit", "session"),
+        "delay": settings.get("delay", 0),
+        "width": settings.get("width", 800),
+        "height": settings.get("height", 600),
+    }
+
+    import json
+    js_code = POPUNDER_ENGINE_JS.replace('__CONFIG__', json.dumps(config))
+    return Response(content=js_code, media_type="application/javascript; charset=utf-8", headers=JS_CACHE_HEADERS)
+
+
 # ─── Seed Data ───
 SEED_CATEGORIES = [
     {"name": "Website", "description": "General website scripts"},
