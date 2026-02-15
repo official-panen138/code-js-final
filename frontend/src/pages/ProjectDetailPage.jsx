@@ -248,6 +248,7 @@ function ScriptsTab({ projectId, scripts, onRefresh, getEmbedUrl, copied, copyTo
   const [analyticsScript, setAnalyticsScript] = useState(null);
   const [scriptAnalyticsData, setScriptAnalyticsData] = useState(null);
   const [loadingScriptAnalytics, setLoadingScriptAnalytics] = useState(false);
+  const [deletingLogId, setDeletingLogId] = useState(null);
 
   const resetForm = () => { 
     setForm({ name: '', js_code: '', secondary_script_mode: 'js', secondary_script: '', secondary_script_links: [] }); 
