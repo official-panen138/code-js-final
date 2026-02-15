@@ -285,12 +285,22 @@ async def generate_script_slug(db: AsyncSession, project_id: int, name: str) -> 
             return slug
 
 
-async def get_user_project(db: AsyncSession, project_id: int, user_id: int) -> Project:
-    result = await db.execute(
-        select(Project)
-        .options(selectinload(Project.category), selectinload(Project.scripts).selectinload(Script.whitelists))
-        .where(and_(Project.id == project_id, Project.user_id == user_id))
-    )
+async def get_user_project(db: AsyncSession, project_id: int, user_id: int, is_admin: bool = False) -> Project:
+    """Get a project by ID. If is_admin is True, bypasses user ownership check."""
+    if is_admin:
+        # Admin can access any project
+        result = await db.execute(
+            select(Project)
+            .options(selectinload(Project.category), selectinload(Project.scripts).selectinload(Script.whitelists))
+            .where(Project.id == project_id)
+        )
+    else:
+        # Regular users can only access their own projects
+        result = await db.execute(
+            select(Project)
+            .options(selectinload(Project.category), selectinload(Project.scripts).selectinload(Script.whitelists))
+            .where(and_(Project.id == project_id, Project.user_id == user_id))
+        )
     project = result.scalar_one_or_none()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
