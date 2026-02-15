@@ -1328,7 +1328,9 @@ async def clear_script_logs(project_id: int, script_id: int, db: AsyncSession = 
 @api_router.get("/projects/{project_id}/scripts/{script_id}/logs")
 async def get_script_logs(project_id: int, script_id: int, page: int = 1, per_page: int = 20, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
     """Get individual access log entries for a specific script with pagination and per-row deletion."""
-    project = await get_user_project(db, project_id, current_user['user_id'])
+    user_id = current_user['user_id']
+    is_admin = await is_user_admin(db, user_id)
+    project = await get_user_project(db, project_id, user_id, is_admin)
     
     # Verify script belongs to project
     result = await db.execute(
