@@ -33,20 +33,24 @@ export default function ProjectDetailPage() {
   const [analytics, setAnalytics] = useState(null);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(null);
+  const [cdnDomains, setCdnDomains] = useState([]);
+  const [selectedCdn, setSelectedCdn] = useState('default'); // 'default' = main domain
 
   const loadProject = useCallback(async () => {
     try {
-      const [projRes, scriptRes, logRes, analyticsRes] = await Promise.all([
+      const [projRes, scriptRes, logRes, analyticsRes, cdnRes] = await Promise.all([
         projectAPI.get(projectId),
         scriptAPI.list(projectId),
         logsAPI.list(projectId),
         analyticsAPI.get(projectId),
+        customDomainAPI.listActive().catch(() => ({ data: { domains: [] } })),
       ]);
       setProject(projRes.data.project);
       setScripts(scriptRes.data.scripts);
       setLogs(logRes.data.logs);
       setLogStats(logRes.data.stats);
       setAnalytics(analyticsRes.data);
+      setCdnDomains(cdnRes.data.domains || []);
     } catch (err) {
       toast.error('Failed to load project');
       navigate('/projects');
