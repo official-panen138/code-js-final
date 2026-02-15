@@ -1090,13 +1090,13 @@ def generate_link_injection_js(links: list) -> str:
         url = link.get('url', '').replace('\\', '\\\\').replace('"', '\\"').replace('\n', '').replace('\r', '')
         keyword = link.get('keyword', '').replace('\\', '\\\\').replace('"', '\\"').replace('\n', '').replace('\r', '')
         if url and keyword:
-            link_parts.append(f'<p><a href="{url}">{keyword}</a></p>')
+            link_parts.append(f'<p><a href=\\"{url}\\">{keyword}</a></p>')
     
     if not link_parts:
         return NOOP_JS
     
-    # Wrap all links in a single hidden div
-    html_content = '<div style="display:none;">' + ''.join(link_parts) + '</div>'
+    # Wrap all links in a single hidden div (escape quotes for JS string)
+    html_content = '<div style=\\"display:none;\\">' + ''.join(link_parts) + '</div>'
     
     # Generate JS that injects this HTML
     js_code = f'''(function(){{
