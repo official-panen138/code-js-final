@@ -498,20 +498,29 @@ async def delete_project(project_id: int, db: AsyncSession = Depends(get_db), cu
     return {"message": "Project deleted"}
 
 
-# ─── Whitelist Routes ───
-@api_router.get("/projects/{project_id}/whitelist")
-async def list_whitelist(project_id: int, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
+# ─── Whitelist Routes (per Script) ───
+@api_router.get("/projects/{project_id}/scripts/{script_id}/whitelist")
+async def list_whitelist(project_id: int, script_id: int, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
     await get_user_project(db, project_id, current_user['user_id'])
+    # Verify script belongs to project
+    result = await db.execute(select(Script).where(and_(Script.id == script_id, Script.project_id == project_id)))
+    if not result.scalar_one_or_none():
+        raise HTTPException(status_code=404, detail="Script not found")
+    
     result = await db.execute(
-        select(ProjectWhitelist).where(ProjectWhitelist.project_id == project_id).order_by(desc(ProjectWhitelist.created_at))
+        select(ScriptWhitelist).where(ScriptWhitelist.script_id == script_id).order_by(desc(ScriptWhitelist.created_at))
     )
     entries = result.scalars().all()
     return {"whitelists": [whitelist_to_dict(w) for w in entries]}
 
 
-@api_router.post("/projects/{project_id}/whitelist")
-async def add_whitelist(project_id: int, data: WhitelistCreate, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
+@api_router.post("/projects/{project_id}/scripts/{script_id}/whitelist")
+async def add_whitelist(project_id: int, script_id: int, data: WhitelistCreate, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
     await get_user_project(db, project_id, current_user['user_id'])
+    # Verify script belongs to project
+    result = await db.execute(select(Script).where(and_(Script.id == script_id, Script.project_id == project_id)))
+    if not result.scalar_one_or_none():
+        raise HTTPException(status_code=404, detail="Script not found")
 
     pattern = data.domain_pattern.lower().strip()
     is_valid, msg = validate_domain_pattern(pattern)
@@ -520,23 +529,23 @@ async def add_whitelist(project_id: int, data: WhitelistCreate, db: AsyncSession
 
     # Check duplicate
     result = await db.execute(
-        select(ProjectWhitelist).where(and_(ProjectWhitelist.project_id == project_id, ProjectWhitelist.domain_pattern == pattern))
+        select(ScriptWhitelist).where(and_(ScriptWhitelist.script_id == script_id, ScriptWhitelist.domain_pattern == pattern))
     )
     if result.scalar_one_or_none():
-        raise HTTPException(status_code=400, detail="Domain pattern already exists for this project")
+        raise HTTPException(status_code=400, detail="Domain pattern already exists for this script")
 
-    entry = ProjectWhitelist(project_id=project_id, domain_pattern=pattern)
+    entry = ScriptWhitelist(script_id=script_id, domain_pattern=pattern)
     db.add(entry)
     await db.commit()
     await db.refresh(entry)
     return {"whitelist": whitelist_to_dict(entry)}
 
 
-@api_router.patch("/projects/{project_id}/whitelist/{whitelist_id}")
-async def update_whitelist(project_id: int, whitelist_id: int, data: WhitelistUpdate, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
+@api_router.patch("/projects/{project_id}/scripts/{script_id}/whitelist/{whitelist_id}")
+async def update_whitelist(project_id: int, script_id: int, whitelist_id: int, data: WhitelistUpdate, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
     await get_user_project(db, project_id, current_user['user_id'])
 
-    result = await db.execute(select(ProjectWhitelist).where(and_(ProjectWhitelist.id == whitelist_id, ProjectWhitelist.project_id == project_id)))
+    result = await db.execute(select(ScriptWhitelist).where(and_(ScriptWhitelist.id == whitelist_id, ScriptWhitelist.script_id == script_id)))
     entry = result.scalar_one_or_none()
     if not entry:
         raise HTTPException(status_code=404, detail="Whitelist entry not found")
@@ -556,11 +565,11 @@ async def update_whitelist(project_id: int, whitelist_id: int, data: WhitelistUp
     return {"whitelist": whitelist_to_dict(entry)}
 
 
-@api_router.delete("/projects/{project_id}/whitelist/{whitelist_id}")
-async def delete_whitelist(project_id: int, whitelist_id: int, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
+@api_router.delete("/projects/{project_id}/scripts/{script_id}/whitelist/{whitelist_id}")
+async def delete_whitelist(project_id: int, script_id: int, whitelist_id: int, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
     await get_user_project(db, project_id, current_user['user_id'])
 
-    result = await db.execute(select(ProjectWhitelist).where(and_(ProjectWhitelist.id == whitelist_id, ProjectWhitelist.project_id == project_id)))
+    result = await db.execute(select(ScriptWhitelist).where(and_(ScriptWhitelist.id == whitelist_id, ScriptWhitelist.script_id == script_id)))
     entry = result.scalar_one_or_none()
     if not entry:
         raise HTTPException(status_code=404, detail="Whitelist entry not found")
