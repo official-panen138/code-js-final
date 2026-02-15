@@ -110,6 +110,25 @@ class CustomDomainUpdate(BaseModel):
     is_active: Optional[bool] = None
 
 
+class PopunderCampaignSettings(BaseModel):
+    target_url: str
+    frequency: Optional[int] = 1  # How often to show (per session/hour/day)
+    frequency_unit: Optional[str] = 'session'  # session, hour, day
+    delay: Optional[int] = 0  # Delay in ms before triggering
+    width: Optional[int] = 800  # Popunder window width
+    height: Optional[int] = 600  # Popunder window height
+
+class PopunderCampaignCreate(BaseModel):
+    name: str
+    settings: PopunderCampaignSettings
+    status: Optional[str] = 'active'
+
+class PopunderCampaignUpdate(BaseModel):
+    name: Optional[str] = None
+    settings: Optional[PopunderCampaignSettings] = None
+    status: Optional[str] = None
+
+
 # ─── Helpers ───
 def user_to_dict(u: User) -> dict:
     return {"id": u.id, "email": u.email, "role": u.role, "is_active": u.is_active, "created_at": u.created_at.isoformat() if u.created_at else None}
