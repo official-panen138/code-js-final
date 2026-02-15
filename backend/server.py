@@ -1686,6 +1686,143 @@ if (document.readyState === 'loading') {
 })();'''
 
 
+@api_router.get("/test/popunder/{campaign_slug}", response_class=HTMLResponse)
+async def get_popunder_test_page(campaign_slug: str, request: Request, db: AsyncSession = Depends(get_db)):
+    """
+    Test page for pop-under campaigns.
+    Allows testing the pop-under behavior without authentication.
+    """
+    # Verify campaign exists
+    result = await db.execute(
+        select(PopunderCampaign).where(PopunderCampaign.slug == campaign_slug)
+    )
+    campaign = result.scalar_one_or_none()
+    
+    if not campaign:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+    
+    # Get API base URL from request
+    api_base = f"{request.base_url.scheme}://{request.headers.get('host', 'localhost')}"
+    
+    html_content = f'''<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pop-under Test: {campaign.name}</title>
+    <style>
+        * {{ box-sizing: border-box; }}
+        body {{
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #e8e8e8;
+        }}
+        h1 {{ color: #00d9ff; font-size: 2rem; }}
+        .test-card {{
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(10px);
+            padding: 30px;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.1);
+            margin-top: 20px;
+        }}
+        .instructions {{
+            background: rgba(0, 217, 255, 0.1);
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            border-left: 4px solid #00d9ff;
+        }}
+        .instructions h3 {{ margin-top: 0; color: #00d9ff; }}
+        .instructions ol {{ margin: 0; padding-left: 20px; }}
+        .instructions li {{ margin: 8px 0; line-height: 1.6; }}
+        button {{
+            background: linear-gradient(135deg, #00d9ff 0%, #0099cc 100%);
+            color: #1a1a2e;
+            padding: 15px 40px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }}
+        button:hover {{
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 217, 255, 0.3);
+        }}
+        .status {{
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            display: none;
+        }}
+        .status.success {{ 
+            background: rgba(76, 175, 80, 0.2);
+            color: #4caf50;
+            display: block;
+            border: 1px solid rgba(76, 175, 80, 0.3);
+        }}
+        .campaign-info {{
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 8px;
+            font-size: 14px;
+        }}
+        .campaign-info code {{
+            background: rgba(0,0,0,0.3);
+            padding: 2px 6px;
+            border-radius: 4px;
+        }}
+    </style>
+</head>
+<body>
+    <h1>Pop-under Test Page</h1>
+    <p style="opacity: 0.7;">Campaign: <strong>{campaign.name}</strong></p>
+    
+    <div class="test-card">
+        <div class="instructions">
+            <h3>Test Instructions:</h3>
+            <ol>
+                <li><strong>Click anywhere on this page</strong> to trigger the pop-under</li>
+                <li>A new browser window should open with the target URL</li>
+                <li><strong>Expected behavior:</strong> The new window opens, but <em>this page remains visible on your screen</em></li>
+                <li>The pop-under window should appear "behind" this main window</li>
+            </ol>
+        </div>
+        
+        <p style="margin-bottom: 20px;">Click the button below or anywhere on the page to test:</p>
+        <button id="testBtn">Click to Test Pop-under</button>
+        
+        <div id="status" class="status"></div>
+        
+        <div class="campaign-info">
+            <p><strong>Campaign ID:</strong> <code>{campaign.id}</code></p>
+            <p><strong>Script URL:</strong> <code>{api_base}/api/js/popunder/{campaign_slug}.js</code></p>
+        </div>
+    </div>
+    
+    <!-- Load the popunder script -->
+    <script src="{api_base}/api/js/popunder/{campaign_slug}.js"></script>
+    
+    <script>
+        document.getElementById('testBtn').addEventListener('click', function() {{
+            var status = document.getElementById('status');
+            status.innerHTML = '✓ Pop-under triggered! Check if a new window opened behind this one.';
+            status.className = 'status success';
+        }});
+    </script>
+</body>
+</html>'''
+    
+    return HTMLResponse(content=html_content)
+
+
 @api_router.get("/js/popunder/{campaign_file}")
 async def deliver_popunder_js(campaign_file: str, request: Request, db: AsyncSession = Depends(get_db)):
     """
