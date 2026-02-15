@@ -68,7 +68,12 @@ export default function ProjectDetailPage() {
     setTimeout(() => setCopied(null), 2000);
   };
 
-  const getEmbedUrl = (scriptSlug) => `${BACKEND_URL}/api/js/${project?.slug}/${scriptSlug}.js`;
+  const getEmbedUrl = (scriptSlug) => {
+    const baseUrl = selectedCdn === 'default' 
+      ? BACKEND_URL 
+      : `https://${cdnDomains.find(d => d.id.toString() === selectedCdn)?.domain}`;
+    return `${baseUrl}/api/js/${project?.slug}/${scriptSlug}.js`;
+  };
 
   if (loading) {
     return (
