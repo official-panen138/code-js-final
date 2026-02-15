@@ -1113,7 +1113,7 @@ async def update_custom_domain(domain_id: int, data: CustomDomainUpdate, db: Asy
 
 
 @api_router.delete("/custom-domains/{domain_id}")
-async def delete_custom_domain(domain_id: int, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
+async def delete_custom_domain(domain_id: int, db: AsyncSession = Depends(get_db), current_user: dict = Depends(require_permission('custom_domains'))):
     result = await db.execute(select(CustomDomain).where(CustomDomain.id == domain_id))
     entry = result.scalar_one_or_none()
     if not entry:
