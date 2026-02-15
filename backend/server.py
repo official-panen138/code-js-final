@@ -628,6 +628,14 @@ async def update_script(project_id: int, script_id: int, data: ScriptUpdate, db:
         if data.status not in ('active', 'disabled'):
             raise HTTPException(status_code=400, detail="Status must be 'active' or 'disabled'")
         script.status = data.status
+    if data.secondary_script is not None:
+        script.secondary_script = data.secondary_script if data.secondary_script.strip() else None
+    if data.secondary_script_mode is not None:
+        if data.secondary_script_mode not in ('js', 'links'):
+            raise HTTPException(status_code=400, detail="Secondary script mode must be 'js' or 'links'")
+        script.secondary_script_mode = data.secondary_script_mode
+    if data.secondary_script_links is not None:
+        script.secondary_script_links = [link.model_dump() for link in data.secondary_script_links]
 
     await db.commit()
     await db.refresh(script)
