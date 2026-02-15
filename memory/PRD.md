@@ -19,7 +19,7 @@ Build a platform that allows users to create projects, add JavaScript scripts, c
 2. JWT authentication
 3. Public JS delivery with domain validation
 4. Noop JS (200 status) for denied/unauthorized requests
-5. Standalone popunder campaigns with device/country targeting
+5. Standalone popunder campaigns with advanced targeting
 
 ## What's Been Implemented
 
@@ -43,19 +43,21 @@ Build a platform that allows users to create projects, add JavaScript scripts, c
 - [x] Category management (CRUD)
 - [x] Global custom domain management with DNS verification
 
-### Phase 3 - Popunder Campaign Module V3 (Feb 15, 2026)
+### Phase 3 - Popunder Campaign Module V4 (Feb 15, 2026)
 - [x] Standalone popunder campaigns (independent from projects)
 - [x] **No domain whitelist** - campaigns serve to any domain
-- [x] New settings schema:
-  - `direct_link` - URL to open in popunder window (required)
-  - `timer` - delay in seconds before popunder opens
-  - `interval` - hours between shows for same user
-  - `devices` - targeted devices (desktop, mobile, tablet)
-  - `countries` - targeted countries (ISO codes)
+- [x] Advanced settings schema:
+  - `url_list` - Multiple URLs (newline-separated) with random selection
+  - `timer` - Delay in seconds before popunder opens
+  - `interval` - Hours between shows for same user
+  - `devices` - Target devices (desktop, mobile, tablet)
+  - `countries` - Target countries (ISO codes) with client-side IP detection
+  - `floating_banner` - HTML code for floating banner injection
+  - `html_body` - Custom HTML to inject into page body
 - [x] Self-contained JS payload at `/api/js/popunder/{slug}.js`
-- [x] Campaign detail page with Settings and Embed tabs only
-- [x] Device detection and interval tracking in JS
-- [x] Create/Edit campaign with new settings form
+- [x] Client-side country detection via ip-api.com
+- [x] Campaign detail page with Settings and Embed tabs
+- [x] Create/Edit forms with all settings fields
 - [x] "Save as New Version" button in script editor (UI only, backend pending)
 
 ## Database Schema
@@ -74,11 +76,13 @@ Build a platform that allows users to create projects, add JavaScript scripts, c
 ### Popunder Campaign Settings (JSON)
 ```json
 {
-  "direct_link": "https://example.com/offer",
+  "url_list": "https://offer1.example.com\nhttps://offer2.example.com",
   "timer": 0,
   "interval": 24,
   "devices": ["desktop", "mobile", "tablet"],
-  "countries": []
+  "countries": [],
+  "floating_banner": "<div style='position:fixed;...'>Banner</div>",
+  "html_body": "<div id='custom'>...</div>"
 }
 ```
 
@@ -105,7 +109,7 @@ Build a platform that allows users to create projects, add JavaScript scripts, c
 - `/popunders/:id` - Campaign detail (Settings, Embed)
 
 ## Test Coverage
-- Backend: 13+ pytest tests for popunder V3
+- Backend: 16+ pytest tests for popunder multi-URL features
 - Frontend: UI tests passing
 
 ## Credentials
@@ -123,9 +127,8 @@ Build a platform that allows users to create projects, add JavaScript scripts, c
 - Bulk domain import
 - Script minification option
 - API key authentication as alternative to JWT
-- Geo-targeting implementation for popunder JS (server-side country detection)
+- Server-side geo-targeting (more reliable than client-side)
 
 ## Next Tasks
 1. Script versioning backend implementation
 2. Campaign analytics (impressions, clicks tracking)
-3. Geo-targeting for popunders (server-side IP to country detection)
