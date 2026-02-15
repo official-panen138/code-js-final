@@ -84,7 +84,12 @@ Build a platform that allows users to create projects, add JavaScript scripts, c
   - Updates summary stats after deletion
 - [x] **New API Endpoint**: GET /api/projects/{id}/analytics/logs
   - Returns flat list of individual log entries with IDs
-  - Response: { logs: [...], summary: { total, allowed, denied } }
+  - Response: { logs: [...], summary: { total, allowed, denied }, pagination: {...} }
+- [x] **Pagination for Large Datasets**: 
+  - 20 logs per page with Prev/Next navigation
+  - Shows "Showing X - Y of Z logs" info
+  - Works in both Analytics tab and Script modal
+  - API params: page, per_page with proper offset/limit
 
 ## Database Schema
 
