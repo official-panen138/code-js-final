@@ -40,8 +40,8 @@ function App() {
           <Route path="/dashboard" element={<PrivateRoute><DashboardPage /></PrivateRoute>} />
           <Route path="/projects" element={<PrivateRoute><ProjectsPage /></PrivateRoute>} />
           <Route path="/projects/:projectId" element={<PrivateRoute><ProjectDetailPage /></PrivateRoute>} />
-          <Route path="/settings" element={<PrivateRoute><SettingsPage /></PrivateRoute>} />
-          <Route path="/users" element={<PrivateRoute><UserManagementPage /></PrivateRoute>} />
+          <Route path="/settings" element={<PermissionRoute permission="settings"><SettingsPage /></PermissionRoute>} />
+          <Route path="/users" element={<PermissionRoute permission="user_management"><UserManagementPage /></PermissionRoute>} />
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
