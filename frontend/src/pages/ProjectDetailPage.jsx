@@ -466,12 +466,38 @@ function ScriptsTab({ projectId, scripts, onRefresh, getEmbedUrl, copied, copyTo
     setLoadingScriptAnalytics(true);
     setScriptAnalyticsData(null);
     try {
-      const res = await scriptAPI.analytics(projectId, script.id);
+      const res = await scriptAPI.logs(projectId, script.id);
       setScriptAnalyticsData(res.data);
     } catch (err) {
       toast.error('Failed to load script analytics');
     } finally {
       setLoadingScriptAnalytics(false);
+    }
+  };
+
+  const handleDeleteScriptLog = async (logId) => {
+    setDeletingLogId(logId);
+    try {
+      await logsAPI.delete(projectId, logId);
+      // Update local state
+      setScriptAnalyticsData(prev => {
+        const deletedLog = prev.logs.find(l => l.id === logId);
+        const wasAllowed = deletedLog?.status === 'allowed';
+        return {
+          ...prev,
+          logs: prev.logs.filter(l => l.id !== logId),
+          summary: {
+            total: prev.summary.total - 1,
+            allowed: wasAllowed ? prev.summary.allowed - 1 : prev.summary.allowed,
+            denied: !wasAllowed ? prev.summary.denied - 1 : prev.summary.denied,
+          }
+        };
+      });
+      toast.success('Log entry deleted');
+    } catch (err) {
+      toast.error('Failed to delete log entry');
+    } finally {
+      setDeletingLogId(null);
     }
   };
 
