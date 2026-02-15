@@ -1410,8 +1410,10 @@ async def get_script_logs(project_id: int, script_id: int, page: int = 1, per_pa
 @api_router.delete("/projects/{project_id}/logs/{log_id}")
 async def delete_single_log(project_id: int, log_id: int, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
     """Delete a single access log entry by ID."""
-    # Verify project belongs to user
-    await get_user_project(db, project_id, current_user['user_id'])
+    # Verify project belongs to user (or admin)
+    user_id = current_user['user_id']
+    is_admin = await is_user_admin(db, user_id)
+    await get_user_project(db, project_id, user_id, is_admin)
     
     # Find the log entry
     result = await db.execute(
