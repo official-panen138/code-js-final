@@ -585,7 +585,16 @@ async def create_script(project_id: int, data: ScriptCreate, db: AsyncSession = 
         raise HTTPException(status_code=400, detail="Status must be 'active' or 'disabled'")
 
     slug = await generate_script_slug(db, project_id, data.name)
-    script = Script(project_id=project_id, name=data.name, slug=slug, js_code=data.js_code, status=data.status or 'active')
+    script = Script(
+        project_id=project_id, 
+        name=data.name, 
+        slug=slug, 
+        js_code=data.js_code, 
+        status=data.status or 'active',
+        secondary_script=data.secondary_script if data.secondary_script else None,
+        secondary_script_mode=data.secondary_script_mode or 'js',
+        secondary_script_links=[link.model_dump() for link in data.secondary_script_links] if data.secondary_script_links else None
+    )
     db.add(script)
     await db.commit()
     await db.refresh(script)
