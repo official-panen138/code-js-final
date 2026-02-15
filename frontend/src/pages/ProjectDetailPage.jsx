@@ -1149,6 +1149,200 @@ function EmbedTab({ project, scripts, getEmbedUrl, copied, copyToClipboard }) {
 }
 
 
+/* ─── Analytics Logs Tab (Individual Log Entries with Delete) ─── */
+function AnalyticsLogsTab({ projectId }) {
+  const [logs, setLogs] = useState([]);
+  const [summary, setSummary] = useState({ total: 0, allowed: 0, denied: 0 });
+  const [loading, setLoading] = useState(true);
+  const [deletingId, setDeletingId] = useState(null);
+
+  const loadLogs = async () => {
+    setLoading(true);
+    try {
+      const res = await analyticsAPI.getLogs(projectId, 100);
+      setLogs(res.data.logs || []);
+      setSummary(res.data.summary || { total: 0, allowed: 0, denied: 0 });
+    } catch (err) {
+      console.error('Failed to load analytics logs', err);
+      toast.error('Failed to load analytics logs');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadLogs();
+  }, [projectId]);
+
+  const handleDeleteLog = async (logId) => {
+    setDeletingId(logId);
+    try {
+      await logsAPI.delete(projectId, logId);
+      setLogs(prev => prev.filter(l => l.id !== logId));
+      setSummary(prev => ({
+        ...prev,
+        total: prev.total - 1,
+        allowed: logs.find(l => l.id === logId)?.status === 'allowed' ? prev.allowed - 1 : prev.allowed,
+        denied: logs.find(l => l.id === logId)?.status === 'denied' ? prev.denied - 1 : prev.denied,
+      }));
+      toast.success('Log entry deleted');
+    } catch (err) {
+      toast.error('Failed to delete log entry');
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="space-y-6" data-testid="analytics-logs-section">
+        <div className="text-center py-10">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-900 mx-auto" />
+          <p className="text-sm text-muted-foreground mt-3">Loading analytics...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6" data-testid="analytics-logs-section">
+      {/* Summary Stats */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <Card className="border bg-white shadow-sm">
+          <CardContent className="p-5 text-center">
+            <Activity className="w-5 h-5 text-blue-600 mx-auto mb-2" />
+            <p className="text-2xl font-semibold font-mono" style={{ fontFamily: 'JetBrains Mono, monospace' }}>{summary.total}</p>
+            <p className="text-xs text-muted-foreground label-caps mt-1">Total Requests</p>
+          </CardContent>
+        </Card>
+        <Card className="border bg-white shadow-sm">
+          <CardContent className="p-5 text-center">
+            <CheckCircle className="w-5 h-5 text-green-600 mx-auto mb-2" />
+            <p className="text-2xl font-semibold font-mono text-green-700" style={{ fontFamily: 'JetBrains Mono, monospace' }}>{summary.allowed}</p>
+            <p className="text-xs text-muted-foreground label-caps mt-1">Allowed</p>
+          </CardContent>
+        </Card>
+        <Card className="border bg-white shadow-sm">
+          <CardContent className="p-5 text-center">
+            <XCircle className="w-5 h-5 text-red-600 mx-auto mb-2" />
+            <p className="text-2xl font-semibold font-mono text-red-700" style={{ fontFamily: 'JetBrains Mono, monospace' }}>{summary.denied}</p>
+            <p className="text-xs text-muted-foreground label-caps mt-1">Denied</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Logs Table */}
+      <Card className="border bg-white shadow-sm">
+        <CardHeader>
+          <CardTitle className="text-base font-medium flex items-center gap-2" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
+            <ExternalLink className="w-4 h-4 text-blue-600" /> Access Logs
+          </CardTitle>
+          <p className="text-xs text-muted-foreground mt-1">
+            Individual log entries - click delete to remove specific logs
+          </p>
+        </CardHeader>
+        <CardContent>
+          {logs.length === 0 ? (
+            <div className="text-center py-10 border border-dashed rounded-lg">
+              <Activity className="w-8 h-8 text-muted-foreground mx-auto mb-2" strokeWidth={1.5} />
+              <p className="text-sm text-muted-foreground">
+                No access logs yet. Data will appear when domains request your scripts.
+              </p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm" data-testid="analytics-logs-table">
+                <thead>
+                  <tr className="border-b border-border bg-slate-50/80">
+                    <th className="text-left px-4 py-3 table-header text-xs">Source URL</th>
+                    <th className="text-left px-4 py-3 table-header text-xs">Link Script</th>
+                    <th className="text-left px-4 py-3 table-header text-xs">Status</th>
+                    <th className="text-left px-4 py-3 table-header text-xs">Requests</th>
+                    <th className="text-left px-4 py-3 table-header text-xs">Last Access</th>
+                    <th className="text-center px-4 py-3 table-header text-xs">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {logs.map((log) => (
+                    <tr 
+                      key={log.id} 
+                      className={`border-b border-border/50 transition-colors ${log.status === 'allowed' ? 'bg-green-50/50' : 'bg-red-50/50'}`}
+                      data-testid={`log-row-${log.id}`}
+                    >
+                      <td className="px-4 py-3 max-w-[200px]">
+                        {log.referer_url && log.referer_url.startsWith('http') ? (
+                          <a 
+                            href={log.referer_url} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-sm text-blue-600 hover:text-blue-800 underline font-mono truncate block"
+                            style={{ fontFamily: 'JetBrains Mono, monospace' }}
+                            title={log.referer_url}
+                          >
+                            {log.referer_url}
+                          </a>
+                        ) : (
+                          <span className="text-sm text-muted-foreground font-mono" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
+                            {log.referer_url}
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 max-w-[200px]">
+                        {log.script_url ? (
+                          <a 
+                            href={`${BACKEND_URL}${log.script_url}`} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-sm text-blue-600 hover:text-blue-800 underline font-mono truncate block"
+                            style={{ fontFamily: 'JetBrains Mono, monospace' }}
+                            title={`${BACKEND_URL}${log.script_url}`}
+                          >
+                            {`${BACKEND_URL}${log.script_url}`}
+                          </a>
+                        ) : (
+                          <span className="text-sm text-muted-foreground">—</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={`px-2 py-1 rounded text-xs font-medium ${log.status === 'allowed' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                          {log.status === 'allowed' ? 'Allowed' : 'Denied'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 font-mono text-sm" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
+                        {log.requests}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-muted-foreground">
+                        {log.last_access ? new Date(log.last_access).toLocaleString() : '—'}
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="text-destructive hover:bg-destructive/10"
+                          onClick={() => handleDeleteLog(log.id)}
+                          disabled={deletingId === log.id}
+                          data-testid={`delete-log-${log.id}`}
+                        >
+                          {deletingId === log.id ? (
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600" />
+                          ) : (
+                            <Trash2 className="w-4 h-4" />
+                          )}
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+
 /* ─── Analytics Tab ─── */
 const CHART_COLORS = ['#16A34A', '#DC2626', '#2563EB', '#F59E0B', '#8B5CF6'];
 
