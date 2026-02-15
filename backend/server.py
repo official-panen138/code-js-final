@@ -1257,7 +1257,6 @@ async def list_popunder_campaigns(db: AsyncSession = Depends(get_db), current_us
     """List all popunder campaigns for the current user."""
     result = await db.execute(
         select(PopunderCampaign)
-        .options(selectinload(PopunderCampaign.whitelists))
         .where(PopunderCampaign.user_id == current_user['user_id'])
         .order_by(desc(PopunderCampaign.created_at))
     )
@@ -1271,8 +1270,8 @@ async def create_popunder_campaign(data: PopunderCampaignCreate, db: AsyncSessio
     if not data.name or not data.name.strip():
         raise HTTPException(status_code=400, detail="Campaign name is required")
 
-    if not data.settings or not data.settings.target_url:
-        raise HTTPException(status_code=400, detail="Target URL is required in settings")
+    if not data.settings or not data.settings.url_list or not data.settings.url_list.strip():
+        raise HTTPException(status_code=400, detail="At least one URL is required")
 
     if data.status and data.status not in ('active', 'paused'):
         raise HTTPException(status_code=400, detail="Status must be 'active' or 'paused'")
@@ -1295,9 +1294,9 @@ async def create_popunder_campaign(data: PopunderCampaignCreate, db: AsyncSessio
 
 @api_router.get("/popunders/{campaign_id}")
 async def get_popunder_campaign(campaign_id: int, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
-    """Get a specific popunder campaign with its whitelist."""
+    """Get a specific popunder campaign."""
     campaign = await get_user_campaign(db, campaign_id, current_user['user_id'])
-    return {"popunder": popunder_campaign_to_dict(campaign), "whitelists": [popunder_whitelist_to_dict(w) for w in campaign.whitelists]}
+    return {"popunder": popunder_campaign_to_dict(campaign)}
 
 
 @api_router.patch("/popunders/{campaign_id}")
@@ -1313,8 +1312,8 @@ async def update_popunder_campaign(campaign_id: int, data: PopunderCampaignUpdat
         campaign.slug = await generate_popunder_slug(db, name)
 
     if data.settings is not None:
-        if not data.settings.target_url:
-            raise HTTPException(status_code=400, detail="Target URL is required in settings")
+        if not data.settings.url_list or not data.settings.url_list.strip():
+            raise HTTPException(status_code=400, detail="At least one URL is required")
         campaign.settings = data.settings.model_dump()
 
     if data.status is not None:
@@ -1334,160 +1333,6 @@ async def delete_popunder_campaign(campaign_id: int, db: AsyncSession = Depends(
     await db.delete(campaign)
     await db.commit()
     return {"message": "Popunder campaign deleted"}
-
-
-# ─── Popunder Whitelist Routes ───
-@api_router.get("/popunders/{campaign_id}/whitelist")
-async def list_popunder_whitelist(campaign_id: int, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
-    """List whitelist entries for a popunder campaign."""
-    campaign = await get_user_campaign(db, campaign_id, current_user['user_id'])
-    return {"whitelists": [popunder_whitelist_to_dict(w) for w in campaign.whitelists]}
-
-
-@api_router.post("/popunders/{campaign_id}/whitelist")
-async def add_popunder_whitelist(campaign_id: int, data: WhitelistCreate, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
-    """Add a domain pattern to a popunder campaign's whitelist."""
-    campaign = await get_user_campaign(db, campaign_id, current_user['user_id'])
-    
-    pattern = data.domain_pattern.strip().lower()
-    if not validate_domain_pattern(pattern):
-        raise HTTPException(status_code=400, detail="Invalid domain pattern")
-
-    # Check for duplicate
-    result = await db.execute(select(PopunderWhitelist).where(and_(PopunderWhitelist.campaign_id == campaign_id, PopunderWhitelist.domain_pattern == pattern)))
-    if result.scalar_one_or_none():
-        raise HTTPException(status_code=400, detail="Domain pattern already exists")
-
-    entry = PopunderWhitelist(campaign_id=campaign_id, domain_pattern=pattern)
-    db.add(entry)
-    await db.commit()
-    await db.refresh(entry)
-    return {"whitelist": popunder_whitelist_to_dict(entry)}
-
-
-@api_router.patch("/popunders/{campaign_id}/whitelist/{whitelist_id}")
-async def update_popunder_whitelist(campaign_id: int, whitelist_id: int, data: WhitelistUpdate, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
-    """Update a whitelist entry (toggle active status)."""
-    await get_user_campaign(db, campaign_id, current_user['user_id'])
-    
-    result = await db.execute(select(PopunderWhitelist).where(and_(PopunderWhitelist.id == whitelist_id, PopunderWhitelist.campaign_id == campaign_id)))
-    entry = result.scalar_one_or_none()
-    if not entry:
-        raise HTTPException(status_code=404, detail="Whitelist entry not found")
-
-    if data.is_active is not None:
-        entry.is_active = data.is_active
-
-    await db.commit()
-    await db.refresh(entry)
-    return {"whitelist": popunder_whitelist_to_dict(entry)}
-
-
-@api_router.delete("/popunders/{campaign_id}/whitelist/{whitelist_id}")
-async def delete_popunder_whitelist(campaign_id: int, whitelist_id: int, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
-    """Delete a whitelist entry from a popunder campaign."""
-    await get_user_campaign(db, campaign_id, current_user['user_id'])
-    
-    result = await db.execute(select(PopunderWhitelist).where(and_(PopunderWhitelist.id == whitelist_id, PopunderWhitelist.campaign_id == campaign_id)))
-    entry = result.scalar_one_or_none()
-    if not entry:
-        raise HTTPException(status_code=404, detail="Whitelist entry not found")
-
-    await db.delete(entry)
-    await db.commit()
-    return {"message": "Whitelist entry deleted"}
-
-
-@api_router.post("/popunders/{campaign_id}/test-domain")
-async def test_popunder_domain(campaign_id: int, data: DomainTestRequest, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
-    """Test if a domain would be allowed by this campaign's whitelist."""
-    campaign = await get_user_campaign(db, campaign_id, current_user['user_id'])
-    
-    test_domain = normalize_domain(data.domain)
-    active_patterns = [w.domain_pattern for w in campaign.whitelists if w.is_active]
-    
-    if not active_patterns:
-        return {"allowed": False, "reason": "No active whitelist entries", "domain": test_domain, "patterns": []}
-
-    allowed = is_domain_allowed(test_domain, active_patterns)
-    matched = [p for p in active_patterns if is_domain_allowed(test_domain, [p])]
-    
-    return {"allowed": allowed, "domain": test_domain, "patterns": active_patterns, "matched_patterns": matched}
-
-
-# ─── Public Popunder JS Delivery ───
-POPUNDER_ENGINE_JS = '''
-(function() {
-  var config = __CONFIG__;
-  var storageKey = 'popunder_' + config.campaignSlug;
-  var now = Date.now();
-
-  function getStoredData() {
-    try {
-      var data = localStorage.getItem(storageKey);
-      return data ? JSON.parse(data) : { count: 0, lastShown: 0 };
-    } catch(e) { return { count: 0, lastShown: 0 }; }
-  }
-
-  function setStoredData(data) {
-    try { localStorage.setItem(storageKey, JSON.stringify(data)); } catch(e) {}
-  }
-
-  function shouldShow() {
-    var data = getStoredData();
-    var freq = config.frequency || 1;
-    var unit = config.frequencyUnit || 'session';
-    
-    if (unit === 'session') {
-      return data.count < freq;
-    } else if (unit === 'hour') {
-      var hourAgo = now - 3600000;
-      return data.lastShown < hourAgo || data.count < freq;
-    } else if (unit === 'day') {
-      var dayAgo = now - 86400000;
-      return data.lastShown < dayAgo || data.count < freq;
-    }
-    return true;
-  }
-
-  function openPopunder() {
-    var data = getStoredData();
-    if (!shouldShow()) return;
-    
-    var w = config.width || 800;
-    var h = config.height || 600;
-    var left = (screen.width - w) / 2;
-    var top = (screen.height - h) / 2;
-    var features = 'width=' + w + ',height=' + h + ',left=' + left + ',top=' + top + ',scrollbars=yes,resizable=yes';
-    
-    setTimeout(function() {
-      var win = window.open(config.targetUrl, '_blank', features);
-      if (win) {
-        win.blur();
-        window.focus();
-        data.count++;
-        data.lastShown = now;
-        setStoredData(data);
-      }
-    }, config.delay || 0);
-  }
-
-  // Trigger on first user interaction
-  var triggered = false;
-  function onUserAction() {
-    if (triggered) return;
-    triggered = true;
-    openPopunder();
-    document.removeEventListener('click', onUserAction);
-    document.removeEventListener('keydown', onUserAction);
-  }
-  
-  document.addEventListener('click', onUserAction);
-  document.addEventListener('keydown', onUserAction);
-})();
-'''
-
-
 
 
 # ─── Seed Data ───
