@@ -183,6 +183,13 @@ class PopunderCampaignUpdate(BaseModel):
     settings: Optional[PopunderCampaignSettings] = None
     status: Optional[str] = None
 
+class CampaignAnalyticsEvent(BaseModel):
+    campaign_id: int
+    event_type: str  # 'impression' or 'click'
+    referer_url: Optional[str] = None
+    target_url: Optional[str] = None
+    device_type: Optional[str] = None
+
 
 # ─── Helpers ───
 def user_to_dict(u: User) -> dict:
