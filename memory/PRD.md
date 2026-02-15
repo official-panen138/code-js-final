@@ -55,6 +55,10 @@ Build a platform that allows users to create projects, add JavaScript scripts, c
 - [x] **Script URL in Analytics**: Analytics by_script section shows which script URLs were accessed
   - Table with Script Name, URL, Allowed count, Denied count, Total
   - Format: /api/js/{project_slug}/{script_slug}.js
+- [x] **Script Access Details**: Detailed breakdown of domain + script URL combinations
+  - Shows which specific domains accessed which specific script URLs
+  - Includes status (Allowed/Denied), request count, and last access time
+  - Helps identify exactly which domains are using which scripts
 - [x] **Clear Access Logs**: Button to clear all access logs for a project
   - Confirmation dialog before deletion
   - DELETE /api/projects/{id}/logs endpoint
