@@ -121,7 +121,7 @@ export default function PopundersPage() {
         settings: {
           url_list: form.url_list.trim(),
           timer: parseInt(form.timer) || 0,
-          interval: parseInt(form.interval) || 24,
+          frequency: parseInt(form.frequency) || 1,
           devices: form.devices,
           countries: form.countries,
           floating_banner: form.floating_banner || '',
