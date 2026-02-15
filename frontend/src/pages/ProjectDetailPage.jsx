@@ -715,6 +715,158 @@ function ScriptsTab({ projectId, scripts, onRefresh, getEmbedUrl, copied, copyTo
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Whitelist Dialog */}
+      <Dialog open={showWhitelist} onOpenChange={setShowWhitelist}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto" data-testid="whitelist-dialog">
+          <DialogHeader>
+            <DialogTitle style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
+              <div className="flex items-center gap-2">
+                <Shield className="w-5 h-5 text-blue-600" />
+                Domain Whitelist - {whitelistScript?.name}
+              </div>
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {/* Info box */}
+            <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
+              <div className="flex gap-3">
+                <AlertCircle className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
+                <div className="text-xs text-blue-800 space-y-1">
+                  <p className="font-medium">Domain pattern rules:</p>
+                  <ul className="list-disc list-inside space-y-0.5 text-blue-700">
+                    <li>Exact domain: <code className="bg-blue-100 px-1 rounded">example.com</code></li>
+                    <li>Wildcard: <code className="bg-blue-100 px-1 rounded">*.example.com</code> (matches sub.example.com)</li>
+                    <li>Empty whitelist = all requests denied</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            {/* Add domain */}
+            <div className="flex gap-2">
+              <Input
+                placeholder="e.g. example.com or *.example.com"
+                value={newDomain}
+                onChange={(e) => setNewDomain(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleAddDomain()}
+                className="flex-1"
+                data-testid="whitelist-add-domain-input"
+              />
+              <Button onClick={handleAddDomain} disabled={addingDomain} className="bg-[#0F172A] hover:bg-[#1E293B] text-white" data-testid="whitelist-add-domain-btn">
+                <Plus className="w-4 h-4 mr-1" /> {addingDomain ? 'Adding...' : 'Add'}
+              </Button>
+            </div>
+
+            {/* Whitelist entries */}
+            {loadingWhitelist ? (
+              <div className="text-center py-6">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-slate-900 mx-auto" />
+              </div>
+            ) : whitelistEntries.length === 0 ? (
+              <div className="text-center py-6 border border-dashed rounded-lg">
+                <Globe className="w-6 h-6 text-muted-foreground mx-auto mb-2" strokeWidth={1.5} />
+                <p className="text-sm text-muted-foreground">
+                  No domains whitelisted. This script will not be served until you add allowed domains.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-2 max-h-[200px] overflow-y-auto">
+                {whitelistEntries.map((entry) => (
+                  <div
+                    key={entry.id}
+                    className="flex items-center justify-between px-3 py-2 bg-slate-50 border border-border rounded-lg"
+                    data-testid={`whitelist-entry-${entry.id}`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Globe className="w-4 h-4 text-muted-foreground" />
+                      <code className="text-sm font-mono" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
+                        {entry.domain_pattern}
+                      </code>
+                      {!entry.is_active && (
+                        <Badge variant="secondary" className="text-xs text-orange-600 bg-orange-50">disabled</Badge>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        checked={entry.is_active}
+                        onCheckedChange={() => handleToggleDomain(entry)}
+                        data-testid={`whitelist-toggle-${entry.id}`}
+                      />
+                      <Button variant="ghost" size="sm" className="text-destructive" onClick={() => handleDeleteDomain(entry.id)} data-testid={`whitelist-delete-${entry.id}`}>
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <Separator />
+
+            {/* Domain Tester */}
+            <div className="space-y-3">
+              <Label className="label-caps flex items-center gap-2">
+                <Search className="w-4 h-4 text-blue-600" />
+                Test Domain
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Test if a domain would be allowed by this script's whitelist.
+              </p>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="e.g. sub.example.com"
+                  value={testDomain}
+                  onChange={(e) => { setTestDomain(e.target.value); setTestResult(null); }}
+                  onKeyDown={(e) => e.key === 'Enter' && handleTestDomain()}
+                  className="flex-1"
+                  data-testid="whitelist-test-domain-input"
+                />
+                <Button
+                  onClick={handleTestDomain}
+                  disabled={testing}
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                  data-testid="whitelist-test-domain-btn"
+                >
+                  {testing ? 'Testing...' : 'Test'}
+                </Button>
+              </div>
+              {testResult && (
+                <div
+                  className={`flex items-start gap-3 p-3 rounded-lg border ${
+                    testResult.allowed
+                      ? 'bg-green-50 border-green-200'
+                      : 'bg-red-50 border-red-200'
+                  }`}
+                  data-testid="whitelist-test-result"
+                >
+                  {testResult.allowed ? (
+                    <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+                  ) : (
+                    <XCircle className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
+                  )}
+                  <div className="space-y-1 text-xs">
+                    <p className={`font-medium ${testResult.allowed ? 'text-green-800' : 'text-red-800'}`}>
+                      {testResult.allowed ? 'Allowed' : 'Denied'}
+                    </p>
+                    <p className="text-slate-600">
+                      Normalized: <code className="bg-white/60 px-1 rounded">{testResult.normalized_domain}</code>
+                    </p>
+                    {testResult.matched_pattern && (
+                      <p className="text-slate-600">
+                        Matched: <code className="bg-white/60 px-1 rounded">{testResult.matched_pattern}</code>
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowWhitelist(false)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
