@@ -14,7 +14,8 @@ import { Checkbox } from '../components/ui/checkbox';
 import { Textarea } from '../components/ui/textarea';
 import {
   ArrowLeft, Copy, Check, Pencil, Layers, ExternalLink,
-  Settings2, Monitor, Smartphone, Tablet, Globe, Link2, Code
+  Settings2, Monitor, Smartphone, Tablet, Globe, Link2, Code,
+  BarChart3, Eye, MousePointerClick, Percent, Trash2, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { toast } from 'sonner';
 
