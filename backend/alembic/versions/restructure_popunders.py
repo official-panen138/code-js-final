@@ -21,6 +21,9 @@ depends_on: Union[str, Sequence[str], None] = None
 def upgrade() -> None:
     """Restructure popunder_campaigns to be independent from projects."""
     
+    # Disable foreign key checks for clean drop
+    op.execute("SET FOREIGN_KEY_CHECKS=0")
+    
     # Drop the old table and recreate with new structure
     op.drop_table('popunder_campaigns')
     
@@ -54,6 +57,9 @@ def upgrade() -> None:
         sa.ForeignKeyConstraint(['campaign_id'], ['popunder_campaigns.id'], ondelete='CASCADE'),
     )
     op.create_index('ix_popunder_whitelists_campaign_id', 'popunder_whitelists', ['campaign_id'])
+    
+    # Re-enable foreign key checks
+    op.execute("SET FOREIGN_KEY_CHECKS=1")
 
 
 def downgrade() -> None:
