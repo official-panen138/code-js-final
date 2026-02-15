@@ -9,7 +9,7 @@ import { Label } from '../components/ui/label';
 import { Badge } from '../components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import { Plus, FileCode, Globe, FolderKanban, Search } from 'lucide-react';
+import { Plus, FileCode, Globe, FolderKanban, Search, Filter, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function ProjectsPage() {
@@ -18,6 +18,7 @@ export default function ProjectsPage() {
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
   const [search, setSearch] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('all');
   const [newProject, setNewProject] = useState({ name: '', category_id: '' });
   const [creating, setCreating] = useState(false);
   const navigate = useNavigate();
