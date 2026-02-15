@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { projectAPI, scriptAPI, whitelistAPI, logsAPI, analyticsAPI, domainTestAPI, popunderAPI } from '../lib/api';
+import { projectAPI, scriptAPI, whitelistAPI, logsAPI, analyticsAPI, domainTestAPI } from '../lib/api';
 import Layout from '../components/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
@@ -11,11 +11,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../components/ui/dialog';
 import { Switch } from '../components/ui/switch';
 import { Separator } from '../components/ui/separator';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import {
   ArrowLeft, Copy, Check, Plus, Trash2, Pencil, FileCode, Globe,
-  Shield, Activity, ExternalLink, AlertCircle, CheckCircle, XCircle, Search,
-  Layers, Settings2, SaveAll
+  Shield, Activity, ExternalLink, AlertCircle, CheckCircle, XCircle, Search, SaveAll
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
