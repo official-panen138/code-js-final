@@ -349,7 +349,7 @@ function ProjectSettings({ project, onUpdate }) {
                 
                 <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
                   <p className="text-xs text-blue-800">
-                    Each pair will be injected as a hidden link: <code className="bg-blue-100 px-1 rounded">&lt;div style="display:none;"&gt;&lt;a href="URL"&gt;keyword&lt;/a&gt;&lt;/div&gt;</code>
+                    Each pair will be injected as: <code className="bg-blue-100 px-1 rounded">&lt;p&gt;&lt;a href="URL"&gt;keyword&lt;/a&gt;&lt;/p&gt;</code> inside a single hidden div
                   </p>
                 </div>
 
