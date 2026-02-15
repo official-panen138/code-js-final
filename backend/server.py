@@ -2248,7 +2248,9 @@ async def update_popunder_campaign(campaign_id: int, data: PopunderCampaignUpdat
 @api_router.delete("/popunders/{campaign_id}")
 async def delete_popunder_campaign(campaign_id: int, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
     """Delete a popunder campaign."""
-    campaign = await get_user_campaign(db, campaign_id, current_user['user_id'])
+    user_id = current_user['user_id']
+    is_admin = await is_user_admin(db, user_id)
+    campaign = await get_user_campaign(db, campaign_id, user_id, is_admin)
     await db.delete(campaign)
     await db.commit()
     return {"message": "Popunder campaign deleted"}
