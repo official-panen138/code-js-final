@@ -466,7 +466,7 @@ async def update_project(project_id: int, data: ProjectUpdate, db: AsyncSession 
 
     if data.name is not None:
         project.name = data.name
-        project.slug = await generate_unique_slug(db, data.name)
+        # Note: slug is NOT changed on update to preserve embed URLs
     if data.category_id is not None:
         cat = await db.execute(select(Category).where(Category.id == data.category_id))
         if not cat.scalar_one_or_none():
