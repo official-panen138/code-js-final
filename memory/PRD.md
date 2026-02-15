@@ -109,10 +109,16 @@ Build a platform that allows users to create projects, add JavaScript scripts, c
 ### Phase 9 - User Name Field (Feb 15, 2026)
 - [x] **User Name**: Added optional name field to users
   - Database: Added `name` VARCHAR(100) column to users table
-  - Registration: Users can optionally provide their name during signup
   - User Management: Admin can set/edit user names when creating/editing users
   - UI: User list shows name prominently with email below
   - API: Name included in all user-related responses
+
+### Phase 10 - Admin-Only User Creation (Feb 15, 2026)
+- [x] **Removed Public Registration**: Users can no longer self-register
+  - Removed `/register` route from frontend
+  - Removed `POST /api/auth/register` endpoint from backend
+  - Login page shows "Contact your administrator for account access"
+  - User creation now exclusively through User Management (admin-only)
 
 ## Database Schema
 
