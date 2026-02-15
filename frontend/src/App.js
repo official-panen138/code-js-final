@@ -33,6 +33,7 @@ function App() {
           <Route path="/projects" element={<PrivateRoute><ProjectsPage /></PrivateRoute>} />
           <Route path="/projects/:projectId" element={<PrivateRoute><ProjectDetailPage /></PrivateRoute>} />
           <Route path="/settings" element={<PrivateRoute><SettingsPage /></PrivateRoute>} />
+          <Route path="/users" element={<PrivateRoute><UserManagementPage /></PrivateRoute>} />
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
