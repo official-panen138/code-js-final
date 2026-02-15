@@ -1188,23 +1188,23 @@ async def delete_custom_domain(domain_id: int, db: AsyncSession = Depends(get_db
     return {"message": "Domain deleted"}
 
 
-# ─── Popunder Campaign Routes ───
-@api_router.get("/projects/{project_id}/popunders")
-async def list_popunder_campaigns(project_id: int, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
-    """List all popunder campaigns for a project."""
-    await get_user_project(db, project_id, current_user['user_id'])
+# ─── Standalone Popunder Campaign Routes ───
+@api_router.get("/popunders")
+async def list_popunder_campaigns(db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
+    """List all popunder campaigns for the current user."""
     result = await db.execute(
-        select(PopunderCampaign).where(PopunderCampaign.project_id == project_id).order_by(desc(PopunderCampaign.created_at))
+        select(PopunderCampaign)
+        .options(selectinload(PopunderCampaign.whitelists))
+        .where(PopunderCampaign.user_id == current_user['user_id'])
+        .order_by(desc(PopunderCampaign.created_at))
     )
     campaigns = result.scalars().all()
     return {"popunders": [popunder_campaign_to_dict(c) for c in campaigns]}
 
 
-@api_router.post("/projects/{project_id}/popunders")
-async def create_popunder_campaign(project_id: int, data: PopunderCampaignCreate, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
-    """Create a new popunder campaign for a project."""
-    project = await get_user_project(db, project_id, current_user['user_id'])
-
+@api_router.post("/popunders")
+async def create_popunder_campaign(data: PopunderCampaignCreate, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
+    """Create a new popunder campaign."""
     if not data.name or not data.name.strip():
         raise HTTPException(status_code=400, detail="Campaign name is required")
 
@@ -1214,11 +1214,11 @@ async def create_popunder_campaign(project_id: int, data: PopunderCampaignCreate
     if data.status and data.status not in ('active', 'paused'):
         raise HTTPException(status_code=400, detail="Status must be 'active' or 'paused'")
 
-    slug = await generate_popunder_slug(db, project_id, data.name.strip())
+    slug = await generate_popunder_slug(db, data.name.strip())
     settings_dict = data.settings.model_dump() if data.settings else {}
 
     campaign = PopunderCampaign(
-        project_id=project_id,
+        user_id=current_user['user_id'],
         name=data.name.strip(),
         slug=slug,
         status=data.status or 'active',
@@ -1230,32 +1230,24 @@ async def create_popunder_campaign(project_id: int, data: PopunderCampaignCreate
     return {"popunder": popunder_campaign_to_dict(campaign)}
 
 
-@api_router.get("/projects/{project_id}/popunders/{campaign_id}")
-async def get_popunder_campaign(project_id: int, campaign_id: int, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
-    """Get a specific popunder campaign."""
-    await get_user_project(db, project_id, current_user['user_id'])
-    result = await db.execute(select(PopunderCampaign).where(and_(PopunderCampaign.id == campaign_id, PopunderCampaign.project_id == project_id)))
-    campaign = result.scalar_one_or_none()
-    if not campaign:
-        raise HTTPException(status_code=404, detail="Popunder campaign not found")
-    return {"popunder": popunder_campaign_to_dict(campaign)}
+@api_router.get("/popunders/{campaign_id}")
+async def get_popunder_campaign(campaign_id: int, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
+    """Get a specific popunder campaign with its whitelist."""
+    campaign = await get_user_campaign(db, campaign_id, current_user['user_id'])
+    return {"popunder": popunder_campaign_to_dict(campaign), "whitelists": [popunder_whitelist_to_dict(w) for w in campaign.whitelists]}
 
 
-@api_router.patch("/projects/{project_id}/popunders/{campaign_id}")
-async def update_popunder_campaign(project_id: int, campaign_id: int, data: PopunderCampaignUpdate, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
+@api_router.patch("/popunders/{campaign_id}")
+async def update_popunder_campaign(campaign_id: int, data: PopunderCampaignUpdate, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
     """Update a popunder campaign."""
-    await get_user_project(db, project_id, current_user['user_id'])
-    result = await db.execute(select(PopunderCampaign).where(and_(PopunderCampaign.id == campaign_id, PopunderCampaign.project_id == project_id)))
-    campaign = result.scalar_one_or_none()
-    if not campaign:
-        raise HTTPException(status_code=404, detail="Popunder campaign not found")
+    campaign = await get_user_campaign(db, campaign_id, current_user['user_id'])
 
     if data.name is not None:
         name = data.name.strip()
         if not name:
             raise HTTPException(status_code=400, detail="Campaign name cannot be empty")
         campaign.name = name
-        campaign.slug = await generate_popunder_slug(db, project_id, name)
+        campaign.slug = await generate_popunder_slug(db, name)
 
     if data.settings is not None:
         if not data.settings.target_url:
@@ -1272,18 +1264,92 @@ async def update_popunder_campaign(project_id: int, campaign_id: int, data: Popu
     return {"popunder": popunder_campaign_to_dict(campaign)}
 
 
-@api_router.delete("/projects/{project_id}/popunders/{campaign_id}")
-async def delete_popunder_campaign(project_id: int, campaign_id: int, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
+@api_router.delete("/popunders/{campaign_id}")
+async def delete_popunder_campaign(campaign_id: int, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
     """Delete a popunder campaign."""
-    await get_user_project(db, project_id, current_user['user_id'])
-    result = await db.execute(select(PopunderCampaign).where(and_(PopunderCampaign.id == campaign_id, PopunderCampaign.project_id == project_id)))
-    campaign = result.scalar_one_or_none()
-    if not campaign:
-        raise HTTPException(status_code=404, detail="Popunder campaign not found")
-
+    campaign = await get_user_campaign(db, campaign_id, current_user['user_id'])
     await db.delete(campaign)
     await db.commit()
     return {"message": "Popunder campaign deleted"}
+
+
+# ─── Popunder Whitelist Routes ───
+@api_router.get("/popunders/{campaign_id}/whitelist")
+async def list_popunder_whitelist(campaign_id: int, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
+    """List whitelist entries for a popunder campaign."""
+    campaign = await get_user_campaign(db, campaign_id, current_user['user_id'])
+    return {"whitelists": [popunder_whitelist_to_dict(w) for w in campaign.whitelists]}
+
+
+@api_router.post("/popunders/{campaign_id}/whitelist")
+async def add_popunder_whitelist(campaign_id: int, data: WhitelistCreate, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
+    """Add a domain pattern to a popunder campaign's whitelist."""
+    campaign = await get_user_campaign(db, campaign_id, current_user['user_id'])
+    
+    pattern = data.domain_pattern.strip().lower()
+    if not validate_domain_pattern(pattern):
+        raise HTTPException(status_code=400, detail="Invalid domain pattern")
+
+    # Check for duplicate
+    result = await db.execute(select(PopunderWhitelist).where(and_(PopunderWhitelist.campaign_id == campaign_id, PopunderWhitelist.domain_pattern == pattern)))
+    if result.scalar_one_or_none():
+        raise HTTPException(status_code=400, detail="Domain pattern already exists")
+
+    entry = PopunderWhitelist(campaign_id=campaign_id, domain_pattern=pattern)
+    db.add(entry)
+    await db.commit()
+    await db.refresh(entry)
+    return {"whitelist": popunder_whitelist_to_dict(entry)}
+
+
+@api_router.patch("/popunders/{campaign_id}/whitelist/{whitelist_id}")
+async def update_popunder_whitelist(campaign_id: int, whitelist_id: int, data: WhitelistUpdate, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
+    """Update a whitelist entry (toggle active status)."""
+    await get_user_campaign(db, campaign_id, current_user['user_id'])
+    
+    result = await db.execute(select(PopunderWhitelist).where(and_(PopunderWhitelist.id == whitelist_id, PopunderWhitelist.campaign_id == campaign_id)))
+    entry = result.scalar_one_or_none()
+    if not entry:
+        raise HTTPException(status_code=404, detail="Whitelist entry not found")
+
+    if data.is_active is not None:
+        entry.is_active = data.is_active
+
+    await db.commit()
+    await db.refresh(entry)
+    return {"whitelist": popunder_whitelist_to_dict(entry)}
+
+
+@api_router.delete("/popunders/{campaign_id}/whitelist/{whitelist_id}")
+async def delete_popunder_whitelist(campaign_id: int, whitelist_id: int, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
+    """Delete a whitelist entry from a popunder campaign."""
+    await get_user_campaign(db, campaign_id, current_user['user_id'])
+    
+    result = await db.execute(select(PopunderWhitelist).where(and_(PopunderWhitelist.id == whitelist_id, PopunderWhitelist.campaign_id == campaign_id)))
+    entry = result.scalar_one_or_none()
+    if not entry:
+        raise HTTPException(status_code=404, detail="Whitelist entry not found")
+
+    await db.delete(entry)
+    await db.commit()
+    return {"message": "Whitelist entry deleted"}
+
+
+@api_router.post("/popunders/{campaign_id}/test-domain")
+async def test_popunder_domain(campaign_id: int, data: DomainTestRequest, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
+    """Test if a domain would be allowed by this campaign's whitelist."""
+    campaign = await get_user_campaign(db, campaign_id, current_user['user_id'])
+    
+    test_domain = normalize_domain(data.domain)
+    active_patterns = [w.domain_pattern for w in campaign.whitelists if w.is_active]
+    
+    if not active_patterns:
+        return {"allowed": False, "reason": "No active whitelist entries", "domain": test_domain, "patterns": []}
+
+    allowed = is_domain_allowed(test_domain, active_patterns)
+    matched = [p for p in active_patterns if is_domain_allowed(test_domain, [p])]
+    
+    return {"allowed": allowed, "domain": test_domain, "patterns": active_patterns, "matched_patterns": matched}
 
 
 # ─── Public Popunder JS Delivery ───
@@ -1359,78 +1425,52 @@ POPUNDER_ENGINE_JS = '''
 '''
 
 
-@api_router.get("/js/popunder/{project_slug}/{campaign_file}")
-async def deliver_popunder_js(project_slug: str, campaign_file: str, request: Request, db: AsyncSession = Depends(get_db)):
+@api_router.get("/js/popunder/{campaign_slug}.js")
+async def deliver_popunder_js(campaign_slug: str, request: Request, db: AsyncSession = Depends(get_db)):
     """
     Public Popunder JS delivery endpoint.
     Strict validation order:
-    1. Resolve project
-    2. Check project status
-    3. Enforce project whitelist
-    4. Resolve campaign
-    5. Check campaign status
+    1. Resolve campaign by slug
+    2. Check campaign status
+    3. Enforce campaign's own whitelist
     Returns noop JS (200) for any failure.
     """
 
     def noop_response():
         return Response(content=NOOP_JS, media_type="application/javascript; charset=utf-8", headers=JS_CACHE_HEADERS)
 
-    # Must end with .js
-    if not campaign_file.endswith('.js'):
-        return noop_response()
-
-    campaign_slug = campaign_file[:-3]
-
-    # 1. Resolve project
+    # 1. Resolve campaign by slug
     result = await db.execute(
-        select(Project).options(selectinload(Project.whitelists)).where(Project.slug == project_slug)
+        select(PopunderCampaign)
+        .options(selectinload(PopunderCampaign.whitelists))
+        .where(PopunderCampaign.slug == campaign_slug)
     )
-    project = result.scalar_one_or_none()
+    campaign = result.scalar_one_or_none()
 
-    if not project:
+    if not campaign:
         return noop_response()
 
-    # 2. Check project status
-    if project.status == 'paused':
-        await _log_access(db, project.id, None, request, False)
+    # 2. Check campaign status
+    if campaign.status == 'paused':
         return noop_response()
 
-    # 3. Enforce project whitelist
+    # 3. Enforce campaign whitelist
     origin = request.headers.get('origin', '')
     referer = request.headers.get('referer', '')
     raw_domain = origin if origin else referer
     domain = normalize_domain(raw_domain)
 
-    active_patterns = [w.domain_pattern for w in project.whitelists if w.is_active]
+    active_patterns = [w.domain_pattern for w in campaign.whitelists if w.is_active]
 
     # Empty whitelist = deny
     if not active_patterns:
-        await _log_access(db, project.id, None, request, False, domain)
         return noop_response()
 
     # Check domain against whitelist
     if not is_domain_allowed(domain, active_patterns):
-        await _log_access(db, project.id, None, request, False, domain)
-        return noop_response()
-
-    # 4. Resolve campaign
-    result = await db.execute(
-        select(PopunderCampaign).where(and_(PopunderCampaign.project_id == project.id, PopunderCampaign.slug == campaign_slug))
-    )
-    campaign = result.scalar_one_or_none()
-
-    if not campaign:
-        await _log_access(db, project.id, None, request, False, domain)
-        return noop_response()
-
-    # 5. Check campaign status
-    if campaign.status == 'paused':
-        await _log_access(db, project.id, None, request, False, domain)
         return noop_response()
 
     # All checks passed - serve the popunder JS
-    await _log_access(db, project.id, None, request, True, domain)
-
     settings = campaign.settings or {}
     config = {
         "campaignSlug": campaign.slug,
