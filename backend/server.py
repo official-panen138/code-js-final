@@ -1202,8 +1202,8 @@ async def clear_script_logs(project_id: int, script_id: int, db: AsyncSession = 
 
 # ─── Get Individual Script Logs (with IDs for deletion) ───
 @api_router.get("/projects/{project_id}/scripts/{script_id}/logs")
-async def get_script_logs(project_id: int, script_id: int, limit: int = 100, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
-    """Get individual access log entries for a specific script with IDs for per-row deletion."""
+async def get_script_logs(project_id: int, script_id: int, page: int = 1, per_page: int = 20, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
+    """Get individual access log entries for a specific script with pagination and per-row deletion."""
     project = await get_user_project(db, project_id, current_user['user_id'])
     
     # Verify script belongs to project
@@ -1214,14 +1214,20 @@ async def get_script_logs(project_id: int, script_id: int, limit: int = 100, db:
     if not script:
         raise HTTPException(status_code=404, detail="Script not found")
     
+    # Ensure valid pagination params
+    page = max(1, page)
+    per_page = min(max(1, per_page), 100)  # Max 100 per page
+    offset = (page - 1) * per_page
+    
     script_url = f"/api/js/{project.slug}/{script.slug}.js"
     
-    # Get individual log entries
+    # Get individual log entries with pagination
     result = await db.execute(
         select(AccessLog)
         .where(AccessLog.script_id == script_id)
         .order_by(desc(AccessLog.created_at))
-        .limit(limit)
+        .offset(offset)
+        .limit(per_page)
     )
     logs = result.scalars().all()
     
@@ -1236,7 +1242,7 @@ async def get_script_logs(project_id: int, script_id: int, limit: int = 100, db:
             "last_access": log.created_at.isoformat() if log.created_at else None,
         })
     
-    # Summary stats
+    # Summary stats (total counts for script)
     total_result = await db.execute(
         select(func.count(AccessLog.id)).where(AccessLog.script_id == script_id)
     )
@@ -1246,6 +1252,9 @@ async def get_script_logs(project_id: int, script_id: int, limit: int = 100, db:
         select(func.count(AccessLog.id)).where(and_(AccessLog.script_id == script_id, AccessLog.allowed == True))
     )
     allowed_val = allowed_result.scalar() or 0
+    
+    # Calculate total pages
+    total_pages = (total_val + per_page - 1) // per_page if total_val > 0 else 1
     
     return {
         "script": {
@@ -1259,6 +1268,14 @@ async def get_script_logs(project_id: int, script_id: int, limit: int = 100, db:
             "total": total_val,
             "allowed": allowed_val,
             "denied": total_val - allowed_val
+        },
+        "pagination": {
+            "page": page,
+            "per_page": per_page,
+            "total_pages": total_pages,
+            "total_items": total_val,
+            "has_next": page < total_pages,
+            "has_prev": page > 1
         }
     }
 
