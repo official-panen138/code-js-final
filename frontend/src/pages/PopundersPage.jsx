@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { popunderAPI } from '../lib/api';
 import Layout from '../components/Layout';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { Card, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
@@ -10,15 +10,29 @@ import { Badge } from '../components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../components/ui/dialog';
 import { Switch } from '../components/ui/switch';
 import { Checkbox } from '../components/ui/checkbox';
-import { Plus, Layers, Trash2, Settings2, Monitor, Smartphone, Tablet, Globe } from 'lucide-react';
+import { Textarea } from '../components/ui/textarea';
+import { Plus, Layers, Trash2, Settings2, Monitor, Smartphone, Tablet, Globe, Link2 } from 'lucide-react';
 import { toast } from 'sonner';
-
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
 const DEVICE_OPTIONS = [
   { value: 'desktop', label: 'Desktop', icon: Monitor },
   { value: 'mobile', label: 'Mobile', icon: Smartphone },
   { value: 'tablet', label: 'Tablet', icon: Tablet },
+];
+
+const COUNTRY_OPTIONS = [
+  { code: '', label: 'All Countries' },
+  { code: 'US', label: 'United States' },
+  { code: 'GB', label: 'United Kingdom' },
+  { code: 'CA', label: 'Canada' },
+  { code: 'AU', label: 'Australia' },
+  { code: 'DE', label: 'Germany' },
+  { code: 'FR', label: 'France' },
+  { code: 'IT', label: 'Italy' },
+  { code: 'ES', label: 'Spain' },
+  { code: 'BR', label: 'Brazil' },
+  { code: 'IN', label: 'India' },
+  { code: 'JP', label: 'Japan' },
 ];
 
 export default function PopundersPage() {
@@ -28,10 +42,13 @@ export default function PopundersPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [form, setForm] = useState({
     name: '',
-    direct_link: '',
+    url_list: '',
     timer: 0,
     interval: 24,
     devices: ['desktop', 'mobile', 'tablet'],
+    countries: [],
+    floating_banner: '',
+    html_body: '',
   });
   const [saving, setSaving] = useState(false);
 
@@ -53,10 +70,13 @@ export default function PopundersPage() {
   const resetForm = () => {
     setForm({
       name: '',
-      direct_link: '',
+      url_list: '',
       timer: 0,
       interval: 24,
       devices: ['desktop', 'mobile', 'tablet'],
+      countries: [],
+      floating_banner: '',
+      html_body: '',
     });
   };
 
@@ -69,13 +89,24 @@ export default function PopundersPage() {
     }
   };
 
+  const handleCountryToggle = (countryCode) => {
+    const current = form.countries || [];
+    if (countryCode === '') {
+      setForm({ ...form, countries: [] });
+    } else if (current.includes(countryCode)) {
+      setForm({ ...form, countries: current.filter(c => c !== countryCode) });
+    } else {
+      setForm({ ...form, countries: [...current, countryCode] });
+    }
+  };
+
   const handleCreate = async () => {
     if (!form.name.trim()) {
       toast.error('Campaign name is required');
       return;
     }
-    if (!form.direct_link.trim()) {
-      toast.error('Direct link URL is required');
+    if (!form.url_list.trim()) {
+      toast.error('At least one URL is required');
       return;
     }
     if (form.devices.length === 0) {
@@ -88,11 +119,13 @@ export default function PopundersPage() {
       const payload = {
         name: form.name.trim(),
         settings: {
-          direct_link: form.direct_link.trim(),
+          url_list: form.url_list.trim(),
           timer: parseInt(form.timer) || 0,
           interval: parseInt(form.interval) || 24,
           devices: form.devices,
-          countries: [],
+          countries: form.countries,
+          floating_banner: form.floating_banner || '',
+          html_body: form.html_body || '',
         },
       };
       await popunderAPI.create(payload);
@@ -169,10 +202,11 @@ export default function PopundersPage() {
               <div className="text-sm text-purple-800 space-y-1">
                 <p className="font-medium">How Popunders Work:</p>
                 <ul className="list-disc list-inside text-xs space-y-0.5 text-purple-700">
-                  <li>Opens direct link URL in a new window behind the current page</li>
+                  <li>Opens a random URL from your list in a new window behind the current page</li>
                   <li>Triggers on first user click/touch after page load</li>
                   <li>Timer controls delay before opening (in seconds)</li>
                   <li>Interval controls hours between shows for same user</li>
+                  <li>Country detection uses visitor's IP address</li>
                 </ul>
               </div>
             </div>
@@ -195,6 +229,7 @@ export default function PopundersPage() {
           <div className="grid gap-4">
             {campaigns.map((campaign) => {
               const settings = campaign.settings || {};
+              const urlCount = (settings.url_list || '').split('\n').filter(u => u.trim()).length;
               return (
                 <Card key={campaign.id} className="border border-border bg-white shadow-sm hover:shadow-md transition-shadow" data-testid={`campaign-card-${campaign.id}`}>
                   <CardContent className="p-5">
@@ -220,14 +255,17 @@ export default function PopundersPage() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm mb-4">
+                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 text-sm mb-4">
                       <div>
-                        <span className="label-caps block mb-1">Direct Link</span>
-                        <code className="text-slate-700 text-xs truncate block">{settings.direct_link || '—'}</code>
+                        <span className="label-caps block mb-1">URLs</span>
+                        <div className="flex items-center gap-1 text-slate-700">
+                          <Link2 className="w-3 h-3" />
+                          <span>{urlCount} URL(s)</span>
+                        </div>
                       </div>
                       <div>
                         <span className="label-caps block mb-1">Timer</span>
-                        <span className="text-slate-700">{settings.timer || 0}s delay</span>
+                        <span className="text-slate-700">{settings.timer || 0}s</span>
                       </div>
                       <div>
                         <span className="label-caps block mb-1">Interval</span>
@@ -241,6 +279,13 @@ export default function PopundersPage() {
                             const Icon = opt?.icon || Monitor;
                             return <Icon key={device} className="w-4 h-4 text-slate-500" />;
                           })}
+                        </div>
+                      </div>
+                      <div>
+                        <span className="label-caps block mb-1">Countries</span>
+                        <div className="flex items-center gap-1 text-slate-700">
+                          <Globe className="w-3 h-3" />
+                          <span>{settings.countries?.length || 0 > 0 ? settings.countries.length : 'All'}</span>
                         </div>
                       </div>
                     </div>
@@ -269,13 +314,14 @@ export default function PopundersPage() {
 
       {/* Create Dialog */}
       <Dialog open={showCreate} onOpenChange={(open) => { setShowCreate(open); if (!open) resetForm(); }}>
-        <DialogContent className="max-w-lg" data-testid="create-campaign-dialog">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" data-testid="create-campaign-dialog">
           <DialogHeader>
             <DialogTitle style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
               New Popunder Campaign
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-2">
+          <div className="space-y-5 py-2">
+            {/* Campaign Name */}
             <div className="space-y-2">
               <Label className="label-caps">Campaign Name</Label>
               <Input
@@ -285,16 +331,21 @@ export default function PopundersPage() {
                 data-testid="campaign-name-input"
               />
             </div>
+
+            {/* URL List */}
             <div className="space-y-2">
-              <Label className="label-caps">Direct Link</Label>
-              <Input
-                placeholder="https://example.com/landing-page"
-                value={form.direct_link}
-                onChange={(e) => setForm({ ...form, direct_link: e.target.value })}
-                data-testid="campaign-direct-link-input"
+              <Label className="label-caps">Target URLs (one per line)</Label>
+              <Textarea
+                placeholder="https://example.com/offer1&#10;https://example.com/offer2&#10;https://example.com/offer3"
+                value={form.url_list}
+                onChange={(e) => setForm({ ...form, url_list: e.target.value })}
+                rows={4}
+                data-testid="campaign-url-list-input"
               />
-              <p className="text-xs text-muted-foreground">URL to open in the popunder window</p>
+              <p className="text-xs text-muted-foreground">Enter multiple URLs, one per line. A random URL will be selected on each trigger.</p>
             </div>
+
+            {/* Timer & Interval */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="label-caps">Timer (seconds)</Label>
@@ -319,6 +370,8 @@ export default function PopundersPage() {
                 <p className="text-xs text-muted-foreground">Hours between shows</p>
               </div>
             </div>
+
+            {/* Devices */}
             <div className="space-y-2">
               <Label className="label-caps">Devices</Label>
               <div className="flex gap-4">
@@ -340,6 +393,59 @@ export default function PopundersPage() {
                   );
                 })}
               </div>
+            </div>
+
+            {/* Countries */}
+            <div className="space-y-2">
+              <Label className="label-caps">Countries (IP-based detection)</Label>
+              <p className="text-xs text-muted-foreground mb-2">Leave empty for all countries</p>
+              <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto p-2 border rounded-md">
+                {COUNTRY_OPTIONS.map((country) => {
+                  const isAllSelected = form.countries?.length === 0;
+                  const isSelected = country.code === '' 
+                    ? isAllSelected 
+                    : (form.countries || []).includes(country.code);
+                  return (
+                    <div key={country.code || 'all'} className="flex items-center gap-2">
+                      <Checkbox
+                        id={`create-country-${country.code || 'all'}`}
+                        checked={isSelected}
+                        onCheckedChange={() => handleCountryToggle(country.code)}
+                        data-testid={`create-country-checkbox-${country.code || 'all'}`}
+                      />
+                      <label htmlFor={`create-country-${country.code || 'all'}`} className="text-sm cursor-pointer">
+                        {country.label}
+                      </label>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Floating Banner */}
+            <div className="space-y-2">
+              <Label className="label-caps">Floating Banner (HTML) - Optional</Label>
+              <Textarea
+                value={form.floating_banner}
+                onChange={(e) => setForm({ ...form, floating_banner: e.target.value })}
+                placeholder='<div style="position:fixed;bottom:0;...">Banner HTML</div>'
+                rows={2}
+                className="font-mono text-sm"
+                data-testid="campaign-floating-banner-input"
+              />
+            </div>
+
+            {/* Custom HTML Body */}
+            <div className="space-y-2">
+              <Label className="label-caps">Custom HTML Body - Optional</Label>
+              <Textarea
+                value={form.html_body}
+                onChange={(e) => setForm({ ...form, html_body: e.target.value })}
+                placeholder='<div id="custom">Custom HTML</div>'
+                rows={2}
+                className="font-mono text-sm"
+                data-testid="campaign-html-body-input"
+              />
             </div>
           </div>
           <DialogFooter>
