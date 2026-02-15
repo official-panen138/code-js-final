@@ -688,7 +688,7 @@ async def dashboard_stats(db: AsyncSession = Depends(get_db), current_user: dict
     total_scripts = script_count.scalar() or 0
 
     whitelist_count = await db.execute(
-        select(func.count(ProjectWhitelist.id)).join(Project).where(Project.user_id == uid)
+        select(func.count(ScriptWhitelist.id)).join(Script).join(Project).where(Project.user_id == uid)
     )
     total_whitelists = whitelist_count.scalar() or 0
 
@@ -705,7 +705,7 @@ async def dashboard_stats(db: AsyncSession = Depends(get_db), current_user: dict
     # Recent projects
     result = await db.execute(
         select(Project)
-        .options(selectinload(Project.category), selectinload(Project.whitelists), selectinload(Project.scripts))
+        .options(selectinload(Project.category), selectinload(Project.scripts))
         .where(Project.user_id == uid)
         .order_by(desc(Project.created_at))
         .limit(5)
