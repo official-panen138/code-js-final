@@ -9,11 +9,17 @@ import { Label } from '../components/ui/label';
 import { Badge } from '../components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../components/ui/dialog';
 import { Switch } from '../components/ui/switch';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import { Plus, Layers, Pencil, Trash2, ExternalLink, Settings2 } from 'lucide-react';
+import { Checkbox } from '../components/ui/checkbox';
+import { Plus, Layers, Trash2, Settings2, Monitor, Smartphone, Tablet, Globe } from 'lucide-react';
 import { toast } from 'sonner';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+
+const DEVICE_OPTIONS = [
+  { value: 'desktop', label: 'Desktop', icon: Monitor },
+  { value: 'mobile', label: 'Mobile', icon: Smartphone },
+  { value: 'tablet', label: 'Tablet', icon: Tablet },
+];
 
 export default function PopundersPage() {
   const navigate = useNavigate();
@@ -22,12 +28,10 @@ export default function PopundersPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [form, setForm] = useState({
     name: '',
-    target_url: '',
-    frequency: 1,
-    frequency_unit: 'session',
-    delay: 0,
-    width: 800,
-    height: 600,
+    direct_link: '',
+    timer: 0,
+    interval: 24,
+    devices: ['desktop', 'mobile', 'tablet'],
   });
   const [saving, setSaving] = useState(false);
 
@@ -49,13 +53,20 @@ export default function PopundersPage() {
   const resetForm = () => {
     setForm({
       name: '',
-      target_url: '',
-      frequency: 1,
-      frequency_unit: 'session',
-      delay: 0,
-      width: 800,
-      height: 600,
+      direct_link: '',
+      timer: 0,
+      interval: 24,
+      devices: ['desktop', 'mobile', 'tablet'],
     });
+  };
+
+  const handleDeviceToggle = (device) => {
+    const current = form.devices || [];
+    if (current.includes(device)) {
+      setForm({ ...form, devices: current.filter(d => d !== device) });
+    } else {
+      setForm({ ...form, devices: [...current, device] });
+    }
   };
 
   const handleCreate = async () => {
@@ -63,8 +74,12 @@ export default function PopundersPage() {
       toast.error('Campaign name is required');
       return;
     }
-    if (!form.target_url.trim()) {
-      toast.error('Target URL is required');
+    if (!form.direct_link.trim()) {
+      toast.error('Direct link URL is required');
+      return;
+    }
+    if (form.devices.length === 0) {
+      toast.error('Select at least one device');
       return;
     }
 
@@ -73,12 +88,11 @@ export default function PopundersPage() {
       const payload = {
         name: form.name.trim(),
         settings: {
-          target_url: form.target_url.trim(),
-          frequency: parseInt(form.frequency) || 1,
-          frequency_unit: form.frequency_unit,
-          delay: parseInt(form.delay) || 0,
-          width: parseInt(form.width) || 800,
-          height: parseInt(form.height) || 600,
+          direct_link: form.direct_link.trim(),
+          timer: parseInt(form.timer) || 0,
+          interval: parseInt(form.interval) || 24,
+          devices: form.devices,
+          countries: [],
         },
       };
       await popunderAPI.create(payload);
@@ -114,8 +128,6 @@ export default function PopundersPage() {
       toast.error('Failed to update campaign');
     }
   };
-
-  const getEmbedUrl = (slug) => `${BACKEND_URL}/api/js/popunder/${slug}.js`;
 
   if (loading) {
     return (
@@ -157,10 +169,10 @@ export default function PopundersPage() {
               <div className="text-sm text-purple-800 space-y-1">
                 <p className="font-medium">How Popunders Work:</p>
                 <ul className="list-disc list-inside text-xs space-y-0.5 text-purple-700">
-                  <li>Opens target URL in a new window behind the current page</li>
-                  <li>Triggers on first user click/keypress after page load</li>
-                  <li>Each campaign has its own domain whitelist</li>
-                  <li>Embed the script on whitelisted domains to activate</li>
+                  <li>Opens direct link URL in a new window behind the current page</li>
+                  <li>Triggers on first user click/touch after page load</li>
+                  <li>Timer controls delay before opening (in seconds)</li>
+                  <li>Interval controls hours between shows for same user</li>
                 </ul>
               </div>
             </div>
@@ -181,67 +193,76 @@ export default function PopundersPage() {
           </Card>
         ) : (
           <div className="grid gap-4">
-            {campaigns.map((campaign) => (
-              <Card key={campaign.id} className="border border-border bg-white shadow-sm hover:shadow-md transition-shadow" data-testid={`campaign-card-${campaign.id}`}>
-                <CardContent className="p-5">
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center">
-                        <Layers className="w-5 h-5 text-purple-600" />
+            {campaigns.map((campaign) => {
+              const settings = campaign.settings || {};
+              return (
+                <Card key={campaign.id} className="border border-border bg-white shadow-sm hover:shadow-md transition-shadow" data-testid={`campaign-card-${campaign.id}`}>
+                  <CardContent className="p-5">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center">
+                          <Layers className="w-5 h-5 text-purple-600" />
+                        </div>
+                        <div>
+                          <h3 className="font-medium text-lg">{campaign.name}</h3>
+                          <p className="text-xs text-muted-foreground font-mono">slug: {campaign.slug}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge className={campaign.status === 'active' ? 'status-active' : 'status-paused'}>
+                          {campaign.status}
+                        </Badge>
+                        <Switch
+                          checked={campaign.status === 'active'}
+                          onCheckedChange={() => toggleStatus(campaign)}
+                          data-testid={`campaign-toggle-${campaign.id}`}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm mb-4">
+                      <div>
+                        <span className="label-caps block mb-1">Direct Link</span>
+                        <code className="text-slate-700 text-xs truncate block">{settings.direct_link || '—'}</code>
                       </div>
                       <div>
-                        <h3 className="font-medium text-lg">{campaign.name}</h3>
-                        <p className="text-xs text-muted-foreground font-mono">slug: {campaign.slug}</p>
+                        <span className="label-caps block mb-1">Timer</span>
+                        <span className="text-slate-700">{settings.timer || 0}s delay</span>
+                      </div>
+                      <div>
+                        <span className="label-caps block mb-1">Interval</span>
+                        <span className="text-slate-700">{settings.interval || 24}h</span>
+                      </div>
+                      <div>
+                        <span className="label-caps block mb-1">Devices</span>
+                        <div className="flex gap-1">
+                          {(settings.devices || ['desktop', 'mobile', 'tablet']).map(device => {
+                            const opt = DEVICE_OPTIONS.find(d => d.value === device);
+                            const Icon = opt?.icon || Monitor;
+                            return <Icon key={device} className="w-4 h-4 text-slate-500" />;
+                          })}
+                        </div>
                       </div>
                     </div>
+
                     <div className="flex items-center gap-2">
-                      <Badge className={campaign.status === 'active' ? 'status-active' : 'status-paused'}>
-                        {campaign.status}
-                      </Badge>
-                      <Switch
-                        checked={campaign.status === 'active'}
-                        onCheckedChange={() => toggleStatus(campaign)}
-                        data-testid={`campaign-toggle-${campaign.id}`}
-                      />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => navigate(`/popunders/${campaign.id}`)}
+                        className="flex-1"
+                        data-testid={`manage-campaign-${campaign.id}`}
+                      >
+                        <Settings2 className="w-4 h-4 mr-2" /> Manage Campaign
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => handleDelete(campaign.id)} className="text-destructive" data-testid={`delete-campaign-${campaign.id}`}>
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
                     </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm mb-4">
-                    <div>
-                      <span className="label-caps block mb-1">Target URL</span>
-                      <code className="text-slate-700 text-xs truncate block">{campaign.settings?.target_url || '—'}</code>
-                    </div>
-                    <div>
-                      <span className="label-caps block mb-1">Frequency</span>
-                      <span className="text-slate-700">{campaign.settings?.frequency || 1} / {campaign.settings?.frequency_unit || 'session'}</span>
-                    </div>
-                    <div>
-                      <span className="label-caps block mb-1">Delay</span>
-                      <span className="text-slate-700">{campaign.settings?.delay || 0}ms</span>
-                    </div>
-                    <div>
-                      <span className="label-caps block mb-1">Window Size</span>
-                      <span className="text-slate-700">{campaign.settings?.width || 800}x{campaign.settings?.height || 600}</span>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => navigate(`/popunders/${campaign.id}`)}
-                      className="flex-1"
-                      data-testid={`manage-campaign-${campaign.id}`}
-                    >
-                      <Settings2 className="w-4 h-4 mr-2" /> Manage Campaign
-                    </Button>
-                    <Button variant="ghost" size="sm" onClick={() => handleDelete(campaign.id)} className="text-destructive" data-testid={`delete-campaign-${campaign.id}`}>
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         )}
       </div>
@@ -265,70 +286,59 @@ export default function PopundersPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label className="label-caps">Target URL</Label>
+              <Label className="label-caps">Direct Link</Label>
               <Input
                 placeholder="https://example.com/landing-page"
-                value={form.target_url}
-                onChange={(e) => setForm({ ...form, target_url: e.target.value })}
-                data-testid="campaign-url-input"
+                value={form.direct_link}
+                onChange={(e) => setForm({ ...form, direct_link: e.target.value })}
+                data-testid="campaign-direct-link-input"
               />
+              <p className="text-xs text-muted-foreground">URL to open in the popunder window</p>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label className="label-caps">Frequency</Label>
+                <Label className="label-caps">Timer (seconds)</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  value={form.timer}
+                  onChange={(e) => setForm({ ...form, timer: e.target.value })}
+                  data-testid="campaign-timer-input"
+                />
+                <p className="text-xs text-muted-foreground">Delay before popunder opens</p>
+              </div>
+              <div className="space-y-2">
+                <Label className="label-caps">Interval (hours)</Label>
                 <Input
                   type="number"
                   min="1"
-                  value={form.frequency}
-                  onChange={(e) => setForm({ ...form, frequency: e.target.value })}
-                  data-testid="campaign-frequency-input"
+                  value={form.interval}
+                  onChange={(e) => setForm({ ...form, interval: e.target.value })}
+                  data-testid="campaign-interval-input"
                 />
-              </div>
-              <div className="space-y-2">
-                <Label className="label-caps">Per</Label>
-                <Select value={form.frequency_unit} onValueChange={(v) => setForm({ ...form, frequency_unit: v })}>
-                  <SelectTrigger data-testid="campaign-frequency-unit">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="session">Session</SelectItem>
-                    <SelectItem value="hour">Hour</SelectItem>
-                    <SelectItem value="day">Day</SelectItem>
-                  </SelectContent>
-                </Select>
+                <p className="text-xs text-muted-foreground">Hours between shows</p>
               </div>
             </div>
             <div className="space-y-2">
-              <Label className="label-caps">Delay (ms)</Label>
-              <Input
-                type="number"
-                min="0"
-                value={form.delay}
-                onChange={(e) => setForm({ ...form, delay: e.target.value })}
-                data-testid="campaign-delay-input"
-              />
-              <p className="text-xs text-muted-foreground">Milliseconds to wait after user interaction</p>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="label-caps">Width</Label>
-                <Input
-                  type="number"
-                  min="200"
-                  value={form.width}
-                  onChange={(e) => setForm({ ...form, width: e.target.value })}
-                  data-testid="campaign-width-input"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="label-caps">Height</Label>
-                <Input
-                  type="number"
-                  min="200"
-                  value={form.height}
-                  onChange={(e) => setForm({ ...form, height: e.target.value })}
-                  data-testid="campaign-height-input"
-                />
+              <Label className="label-caps">Devices</Label>
+              <div className="flex gap-4">
+                {DEVICE_OPTIONS.map((opt) => {
+                  const Icon = opt.icon;
+                  const isSelected = (form.devices || []).includes(opt.value);
+                  return (
+                    <div key={opt.value} className="flex items-center gap-2">
+                      <Checkbox
+                        id={`create-device-${opt.value}`}
+                        checked={isSelected}
+                        onCheckedChange={() => handleDeviceToggle(opt.value)}
+                        data-testid={`create-device-checkbox-${opt.value}`}
+                      />
+                      <label htmlFor={`create-device-${opt.value}`} className="flex items-center gap-1 text-sm cursor-pointer">
+                        <Icon className="w-4 h-4" /> {opt.label}
+                      </label>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>
