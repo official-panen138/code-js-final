@@ -43,6 +43,7 @@ function App() {
           <Route path="/projects/:projectId" element={<PrivateRoute><ProjectDetailPage /></PrivateRoute>} />
           <Route path="/settings" element={<PermissionRoute permission="settings"><SettingsPage /></PermissionRoute>} />
           <Route path="/users" element={<PermissionRoute permission="user_management"><UserManagementPage /></PermissionRoute>} />
+          <Route path="/domains" element={<PermissionRoute permission="custom_domains"><CustomDomainsPage /></PermissionRoute>} />
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
