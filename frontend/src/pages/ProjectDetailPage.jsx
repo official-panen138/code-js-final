@@ -171,19 +171,7 @@ export default function ProjectDetailPage() {
 /* ─── Project Settings ─── */
 function ProjectSettings({ project, onUpdate }) {
   const [showDelete, setShowDelete] = useState(false);
-  const [showSecondaryScript, setShowSecondaryScript] = useState(false);
-  const [secondaryMode, setSecondaryMode] = useState(project.secondary_script_mode || 'js');
-  const [secondaryScript, setSecondaryScript] = useState(project.secondary_script || '');
-  const [secondaryLinks, setSecondaryLinks] = useState(project.secondary_script_links || []);
-  const [savingScript, setSavingScript] = useState(false);
   const navigate = useNavigate();
-
-  const openSecondaryDialog = () => {
-    setSecondaryMode(project.secondary_script_mode || 'js');
-    setSecondaryScript(project.secondary_script || '');
-    setSecondaryLinks(project.secondary_script_links || []);
-    setShowSecondaryScript(true);
-  };
 
   const toggleStatus = async () => {
     try {
@@ -206,46 +194,6 @@ function ProjectSettings({ project, onUpdate }) {
     }
   };
 
-  const handleSaveSecondaryScript = async () => {
-    setSavingScript(true);
-    try {
-      const updateData = {
-        secondary_script_mode: secondaryMode,
-      };
-      
-      if (secondaryMode === 'js') {
-        updateData.secondary_script = secondaryScript;
-        updateData.secondary_script_links = [];
-      } else {
-        updateData.secondary_script = '';
-        updateData.secondary_script_links = secondaryLinks.filter(l => l.url && l.keyword);
-      }
-
-      await projectAPI.update(project.id, updateData);
-      toast.success('Secondary script settings saved');
-      setShowSecondaryScript(false);
-      onUpdate();
-    } catch (err) {
-      toast.error('Failed to save secondary script settings');
-    } finally {
-      setSavingScript(false);
-    }
-  };
-
-  const addLink = () => {
-    setSecondaryLinks([...secondaryLinks, { url: '', keyword: '' }]);
-  };
-
-  const removeLink = (index) => {
-    setSecondaryLinks(secondaryLinks.filter((_, i) => i !== index));
-  };
-
-  const updateLink = (index, field, value) => {
-    const updated = [...secondaryLinks];
-    updated[index] = { ...updated[index], [field]: value };
-    setSecondaryLinks(updated);
-  };
-
   return (
     <div className="flex items-center gap-3">
       <div className="flex items-center gap-2">
@@ -256,9 +204,6 @@ function ProjectSettings({ project, onUpdate }) {
           data-testid="project-status-toggle"
         />
       </div>
-      <Button variant="outline" size="sm" onClick={openSecondaryDialog} data-testid="secondary-script-btn">
-        <FileCode className="w-4 h-4 mr-1" /> Secondary Script
-      </Button>
       <Button variant="outline" size="sm" className="text-destructive border-destructive/30 hover:bg-destructive/10" onClick={() => setShowDelete(true)} data-testid="delete-project-btn">
         <Trash2 className="w-4 h-4" />
       </Button>
@@ -275,134 +220,6 @@ function ProjectSettings({ project, onUpdate }) {
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowDelete(false)}>Cancel</Button>
             <Button variant="destructive" onClick={handleDelete} data-testid="confirm-delete-btn">Delete</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Secondary Script Dialog */}
-      <Dialog open={showSecondaryScript} onOpenChange={setShowSecondaryScript}>
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto" data-testid="secondary-script-dialog">
-          <DialogHeader>
-            <DialogTitle style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>Secondary Script</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="p-3 bg-amber-50 border border-amber-200 rounded-md">
-              <p className="text-sm text-amber-800">
-                <AlertCircle className="w-4 h-4 inline mr-1" />
-                This content will be served to domains that are <strong>NOT whitelisted</strong>, instead of an empty noop response.
-              </p>
-            </div>
-
-            {/* Mode Selector */}
-            <div className="space-y-2">
-              <Label className="label-caps">Mode</Label>
-              <div className="flex gap-2">
-                <Button
-                  type="button"
-                  variant={secondaryMode === 'js' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setSecondaryMode('js')}
-                  className={secondaryMode === 'js' ? 'bg-[#0F172A] hover:bg-[#1E293B] text-white' : ''}
-                  data-testid="mode-js-btn"
-                >
-                  <FileCode className="w-4 h-4 mr-1" /> Full JS Script
-                </Button>
-                <Button
-                  type="button"
-                  variant={secondaryMode === 'links' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setSecondaryMode('links')}
-                  className={secondaryMode === 'links' ? 'bg-[#0F172A] hover:bg-[#1E293B] text-white' : ''}
-                  data-testid="mode-links-btn"
-                >
-                  <ExternalLink className="w-4 h-4 mr-1" /> Link Injection
-                </Button>
-              </div>
-            </div>
-
-            {/* JS Mode Content */}
-            {secondaryMode === 'js' && (
-              <div className="space-y-2">
-                <Label className="label-caps">JavaScript Code</Label>
-                <Textarea
-                  value={secondaryScript}
-                  onChange={(e) => setSecondaryScript(e.target.value)}
-                  placeholder="// JavaScript code for non-whitelisted domains..."
-                  rows={12}
-                  className="font-mono text-sm"
-                  style={{ fontFamily: 'JetBrains Mono, monospace' }}
-                  data-testid="secondary-script-input"
-                />
-                <p className="text-xs text-muted-foreground">Leave empty to serve noop response (default behavior)</p>
-              </div>
-            )}
-
-            {/* Links Mode Content */}
-            {secondaryMode === 'links' && (
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <Label className="label-caps">URL / Keyword Pairs</Label>
-                  <Button type="button" variant="outline" size="sm" onClick={addLink} data-testid="add-link-btn">
-                    <Plus className="w-4 h-4 mr-1" /> Add Link
-                  </Button>
-                </div>
-                
-                <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
-                  <p className="text-xs text-blue-800">
-                    Each pair will be injected as: <code className="bg-blue-100 px-1 rounded">&lt;p&gt;&lt;a href="URL"&gt;keyword&lt;/a&gt;&lt;/p&gt;</code> inside a single hidden div
-                  </p>
-                </div>
-
-                {secondaryLinks.length === 0 ? (
-                  <div className="text-center py-6 border border-dashed rounded-lg">
-                    <ExternalLink className="w-6 h-6 text-muted-foreground mx-auto mb-2" strokeWidth={1.5} />
-                    <p className="text-sm text-muted-foreground">No links added yet. Click "Add Link" to get started.</p>
-                  </div>
-                ) : (
-                  <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2">
-                    {secondaryLinks.map((link, index) => (
-                      <div key={index} className="flex gap-2 items-start p-3 bg-slate-50 rounded-lg border" data-testid={`link-entry-${index}`}>
-                        <div className="flex-1 space-y-2">
-                          <Input
-                            placeholder="https://example.com/"
-                            value={link.url}
-                            onChange={(e) => updateLink(index, 'url', e.target.value)}
-                            className="text-sm"
-                            data-testid={`link-url-${index}`}
-                          />
-                          <Input
-                            placeholder="keyword"
-                            value={link.keyword}
-                            onChange={(e) => updateLink(index, 'keyword', e.target.value)}
-                            className="text-sm"
-                            data-testid={`link-keyword-${index}`}
-                          />
-                        </div>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="text-destructive hover:bg-destructive/10 mt-1"
-                          onClick={() => removeLink(index)}
-                          data-testid={`remove-link-${index}`}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                <p className="text-xs text-muted-foreground">
-                  {secondaryLinks.filter(l => l.url && l.keyword).length} valid link{secondaryLinks.filter(l => l.url && l.keyword).length !== 1 ? 's' : ''} will be injected
-                </p>
-              </div>
-            )}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowSecondaryScript(false)}>Cancel</Button>
-            <Button onClick={handleSaveSecondaryScript} disabled={savingScript} className="bg-[#0F172A] hover:bg-[#1E293B] text-white" data-testid="save-secondary-script-btn">
-              {savingScript ? 'Saving...' : 'Save Settings'}
-            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
