@@ -664,7 +664,13 @@ async def update_script(project_id: int, script_id: int, data: ScriptUpdate, db:
         script.secondary_script_links = [link.model_dump() for link in data.secondary_script_links]
 
     await db.commit()
-    await db.refresh(script)
+    
+    # Reload with whitelists relationship after commit
+    result = await db.execute(
+        select(Script).options(selectinload(Script.whitelists))
+        .where(Script.id == script.id)
+    )
+    script = result.scalar_one()
     return {"script": script_to_dict(script, include_whitelists=True)}
 
 
