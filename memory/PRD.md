@@ -54,20 +54,21 @@ Build a platform that allows users to create projects, add JavaScript scripts, c
 - [x] PopunderCampaign database model with JSON settings field
 - [x] Alembic migration for popunder_campaigns table
 - [x] Full CRUD API: `/api/projects/{projectId}/popunders`
-  - POST: Create campaign with name, settings (target_url, frequency, delay, dimensions)
-  - GET: List campaigns, get single campaign
-  - PATCH: Update campaign name, status, settings
-  - DELETE: Remove campaign
 - [x] Public JS delivery endpoint: `GET /api/js/popunder/{projectSlug}/{campaignSlug}.js`
-- [x] Strict server-side validation order:
-  1. Resolve project by slug
-  2. Check project status (deny if paused)
-  3. **Enforce project whitelist** (deny if domain not allowed)
-  4. Resolve campaign by slug
-  5. Check campaign status (deny if paused)
-- [x] Returns noop JS (200 OK) for any validation failure
-- [x] Popunder JS engine with localStorage-based frequency tracking
-- [x] 15 unit/integration tests for popunder module (all passing)
+- [x] Strict server-side validation (project → whitelist → campaign)
+- [x] **Frontend UI**: New "Popunders" tab in project detail page
+  - Create/Edit/Delete campaigns with full settings form
+  - Campaign cards showing settings, status, embed code
+  - Status toggle (active/paused)
+  - Embed URL copy functionality
+- [x] Embed tab updated to show both scripts and popunder campaigns
+- [x] 15 backend tests + 10 frontend tests (all passing)
+
+### Phase 4 - Script Versioning (Feb 15, 2026)
+- [x] "Save as New Version" button in script edit dialog
+- [x] Creates new script with version suffix (e.g., "Analytics (v2)")
+- [x] Automatically increments version number
+- [x] Original script remains unchanged
 
 ## Database Schema
 
@@ -116,10 +117,9 @@ Build a platform that allows users to create projects, add JavaScript scripts, c
 - GET/POST/PATCH/DELETE `/api/custom-domains/*` - Domain management
 
 ## Test Coverage
-- **Total tests**: 82 (all passing)
-- **Validator tests**: 45 tests
-- **Delivery tests**: 22 tests
-- **Popunder tests**: 15 tests
+- **Total tests**: 97+ (all passing)
+- **Backend tests**: 82 tests (validators, delivery, popunder)
+- **Frontend tests**: 10+ tests (Playwright)
 
 ## Credentials
 - **Admin**: admin@jshost.com / Admin@123
@@ -131,19 +131,19 @@ Build a platform that allows users to create projects, add JavaScript scripts, c
 - All core features implemented
 
 ### P1 (Important) - COMPLETED
-- Popunder Campaign module
+- Popunder Campaign module (backend + frontend)
+- Script versioning feature
 - RBAC system
 - Custom domain management
 
 ### P2 (Nice to have) - FUTURE
-- Frontend UI for popunder management
-- Script versioning
+- Script version history view
 - Rate limiting on JS delivery
 - Bulk domain import
 - Script minification option
 - API key authentication as alternative to JWT
 
 ## Next Tasks
-1. Frontend UI for popunder campaign management (if requested)
-2. Script versioning
-3. Rate limiting on JS delivery endpoints
+1. Script version history viewer (view all versions of a script)
+2. Rate limiting on JS delivery endpoints
+3. Bulk domain import feature
