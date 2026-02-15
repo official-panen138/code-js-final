@@ -1175,15 +1175,17 @@ function EmbedTab({ project, scripts, getEmbedUrl, copied, copyToClipboard }) {
 function AnalyticsLogsTab({ projectId }) {
   const [logs, setLogs] = useState([]);
   const [summary, setSummary] = useState({ total: 0, allowed: 0, denied: 0 });
+  const [pagination, setPagination] = useState({ page: 1, per_page: 20, total_pages: 1, total_items: 0 });
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState(null);
 
-  const loadLogs = async () => {
+  const loadLogs = async (page = 1) => {
     setLoading(true);
     try {
-      const res = await analyticsAPI.getLogs(projectId, 100);
+      const res = await analyticsAPI.getLogs(projectId, page, 20);
       setLogs(res.data.logs || []);
       setSummary(res.data.summary || { total: 0, allowed: 0, denied: 0 });
+      setPagination(res.data.pagination || { page: 1, per_page: 20, total_pages: 1, total_items: 0 });
     } catch (err) {
       console.error('Failed to load analytics logs', err);
       toast.error('Failed to load analytics logs');
@@ -1193,25 +1195,26 @@ function AnalyticsLogsTab({ projectId }) {
   };
 
   useEffect(() => {
-    loadLogs();
+    loadLogs(1);
   }, [projectId]);
 
   const handleDeleteLog = async (logId) => {
     setDeletingId(logId);
     try {
       await logsAPI.delete(projectId, logId);
-      setLogs(prev => prev.filter(l => l.id !== logId));
-      setSummary(prev => ({
-        ...prev,
-        total: prev.total - 1,
-        allowed: logs.find(l => l.id === logId)?.status === 'allowed' ? prev.allowed - 1 : prev.allowed,
-        denied: logs.find(l => l.id === logId)?.status === 'denied' ? prev.denied - 1 : prev.denied,
-      }));
+      // Reload current page to get fresh data
+      await loadLogs(pagination.page);
       toast.success('Log entry deleted');
     } catch (err) {
       toast.error('Failed to delete log entry');
     } finally {
       setDeletingId(null);
+    }
+  };
+
+  const goToPage = (page) => {
+    if (page >= 1 && page <= pagination.total_pages) {
+      loadLogs(page);
     }
   };
 
