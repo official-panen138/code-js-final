@@ -55,6 +55,7 @@ class Project(Base):
     whitelists = relationship('ProjectWhitelist', back_populates='project', cascade='all, delete-orphan')
     scripts = relationship('Script', back_populates='project', cascade='all, delete-orphan')
     access_logs = relationship('AccessLog', back_populates='project', cascade='all, delete-orphan')
+    popunder_campaigns = relationship('PopunderCampaign', back_populates='project', cascade='all, delete-orphan')
 
 
 class ProjectWhitelist(Base):
