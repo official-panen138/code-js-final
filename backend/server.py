@@ -518,12 +518,24 @@ async def create_project(data: ProjectCreate, db: AsyncSession = Depends(get_db)
 
 @api_router.get("/projects")
 async def list_projects(db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
-    result = await db.execute(
-        select(Project)
-        .options(selectinload(Project.category), selectinload(Project.scripts).selectinload(Script.whitelists))
-        .where(Project.user_id == current_user['user_id'])
-        .order_by(desc(Project.created_at))
-    )
+    user_id = current_user['user_id']
+    is_admin = await is_user_admin(db, user_id)
+    
+    if is_admin:
+        # Admin can see all projects
+        result = await db.execute(
+            select(Project)
+            .options(selectinload(Project.category), selectinload(Project.scripts).selectinload(Script.whitelists))
+            .order_by(desc(Project.created_at))
+        )
+    else:
+        # Regular users only see their own projects
+        result = await db.execute(
+            select(Project)
+            .options(selectinload(Project.category), selectinload(Project.scripts).selectinload(Script.whitelists))
+            .where(Project.user_id == user_id)
+            .order_by(desc(Project.created_at))
+        )
     projects = result.scalars().all()
     return {"projects": [project_to_dict(p, include_relations=True) for p in projects]}
 
