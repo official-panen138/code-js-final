@@ -1243,7 +1243,7 @@ async def deliver_js(project_slug: str, script_file: str, request: Request, db: 
 
     # Resolve project
     result = await db.execute(
-        select(Project).options(selectinload(Project.whitelists)).where(Project.slug == project_slug)
+        select(Project).where(Project.slug == project_slug)
     )
     project = result.scalar_one_or_none()
 
@@ -1255,9 +1255,10 @@ async def deliver_js(project_slug: str, script_file: str, request: Request, db: 
         await _log_access(db, project.id, None, request, False)
         return noop_response()
 
-    # Resolve script
+    # Resolve script with whitelists
     result = await db.execute(
-        select(Script).where(and_(Script.project_id == project.id, Script.slug == script_slug))
+        select(Script).options(selectinload(Script.whitelists))
+        .where(and_(Script.project_id == project.id, Script.slug == script_slug))
     )
     script = result.scalar_one_or_none()
 
@@ -1275,8 +1276,8 @@ async def deliver_js(project_slug: str, script_file: str, request: Request, db: 
     raw_domain = origin if origin else referer
     domain = normalize_domain(raw_domain)
 
-    # Load active whitelist patterns
-    active_patterns = [w.domain_pattern for w in project.whitelists if w.is_active]
+    # Load active whitelist patterns from SCRIPT (not project)
+    active_patterns = [w.domain_pattern for w in script.whitelists if w.is_active]
 
     # Empty whitelist = deny (serve secondary script if configured)
     if not active_patterns:
