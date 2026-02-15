@@ -14,7 +14,8 @@ import { Separator } from '../components/ui/separator';
 import { Textarea } from '../components/ui/textarea';
 import {
   ArrowLeft, Copy, Check, Plus, Trash2, Pencil, FileCode, Globe,
-  Shield, Activity, ExternalLink, AlertCircle, CheckCircle, XCircle, Search, SaveAll
+  Shield, Activity, ExternalLink, AlertCircle, CheckCircle, XCircle, Search, SaveAll,
+  ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
