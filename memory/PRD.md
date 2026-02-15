@@ -68,16 +68,23 @@ Build a platform that allows users to create projects, add JavaScript scripts, c
   - New `referer_url` column in access_logs table (VARCHAR 2048)
   - _log_access function captures full Referer header from requests
   - Enables tracking exactly which pages load your scripts
-- [x] **Script Analytics Modal Redesign**: Analytics now only at script-level
-  - Removed global Analytics tab from project page
-  - Click script name to open analytics modal
-  - Shows Script URL, Summary Stats (Total/Allowed/Denied)
-  - "Domains Accessing This Script" table with colored rows
-  - "Full Source URLs" table with clickable referrer links
-- [x] **Clear Script Logs**: Per-script log clearing
-  - DELETE /api/projects/{id}/scripts/{sid}/logs endpoint
-  - "Clear Logs" button in script analytics modal
-  - Confirmation dialog before deletion
+
+### Phase 7 - Analytics Tab Redesign with Per-Row Delete (Feb 15, 2026)
+- [x] **Global Analytics Tab Restored**: Analytics tab back in main project view
+  - Three tabs: Scripts, Embed, Analytics
+  - Summary stats: Total Requests, Allowed, Denied
+- [x] **Individual Log Entries Table**: Shows flat list of individual access log entries
+  - Columns: Source URL, Link Script, Status, Requests, Last Access, Action
+  - Source URL and Link Script are clickable links
+  - Status shows "Allowed" (green) or "Denied" (red) badge
+  - Row colors: green background for Allowed, red for Denied
+- [x] **Per-Row Delete**: Each log entry has delete button
+  - DELETE /api/projects/{id}/logs/{log_id} endpoint
+  - Removes specific log entry without affecting others
+  - Updates summary stats after deletion
+- [x] **New API Endpoint**: GET /api/projects/{id}/analytics/logs
+  - Returns flat list of individual log entries with IDs
+  - Response: { logs: [...], summary: { total, allowed, denied } }
 
 ## Database Schema
 
