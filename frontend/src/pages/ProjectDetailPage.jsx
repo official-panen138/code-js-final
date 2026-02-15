@@ -631,7 +631,25 @@ function EmbedTab({ project, scripts, getEmbedUrl, copied, copyToClipboard }) {
 /* ─── Analytics Tab ─── */
 const CHART_COLORS = ['#16A34A', '#DC2626', '#2563EB', '#F59E0B', '#8B5CF6'];
 
-function AnalyticsTab({ logs, logStats, analytics }) {
+function AnalyticsTab({ logs, logStats, analytics, projectId }) {
+  const [blacklisted, setBlacklisted] = useState([]);
+  const [loadingBlacklisted, setLoadingBlacklisted] = useState(false);
+
+  useEffect(() => {
+    const loadBlacklisted = async () => {
+      setLoadingBlacklisted(true);
+      try {
+        const res = await analyticsAPI.getBlacklistedDomains(projectId);
+        setBlacklisted(res.data.blacklisted_domains || []);
+      } catch (err) {
+        console.error('Failed to load blacklisted domains', err);
+      } finally {
+        setLoadingBlacklisted(false);
+      }
+    };
+    loadBlacklisted();
+  }, [projectId]);
+
   const pieData = logStats ? [
     { name: 'Allowed', value: logStats.allowed },
     { name: 'Denied', value: logStats.denied },
