@@ -7,6 +7,8 @@ import RegisterPage from "./pages/RegisterPage";
 import DashboardPage from "./pages/DashboardPage";
 import ProjectsPage from "./pages/ProjectsPage";
 import ProjectDetailPage from "./pages/ProjectDetailPage";
+import PopundersPage from "./pages/PopundersPage";
+import PopunderDetailPage from "./pages/PopunderDetailPage";
 import SettingsPage from "./pages/SettingsPage";
 import UserManagementPage from "./pages/UserManagementPage";
 import CustomDomainsPage from "./pages/CustomDomainsPage";
@@ -41,6 +43,8 @@ function App() {
           <Route path="/dashboard" element={<PrivateRoute><DashboardPage /></PrivateRoute>} />
           <Route path="/projects" element={<PrivateRoute><ProjectsPage /></PrivateRoute>} />
           <Route path="/projects/:projectId" element={<PrivateRoute><ProjectDetailPage /></PrivateRoute>} />
+          <Route path="/popunders" element={<PermissionRoute permission="popunders"><PopundersPage /></PermissionRoute>} />
+          <Route path="/popunders/:campaignId" element={<PermissionRoute permission="popunders"><PopunderDetailPage /></PermissionRoute>} />
           <Route path="/settings" element={<PermissionRoute permission="settings"><SettingsPage /></PermissionRoute>} />
           <Route path="/users" element={<PermissionRoute permission="user_management"><UserManagementPage /></PermissionRoute>} />
           <Route path="/domains" element={<PermissionRoute permission="custom_domains"><CustomDomainsPage /></PermissionRoute>} />
