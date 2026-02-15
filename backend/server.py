@@ -37,6 +37,51 @@ JS_CACHE_HEADERS = {
 }
 
 
+# ─── CDN Domain Middleware ───
+# CDN domains should ONLY serve JS files, not the full app UI
+@app.middleware("http")
+async def cdn_domain_middleware(request: Request, call_next):
+    """
+    Detect if request is coming from a configured CDN domain.
+    CDN domains should only serve /api/js/* endpoints - all other paths return 404.
+    This allows separation of: Main App (login, dashboard) vs CDN (script delivery only).
+    """
+    host = request.headers.get("host", "").split(":")[0].lower()  # Remove port if present
+    path = request.url.path
+    
+    # Skip middleware for internal requests and health checks
+    if path in ["/", "/api/", "/health"] or not host:
+        return await call_next(request)
+    
+    # Check if this is a CDN domain (not the main app domain)
+    async with async_session_maker() as db:
+        result = await db.execute(
+            select(CustomDomain).where(
+                and_(
+                    CustomDomain.domain == host,
+                    CustomDomain.is_active == True,
+                    CustomDomain.status == 'verified'
+                )
+            )
+        )
+        cdn_domain = result.scalar_one_or_none()
+        
+        if cdn_domain:
+            # This is a CDN domain - only allow /api/js/* paths
+            if path.startswith("/api/js/"):
+                # Allow JS delivery
+                return await call_next(request)
+            else:
+                # Block all other paths on CDN domains (no login page, no dashboard)
+                return PlainTextResponse(
+                    content="CDN domain - only script delivery is available at /api/js/",
+                    status_code=404
+                )
+    
+    # Not a CDN domain - proceed normally (full app access)
+    return await call_next(request)
+
+
 # ─── Pydantic Schemas ───
 class UserRegister(BaseModel):
     email: str
