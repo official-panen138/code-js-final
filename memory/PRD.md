@@ -9,108 +9,68 @@ Build a platform that allows users to create projects, add JavaScript scripts, c
 - **Database**: MySQL via aiomysql async driver
 - **Auth**: JWT (PyJWT + bcrypt)
 
-## User Personas
-- **Web Developer**: Creates projects and popunder campaigns
-- **Agency**: Manages multiple projects/campaigns for different clients
-- **Admin**: Manages system categories, users, roles, and custom domains
-
-## Core Requirements (Static)
-1. Per-project domain whitelists for JS scripts
-2. JWT authentication
-3. Public JS delivery with domain validation
-4. Noop JS (200 status) for denied/unauthorized requests
-5. Standalone popunder campaigns with advanced targeting
-
 ## What's Been Implemented
 
 ### Phase 1 - Core Platform (Feb 14, 2026)
 - [x] MySQL database with SQLAlchemy models
 - [x] JWT authentication (register, login, token verification)
-- [x] Categories seeding (Website, Landing Page, AMP, Partner, Internal)
+- [x] Categories seeding
 - [x] Full CRUD for Projects, Scripts, Whitelists
 - [x] Public JS delivery endpoint with domain matching
-- [x] Domain validation (exact match, wildcard *.example.com)
+- [x] Domain validation (exact match, wildcard)
 - [x] Access logging for JS delivery requests
 - [x] Dashboard with stats and recent projects
-- [x] Frontend with full UI for all features
-- [x] Analytics tab with access logs and charts
 - [x] Domain Tester tool
 
 ### Phase 2 - Admin Features (Feb 14, 2026)
-- [x] Dynamic Role-Based Access Control (RBAC) system
+- [x] Dynamic Role-Based Access Control (RBAC)
 - [x] Role management with customizable permissions
-- [x] User management (create, edit role, activate/deactivate)
-- [x] Category management (CRUD)
-- [x] Global custom domain management with DNS verification
+- [x] User management
+- [x] Category management
+- [x] Global custom domain management
 
 ### Phase 3 - Popunder Campaign Module V4 (Feb 15, 2026)
-- [x] Standalone popunder campaigns (independent from projects)
-- [x] **No domain whitelist** - campaigns serve to any domain
-- [x] Advanced settings schema:
-  - `url_list` - Multiple URLs (newline-separated) with random selection
-  - `timer` - Delay in seconds before popunder opens
-  - `interval` - Hours between shows for same user
-  - `devices` - Target devices (desktop, mobile, tablet)
-  - `countries` - Target countries (ISO codes) with client-side IP detection
-  - `floating_banner` - HTML code for floating banner injection
-  - `html_body` - Custom HTML to inject into page body
-- [x] Self-contained JS payload at `/api/js/popunder/{slug}.js`
-- [x] Client-side country detection via ip-api.com
-- [x] Campaign detail page with Settings and Embed tabs
-- [x] Create/Edit forms with all settings fields
-- [x] "Save as New Version" button in script editor (UI only, backend pending)
+- [x] Standalone popunder campaigns
+- [x] Multiple URLs with random selection
+- [x] Frequency cap (per user per day)
+- [x] Device targeting (desktop/mobile/tablet)
+- [x] Country targeting (client-side IP detection)
+- [x] Floating Banner HTML injection
+- [x] Custom HTML Body injection
+
+### Phase 4 - Analytics & Secondary Script (Feb 15, 2026)
+- [x] **Blacklisted Domains List**: Analytics tab shows domains that were denied access (not whitelisted)
+  - Domain name, request count, last seen timestamp
+  - Real-time tracking from access_logs
+- [x] **Secondary Script**: Fallback JS for non-whitelisted domains
+  - Per-project configurable JS code
+  - Served instead of noop response when domain not whitelisted
+  - Configurable via project settings dialog
 
 ## Database Schema
 
 ### Tables
-- **users**: id, email, password_hash, role, is_active, created_at
-- **roles**: id, name, description, is_system, permissions (JSON)
-- **categories**: id, name, description, is_active
-- **projects**: id, user_id, category_id, name, slug, status, created_at
+- **users**: id, email, password_hash, role, is_active
+- **roles**: id, name, permissions (JSON)
+- **categories**: id, name, description
+- **projects**: id, user_id, category_id, name, slug, status, **secondary_script (NEW)**
 - **project_whitelists**: id, project_id, domain_pattern, is_active
 - **scripts**: id, project_id, name, slug, js_code, status
 - **access_logs**: id, project_id, script_id, ref_domain, allowed, ip, user_agent
-- **custom_domains**: id, domain, status, is_active, platform_ip, resolved_ip
 - **popunder_campaigns**: id, user_id, name, slug, status, settings (JSON)
-
-### Popunder Campaign Settings (JSON)
-```json
-{
-  "url_list": "https://offer1.example.com\nhttps://offer2.example.com",
-  "timer": 0,
-  "interval": 24,
-  "devices": ["desktop", "mobile", "tablet"],
-  "countries": [],
-  "floating_banner": "<div style='position:fixed;...'>Banner</div>",
-  "html_body": "<div id='custom'>...</div>"
-}
-```
 
 ## API Endpoints
 
 ### Projects
-- GET/POST `/api/projects` - List/Create projects
-- GET/PATCH/DELETE `/api/projects/{id}` - Single project ops
+- GET/POST `/api/projects` - List/Create
+- GET/PATCH/DELETE `/api/projects/{id}` - CRUD
 - GET/POST `/api/projects/{id}/whitelist` - Whitelist management
 - GET/POST `/api/projects/{id}/scripts` - Script management
-
-### Standalone Popunder Campaigns
-- GET/POST `/api/popunders` - List/Create campaigns
-- GET/PATCH/DELETE `/api/popunders/{id}` - Campaign management
+- **GET `/api/projects/{id}/blacklisted-domains`** - Get denied domains (NEW)
 
 ### Public JS Delivery
-- GET `/api/js/{projectSlug}/{scriptFile}` - Regular script delivery (with whitelist check)
-- GET `/api/js/popunder/{campaignSlug}.js` - Popunder JS delivery (no whitelist check)
-
-## URL Structure
-- `/projects` - Projects list
-- `/projects/:id` - Project detail (Scripts, Whitelist, Embed, Analytics)
-- `/popunders` - Campaigns list
-- `/popunders/:id` - Campaign detail (Settings, Embed)
-
-## Test Coverage
-- Backend: 16+ pytest tests for popunder multi-URL features
-- Frontend: UI tests passing
+- GET `/api/js/{projectSlug}/{scriptFile}` - Serves script or secondary_script or noop
+- GET `/api/js/popunder/{campaignSlug}.js` - Popunder JS
 
 ## Credentials
 - **Admin**: admin@jshost.com / Admin@123
@@ -118,17 +78,11 @@ Build a platform that allows users to create projects, add JavaScript scripts, c
 
 ## Prioritized Backlog
 
-### P1 (Next Priority)
-- Script versioning backend implementation ("Save as New Version")
+### P1 (Next)
+- Script versioning backend
 - Campaign analytics (impressions, clicks)
 
-### P2 (Nice to have) - FUTURE
-- Rate limiting on JS delivery
+### P2 (Future)
+- Server-side geo-targeting
+- Rate limiting
 - Bulk domain import
-- Script minification option
-- API key authentication as alternative to JWT
-- Server-side geo-targeting (more reliable than client-side)
-
-## Next Tasks
-1. Script versioning backend implementation
-2. Campaign analytics (impressions, clicks tracking)
