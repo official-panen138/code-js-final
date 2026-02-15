@@ -68,13 +68,16 @@ Build a platform that allows users to create projects, add JavaScript scripts, c
   - New `referer_url` column in access_logs table (VARCHAR 2048)
   - _log_access function captures full Referer header from requests
   - Enables tracking exactly which pages load your scripts
-- [x] **Source URL Details Table**: New analytics section showing full source URLs
-  - Displays Source URL (full referrer), Link Script (full script URL with domain), Status, Requests, Last Access
-  - Rows colored by status (green for Allowed, red for Denied)
-  - Both URLs are clickable links
-  - Supports multi-domain access pattern analysis
-- [x] **Script-Specific Referrer URLs**: Script analytics modal includes referer_urls breakdown
-- [x] **Access Logs Table**: Updated to show Source URL column with full referrer
+- [x] **Script Analytics Modal Redesign**: Analytics now only at script-level
+  - Removed global Analytics tab from project page
+  - Click script name to open analytics modal
+  - Shows Script URL, Summary Stats (Total/Allowed/Denied)
+  - "Domains Accessing This Script" table with colored rows
+  - "Full Source URLs" table with clickable referrer links
+- [x] **Clear Script Logs**: Per-script log clearing
+  - DELETE /api/projects/{id}/scripts/{sid}/logs endpoint
+  - "Clear Logs" button in script analytics modal
+  - Confirmation dialog before deletion
 
 ## Database Schema
 
