@@ -980,7 +980,7 @@ async def get_blacklisted_domains(project_id: int, db: AsyncSession = Depends(ge
 # ─── Script-Specific Analytics ───
 @api_router.get("/projects/{project_id}/scripts/{script_id}/analytics")
 async def get_script_analytics(project_id: int, script_id: int, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
-    """Get analytics for a specific script - which domains accessed it."""
+    """Get analytics for a specific script - which domains and pages accessed it."""
     project = await get_user_project(db, project_id, current_user['user_id'])
     
     # Get the script
@@ -1031,6 +1031,35 @@ async def get_script_analytics(project_id: int, script_id: int, db: AsyncSession
             "last_access": row.last_access.isoformat() if row.last_access else None
         })
     
+    # Full referrer URLs that accessed this script
+    referer_url_result = await db.execute(
+        select(
+            AccessLog.referer_url,
+            AccessLog.ref_domain,
+            AccessLog.allowed,
+            func.count(AccessLog.id).label('request_count'),
+            func.max(AccessLog.created_at).label('last_access'),
+        )
+        .where(and_(
+            AccessLog.script_id == script_id,
+            AccessLog.referer_url != None,
+            AccessLog.referer_url != ''
+        ))
+        .group_by(AccessLog.referer_url, AccessLog.ref_domain, AccessLog.allowed)
+        .order_by(desc(func.count(AccessLog.id)))
+        .limit(50)
+    )
+    
+    referer_urls = []
+    for row in referer_url_result:
+        referer_urls.append({
+            "referer_url": row.referer_url,
+            "domain": row.ref_domain,
+            "status": "allowed" if row.allowed else "denied",
+            "request_count": row.request_count,
+            "last_access": row.last_access.isoformat() if row.last_access else None
+        })
+    
     return {
         "script": {
             "id": script.id,
@@ -1043,7 +1072,8 @@ async def get_script_analytics(project_id: int, script_id: int, db: AsyncSession
             "allowed": allowed_val,
             "denied": total_val - allowed_val
         },
-        "domains": domains
+        "domains": domains,
+        "referer_urls": referer_urls  # New: Full referrer URL breakdown
     }
 
 
