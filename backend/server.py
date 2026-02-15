@@ -849,7 +849,9 @@ async def dashboard_stats(db: AsyncSession = Depends(get_db), current_user: dict
 # ─── Access Logs ───
 @api_router.get("/projects/{project_id}/logs")
 async def get_access_logs(project_id: int, limit: int = 50, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
-    await get_user_project(db, project_id, current_user['user_id'])
+    user_id = current_user['user_id']
+    is_admin = await is_user_admin(db, user_id)
+    await get_user_project(db, project_id, user_id, is_admin)
 
     result = await db.execute(
         select(AccessLog).where(AccessLog.project_id == project_id).order_by(desc(AccessLog.created_at)).limit(limit)
@@ -876,7 +878,9 @@ async def get_access_logs(project_id: int, limit: int = 50, db: AsyncSession = D
 @api_router.delete("/projects/{project_id}/logs")
 async def clear_access_logs(project_id: int, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
     """Clear all access logs for a project."""
-    await get_user_project(db, project_id, current_user['user_id'])
+    user_id = current_user['user_id']
+    is_admin = await is_user_admin(db, user_id)
+    await get_user_project(db, project_id, user_id, is_admin)
     
     await db.execute(
         AccessLog.__table__.delete().where(AccessLog.project_id == project_id)
@@ -889,7 +893,9 @@ async def clear_access_logs(project_id: int, db: AsyncSession = Depends(get_db),
 # ─── Analytics ───
 @api_router.get("/projects/{project_id}/analytics")
 async def get_analytics(project_id: int, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
-    project = await get_user_project(db, project_id, current_user['user_id'])
+    user_id = current_user['user_id']
+    is_admin = await is_user_admin(db, user_id)
+    project = await get_user_project(db, project_id, user_id, is_admin)
 
     # Get scripts for URL mapping
     scripts_result = await db.execute(select(Script).where(Script.project_id == project_id))
