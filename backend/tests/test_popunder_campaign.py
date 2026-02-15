@@ -176,10 +176,12 @@ class TestPopunderJSDelivery:
         print("JS delivery endpoint working correctly")
     
     def test_js_delivery_nonexistent_campaign(self):
-        """Test JS delivery returns 404 for non-existent campaign"""
+        """Test JS delivery returns NOOP JS for non-existent campaign (graceful degradation)"""
         response = requests.get(f"{BASE_URL}/api/js/popunder/nonexistent-campaign-12345.js")
-        assert response.status_code == 404
-        print("Non-existent campaign returns 404 correctly")
+        # Returns 200 with NOOP JS for graceful degradation
+        assert response.status_code == 200
+        assert "noop" in response.text.lower() or "unauthorized" in response.text.lower()
+        print("Non-existent campaign returns NOOP JS correctly (graceful degradation)")
     
     def test_js_contains_popunder_logic(self):
         """Test delivered JS contains popunder behavior logic"""
