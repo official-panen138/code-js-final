@@ -940,6 +940,76 @@ async def get_blacklisted_domains(project_id: int, db: AsyncSession = Depends(ge
     }
 
 
+# ─── Script-Specific Analytics ───
+@api_router.get("/projects/{project_id}/scripts/{script_id}/analytics")
+async def get_script_analytics(project_id: int, script_id: int, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
+    """Get analytics for a specific script - which domains accessed it."""
+    project = await get_user_project(db, project_id, current_user['user_id'])
+    
+    # Get the script
+    result = await db.execute(
+        select(Script).where(and_(Script.id == script_id, Script.project_id == project_id))
+    )
+    script = result.scalar_one_or_none()
+    if not script:
+        raise HTTPException(status_code=404, detail="Script not found")
+    
+    script_url = f"/api/js/{project.slug}/{script.slug}.js"
+    
+    # Total stats for this script
+    total_result = await db.execute(
+        select(func.count(AccessLog.id)).where(AccessLog.script_id == script_id)
+    )
+    total_val = total_result.scalar() or 0
+    
+    allowed_result = await db.execute(
+        select(func.count(AccessLog.id)).where(and_(AccessLog.script_id == script_id, AccessLog.allowed == True))
+    )
+    allowed_val = allowed_result.scalar() or 0
+    
+    # Domains that accessed this script
+    domain_result = await db.execute(
+        select(
+            AccessLog.ref_domain,
+            AccessLog.allowed,
+            func.count(AccessLog.id).label('request_count'),
+            func.max(AccessLog.created_at).label('last_access'),
+        )
+        .where(and_(
+            AccessLog.script_id == script_id,
+            AccessLog.ref_domain != None,
+            AccessLog.ref_domain != ''
+        ))
+        .group_by(AccessLog.ref_domain, AccessLog.allowed)
+        .order_by(desc(func.count(AccessLog.id)))
+        .limit(50)
+    )
+    
+    domains = []
+    for row in domain_result:
+        domains.append({
+            "domain": row.ref_domain,
+            "status": "allowed" if row.allowed else "denied",
+            "request_count": row.request_count,
+            "last_access": row.last_access.isoformat() if row.last_access else None
+        })
+    
+    return {
+        "script": {
+            "id": script.id,
+            "name": script.name,
+            "slug": script.slug,
+            "url": script_url,
+        },
+        "summary": {
+            "total": total_val,
+            "allowed": allowed_val,
+            "denied": total_val - allowed_val
+        },
+        "domains": domains
+    }
+
+
 # ─── Domain Tester (for scripts) ───
 @api_router.post("/projects/{project_id}/scripts/{script_id}/test-domain")
 async def test_domain(project_id: int, script_id: int, data: DomainTestRequest, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
