@@ -51,17 +51,10 @@ class ProjectCreate(BaseModel):
     category_id: int
     status: Optional[str] = 'active'
 
-class SecondaryScriptLink(BaseModel):
-    url: str
-    keyword: str
-
 class ProjectUpdate(BaseModel):
     name: Optional[str] = None
     category_id: Optional[int] = None
     status: Optional[str] = None
-    secondary_script: Optional[str] = None
-    secondary_script_mode: Optional[str] = None  # 'js' or 'links'
-    secondary_script_links: Optional[List[SecondaryScriptLink]] = None
 
 class WhitelistCreate(BaseModel):
     domain_pattern: str
