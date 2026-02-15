@@ -268,8 +268,8 @@ export default function PopundersPage() {
                         <span className="text-slate-700">{settings.timer || 0}s</span>
                       </div>
                       <div>
-                        <span className="label-caps block mb-1">Interval</span>
-                        <span className="text-slate-700">{settings.interval || 24}h</span>
+                        <span className="label-caps block mb-1">Frequency</span>
+                        <span className="text-slate-700">{settings.frequency || 1}x/day</span>
                       </div>
                       <div>
                         <span className="label-caps block mb-1">Devices</span>
