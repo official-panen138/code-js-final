@@ -16,10 +16,10 @@ Build a platform that allows users to create projects, add JavaScript scripts, c
 
 ## Core Requirements (Static)
 1. Per-project domain whitelists for JS scripts
-2. Per-campaign independent whitelists for popunders
-3. JWT authentication
-4. Public JS delivery with domain validation
-5. Noop JS (200 status) for denied/unauthorized requests
+2. JWT authentication
+3. Public JS delivery with domain validation
+4. Noop JS (200 status) for denied/unauthorized requests
+5. Standalone popunder campaigns with device/country targeting
 
 ## What's Been Implemented
 
@@ -43,21 +43,20 @@ Build a platform that allows users to create projects, add JavaScript scripts, c
 - [x] Category management (CRUD)
 - [x] Global custom domain management with DNS verification
 
-### Phase 3 - Popunder Campaign Module (Feb 15, 2026)
-- [x] PopunderCampaign database model (independent from projects)
-- [x] PopunderWhitelist table for campaign-specific whitelists
-- [x] Full CRUD API: `/api/popunders`
-- [x] Public JS delivery: `GET /api/js/popunder/{campaignSlug}.js`
-- [x] Campaign-specific whitelist management
-- [x] Domain tester for campaigns
-
-### Phase 4 - Separation of Projects & Campaigns (Feb 15, 2026)
-- [x] **Separate sidebar menus**: Projects and Popunders as independent modules
-- [x] **Popunders List Page** (`/popunders`): Create, list, delete campaigns
-- [x] **Popunder Detail Page** (`/popunders/:id`): Settings, Whitelist, Embed tabs
-- [x] **Independent whitelists**: Campaigns have their own domain whitelists
-- [x] **Removed Popunders tab** from Project detail page
-- [x] **Script versioning**: "Save as New Version" button in script editor
+### Phase 3 - Popunder Campaign Module V3 (Feb 15, 2026)
+- [x] Standalone popunder campaigns (independent from projects)
+- [x] **No domain whitelist** - campaigns serve to any domain
+- [x] New settings schema:
+  - `direct_link` - URL to open in popunder window (required)
+  - `timer` - delay in seconds before popunder opens
+  - `interval` - hours between shows for same user
+  - `devices` - targeted devices (desktop, mobile, tablet)
+  - `countries` - targeted countries (ISO codes)
+- [x] Self-contained JS payload at `/api/js/popunder/{slug}.js`
+- [x] Campaign detail page with Settings and Embed tabs only
+- [x] Device detection and interval tracking in JS
+- [x] Create/Edit campaign with new settings form
+- [x] "Save as New Version" button in script editor (UI only, backend pending)
 
 ## Database Schema
 
@@ -71,7 +70,17 @@ Build a platform that allows users to create projects, add JavaScript scripts, c
 - **access_logs**: id, project_id, script_id, ref_domain, allowed, ip, user_agent
 - **custom_domains**: id, domain, status, is_active, platform_ip, resolved_ip
 - **popunder_campaigns**: id, user_id, name, slug, status, settings (JSON)
-- **popunder_whitelists**: id, campaign_id, domain_pattern, is_active
+
+### Popunder Campaign Settings (JSON)
+```json
+{
+  "direct_link": "https://example.com/offer",
+  "timer": 0,
+  "interval": 24,
+  "devices": ["desktop", "mobile", "tablet"],
+  "countries": []
+}
+```
 
 ## API Endpoints
 
@@ -84,22 +93,20 @@ Build a platform that allows users to create projects, add JavaScript scripts, c
 ### Standalone Popunder Campaigns
 - GET/POST `/api/popunders` - List/Create campaigns
 - GET/PATCH/DELETE `/api/popunders/{id}` - Campaign management
-- GET/POST/DELETE `/api/popunders/{id}/whitelist` - Campaign whitelist
-- POST `/api/popunders/{id}/test-domain` - Domain tester
 
 ### Public JS Delivery
-- GET `/api/js/{projectSlug}/{scriptFile}` - Regular script delivery
-- GET `/api/js/popunder/{campaignSlug}.js` - Popunder JS delivery
+- GET `/api/js/{projectSlug}/{scriptFile}` - Regular script delivery (with whitelist check)
+- GET `/api/js/popunder/{campaignSlug}.js` - Popunder JS delivery (no whitelist check)
 
 ## URL Structure
 - `/projects` - Projects list
 - `/projects/:id` - Project detail (Scripts, Whitelist, Embed, Analytics)
 - `/popunders` - Campaigns list
-- `/popunders/:id` - Campaign detail (Settings, Whitelist, Embed)
+- `/popunders/:id` - Campaign detail (Settings, Embed)
 
 ## Test Coverage
-- Backend: 21 pytest tests (100% passing)
-- Frontend: 15 UI tests (100% passing)
+- Backend: 13+ pytest tests for popunder V3
+- Frontend: UI tests passing
 
 ## Credentials
 - **Admin**: admin@jshost.com / Admin@123
@@ -107,14 +114,18 @@ Build a platform that allows users to create projects, add JavaScript scripts, c
 
 ## Prioritized Backlog
 
+### P1 (Next Priority)
+- Script versioning backend implementation ("Save as New Version")
+- Campaign analytics (impressions, clicks)
+
 ### P2 (Nice to have) - FUTURE
 - Rate limiting on JS delivery
 - Bulk domain import
 - Script minification option
 - API key authentication as alternative to JWT
-- Campaign analytics/tracking
+- Geo-targeting implementation for popunder JS (server-side country detection)
 
 ## Next Tasks
-1. Rate limiting on JS delivery endpoints
-2. Bulk domain import feature
-3. Campaign analytics (impressions, clicks)
+1. Script versioning backend implementation
+2. Campaign analytics (impressions, clicks tracking)
+3. Geo-targeting for popunders (server-side IP to country detection)
