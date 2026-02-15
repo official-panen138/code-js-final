@@ -45,8 +45,22 @@ export function AuthProvider({ children }) {
     setUser(null);
   }, []);
 
+  const hasPermission = useCallback((key) => {
+    if (!user || !user.permissions) return false;
+    return user.permissions.includes(key);
+  }, [user]);
+
+  const refreshUser = useCallback(async () => {
+    try {
+      const res = await authAPI.me();
+      const userData = res.data.user;
+      localStorage.setItem('jshost_user', JSON.stringify(userData));
+      setUser(userData);
+    } catch {}
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, register, logout, hasPermission, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );
