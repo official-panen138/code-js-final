@@ -891,13 +891,21 @@ async def get_blacklisted_domains(project_id: int, db: AsyncSession = Depends(ge
     }
 
 
-# ─── Domain Tester ───
-@api_router.post("/projects/{project_id}/test-domain")
-async def test_domain(project_id: int, data: DomainTestRequest, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
-    project = await get_user_project(db, project_id, current_user['user_id'])
+# ─── Domain Tester (for scripts) ───
+@api_router.post("/projects/{project_id}/scripts/{script_id}/test-domain")
+async def test_domain(project_id: int, script_id: int, data: DomainTestRequest, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
+    await get_user_project(db, project_id, current_user['user_id'])
+    
+    result = await db.execute(
+        select(Script).options(selectinload(Script.whitelists))
+        .where(and_(Script.id == script_id, Script.project_id == project_id))
+    )
+    script = result.scalar_one_or_none()
+    if not script:
+        raise HTTPException(status_code=404, detail="Script not found")
 
     normalized = normalize_domain(data.domain)
-    active_patterns = [w.domain_pattern for w in project.whitelists if w.is_active]
+    active_patterns = [w.domain_pattern for w in script.whitelists if w.is_active]
 
     allowed = is_domain_allowed(normalized, active_patterns)
 
