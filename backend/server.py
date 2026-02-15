@@ -1925,19 +1925,41 @@ def resolve_domain_ip(domain: str) -> str:
 
 
 def get_platform_ip() -> str:
-    """Get the platform's public IP."""
+    """Get the platform's public IP by resolving the main domain or using external IP service."""
+    # First, try to resolve from environment variable (if set)
+    env_ip = os.environ.get('PLATFORM_PUBLIC_IP')
+    if env_ip:
+        return env_ip
+    
+    # Try to get the IP of our main preview domain
+    try:
+        backend_url = os.environ.get('REACT_APP_BACKEND_URL', '')
+        if backend_url:
+            from urllib.parse import urlparse
+            hostname = urlparse(backend_url).hostname
+            if hostname:
+                result = socket.getaddrinfo(hostname, None, socket.AF_INET)
+                if result:
+                    return result[0][4][0]
+    except Exception:
+        pass
+    
+    # Fallback: try to get external IP from service
+    try:
+        import urllib.request
+        return urllib.request.urlopen('https://api.ipify.org', timeout=5).read().decode('utf-8')
+    except Exception:
+        pass
+    
+    # Last resort: return local IP (not ideal)
     try:
         result = socket.getaddrinfo(socket.gethostname(), None, socket.AF_INET)
         if result:
             return result[0][4][0]
     except Exception:
         pass
-    # Fallback: try to get external IP
-    try:
-        import urllib.request
-        return urllib.request.urlopen('https://api.ipify.org', timeout=5).read().decode('utf-8')
-    except Exception:
-        return None
+    
+    return None
 
 
 @api_router.get("/custom-domains")
