@@ -995,6 +995,52 @@ function ScriptsTab({ projectId, scripts, onRefresh, getEmbedUrl, copied, copyTo
                     </div>
                   )}
                 </div>
+
+                {/* Full Source URLs Table */}
+                {scriptAnalyticsData.referer_urls && scriptAnalyticsData.referer_urls.length > 0 && (
+                  <div className="mt-4">
+                    <Label className="label-caps flex items-center gap-2 mb-3">
+                      <ExternalLink className="w-4 h-4 text-blue-600" />
+                      Full Source URLs
+                    </Label>
+                    <div className="overflow-x-auto border border-border rounded-lg">
+                      <table className="w-full text-sm" data-testid="script-referer-urls-table">
+                        <thead>
+                          <tr className="border-b border-border bg-slate-50/80">
+                            <th className="text-left px-3 py-2 table-header text-xs">Source URL</th>
+                            <th className="text-left px-3 py-2 table-header text-xs">Status</th>
+                            <th className="text-left px-3 py-2 table-header text-xs">Requests</th>
+                            <th className="text-left px-3 py-2 table-header text-xs">Last Access</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {scriptAnalyticsData.referer_urls.map((item, idx) => (
+                            <tr key={idx} className={`border-b border-border/50 transition-colors ${item.status === 'allowed' ? 'hover:bg-green-50/30' : 'hover:bg-red-50/30'}`}>
+                              <td className="px-3 py-2 max-w-[200px]">
+                                <code className="text-xs font-mono text-blue-700 break-all block" style={{ fontFamily: 'JetBrains Mono, monospace' }} title={item.referer_url}>
+                                  {item.referer_url.length > 50 ? item.referer_url.substring(0, 50) + '...' : item.referer_url}
+                                </code>
+                              </td>
+                              <td className="px-3 py-2">
+                                <Badge className={item.status === 'allowed' ? 'status-active' : 'status-disabled'} style={{ fontSize: '10px' }}>
+                                  {item.status === 'allowed' ? 'Allowed' : 'Denied'}
+                                </Badge>
+                              </td>
+                              <td className="px-3 py-2 font-mono text-xs" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
+                                <span className={item.status === 'allowed' ? 'text-green-700' : 'text-red-700'}>
+                                  {item.request_count}
+                                </span>
+                              </td>
+                              <td className="px-3 py-2 text-xs text-muted-foreground">
+                                {item.last_access ? new Date(item.last_access).toLocaleString() : '—'}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
               </>
             ) : (
               <div className="text-center py-6">
