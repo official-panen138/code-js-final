@@ -1367,8 +1367,8 @@ async def update_popunder_campaign(campaign_id: int, data: PopunderCampaignUpdat
         campaign.slug = await generate_popunder_slug(db, name)
 
     if data.settings is not None:
-        if not data.settings.url_list or not data.settings.url_list.strip():
-            raise HTTPException(status_code=400, detail="At least one URL is required")
+        if not data.settings.direct_link or not data.settings.direct_link.strip():
+            raise HTTPException(status_code=400, detail="Direct link URL is required")
         campaign.settings = data.settings.model_dump()
 
     if data.status is not None:
