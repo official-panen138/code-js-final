@@ -55,12 +55,12 @@ export const projectAPI = {
   delete: (id) => api.delete(`/projects/${id}`),
 };
 
-// Whitelist
+// Whitelist (per Script)
 export const whitelistAPI = {
-  list: (projectId) => api.get(`/projects/${projectId}/whitelist`),
-  add: (projectId, data) => api.post(`/projects/${projectId}/whitelist`, data),
-  update: (projectId, id, data) => api.patch(`/projects/${projectId}/whitelist/${id}`, data),
-  delete: (projectId, id) => api.delete(`/projects/${projectId}/whitelist/${id}`),
+  list: (projectId, scriptId) => api.get(`/projects/${projectId}/scripts/${scriptId}/whitelist`),
+  add: (projectId, scriptId, data) => api.post(`/projects/${projectId}/scripts/${scriptId}/whitelist`, data),
+  update: (projectId, scriptId, id, data) => api.patch(`/projects/${projectId}/scripts/${scriptId}/whitelist/${id}`, data),
+  delete: (projectId, scriptId, id) => api.delete(`/projects/${projectId}/scripts/${scriptId}/whitelist/${id}`),
 };
 
 // Scripts
@@ -80,6 +80,7 @@ export const dashboardAPI = {
 // Access Logs
 export const logsAPI = {
   list: (projectId, limit = 50) => api.get(`/projects/${projectId}/logs?limit=${limit}`),
+  clear: (projectId) => api.delete(`/projects/${projectId}/logs`),
 };
 
 // Analytics
