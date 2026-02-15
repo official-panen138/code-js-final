@@ -1127,21 +1127,21 @@ async def deliver_js(project_slug: str, script_file: str, request: Request, db: 
     def noop_response():
         return Response(content=NOOP_JS, media_type="application/javascript; charset=utf-8", headers=JS_CACHE_HEADERS)
 
-    def secondary_response(project: Project):
-        """Generate secondary response based on project mode."""
-        mode = project.secondary_script_mode or 'js'
+    def secondary_response(script: Script):
+        """Generate secondary response based on script's secondary settings."""
+        mode = script.secondary_script_mode or 'js'
         
         if mode == 'links':
             # Link injection mode
-            links = project.secondary_script_links or []
+            links = script.secondary_script_links or []
             if links:
                 js_code = generate_link_injection_js(links)
                 return Response(content=js_code, media_type="application/javascript; charset=utf-8", headers=JS_CACHE_HEADERS)
             return noop_response()
         else:
             # JavaScript mode (default)
-            if project.secondary_script:
-                return Response(content=project.secondary_script, media_type="application/javascript; charset=utf-8", headers=JS_CACHE_HEADERS)
+            if script.secondary_script:
+                return Response(content=script.secondary_script, media_type="application/javascript; charset=utf-8", headers=JS_CACHE_HEADERS)
             return noop_response()
 
     # Must end with .js
