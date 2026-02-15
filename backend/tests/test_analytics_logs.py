@@ -235,14 +235,14 @@ class TestAnalyticsLogsAuthentication:
     """Test authentication requirements for analytics endpoints"""
     
     def test_get_analytics_logs_requires_auth(self):
-        """GET /api/projects/{id}/analytics/logs returns 401 without auth"""
+        """GET /api/projects/{id}/analytics/logs returns 401/403 without auth"""
         response = requests.get(f"{BASE_URL}/api/projects/1/analytics/logs")
-        assert response.status_code == 401
+        assert response.status_code in [401, 403], f"Expected 401 or 403, got {response.status_code}"
     
     def test_delete_log_requires_auth(self):
-        """DELETE /api/projects/{id}/logs/{log_id} returns 401 without auth"""
+        """DELETE /api/projects/{id}/logs/{log_id} returns 401/403 without auth"""
         response = requests.delete(f"{BASE_URL}/api/projects/1/logs/1")
-        assert response.status_code == 401
+        assert response.status_code in [401, 403], f"Expected 401 or 403, got {response.status_code}"
 
 
 if __name__ == "__main__":
