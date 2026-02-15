@@ -930,6 +930,57 @@ async def get_analytics(project_id: int, db: AsyncSession = Depends(get_db), cur
     }
 
 
+# ─── Individual Access Logs for Analytics Tab ───
+@api_router.get("/projects/{project_id}/analytics/logs")
+async def get_analytics_logs(project_id: int, limit: int = 100, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
+    """Get individual access log entries for the Analytics tab with per-row delete capability."""
+    project = await get_user_project(db, project_id, current_user['user_id'])
+
+    # Get scripts for URL mapping
+    scripts_result = await db.execute(select(Script).where(Script.project_id == project_id))
+    scripts = {s.id: s for s in scripts_result.scalars().all()}
+
+    # Get individual log entries (most recent first)
+    result = await db.execute(
+        select(AccessLog)
+        .where(AccessLog.project_id == project_id)
+        .order_by(desc(AccessLog.created_at))
+        .limit(limit)
+    )
+    logs = result.scalars().all()
+
+    # Build flat list of individual log entries
+    log_entries = []
+    for log in logs:
+        script = scripts.get(log.script_id) if log.script_id else None
+        script_url = f"/api/js/{project.slug}/{script.slug}.js" if script else None
+        
+        log_entries.append({
+            "id": log.id,
+            "referer_url": log.referer_url or log.ref_domain or "Direct/Unknown",
+            "script_url": script_url,
+            "script_name": script.name if script else "Unknown",
+            "status": "allowed" if log.allowed else "denied",
+            "requests": 1,  # Individual log entry = 1 request
+            "last_access": log.created_at.isoformat() if log.created_at else None,
+        })
+
+    # Summary stats
+    total = await db.execute(select(func.count(AccessLog.id)).where(AccessLog.project_id == project_id))
+    allowed = await db.execute(select(func.count(AccessLog.id)).where(and_(AccessLog.project_id == project_id, AccessLog.allowed == True)))
+    total_val = total.scalar() or 0
+    allowed_val = allowed.scalar() or 0
+
+    return {
+        "logs": log_entries,
+        "summary": {
+            "total": total_val,
+            "allowed": allowed_val,
+            "denied": total_val - allowed_val
+        }
+    }
+
+
 # ─── Blacklisted Domains (non-whitelisted) ───
 @api_router.get("/projects/{project_id}/blacklisted-domains")
 async def get_blacklisted_domains(project_id: int, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
