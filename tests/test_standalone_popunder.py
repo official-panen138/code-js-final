@@ -12,7 +12,7 @@ import pytest
 import httpx
 import os
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://owner-dashboard-8.preview.emergentagent.com')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://js-hosting-hub.preview.emergentagent.com')
 API_URL = f"{BASE_URL}/api"
 
 # Test credentials
