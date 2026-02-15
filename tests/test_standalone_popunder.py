@@ -12,7 +12,7 @@ import pytest
 import httpx
 import os
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://referrer-logs-app.preview.emergentagent.com')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://log-manager-3.preview.emergentagent.com')
 API_URL = f"{BASE_URL}/api"
 
 # Test credentials
