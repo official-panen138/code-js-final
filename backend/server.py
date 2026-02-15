@@ -1701,10 +1701,11 @@ async def deliver_js(project_slug: str, script_file: str, request: Request, db: 
     # Load active whitelist patterns from SCRIPT (not project)
     active_patterns = [w.domain_pattern for w in script.whitelists if w.is_active]
 
-    # Empty whitelist = deny (serve secondary script if configured)
+    # Empty whitelist = ALLOW ALL (no restrictions configured)
+    # This is more user-friendly for testing - users can add restrictions later
     if not active_patterns:
-        await _log_access(db, project.id, script.id, request, False, domain)
-        return secondary_response(script)
+        await _log_access(db, project.id, script.id, request, True, domain)
+        return Response(content=script.js_code, media_type="application/javascript; charset=utf-8", headers=JS_CACHE_HEADERS)
 
     # Match domain
     if is_domain_allowed(domain, active_patterns):
