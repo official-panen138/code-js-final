@@ -927,7 +927,7 @@ function ScriptsTab({ projectId, scripts, onRefresh, getEmbedUrl, copied, copyTo
 
       {/* Script Analytics Dialog */}
       <Dialog open={showScriptAnalytics} onOpenChange={setShowScriptAnalytics}>
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto" data-testid="script-analytics-dialog">
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto" data-testid="script-analytics-dialog">
           <DialogHeader>
             <DialogTitle style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
               <div className="flex items-center gap-2">
@@ -974,13 +974,13 @@ function ScriptsTab({ projectId, scripts, onRefresh, getEmbedUrl, copied, copyTo
                   </div>
                 </div>
 
-                {/* Domains Table */}
+                {/* Individual Logs Table with Delete Buttons */}
                 <div>
                   <Label className="label-caps flex items-center gap-2 mb-3">
-                    <Globe className="w-4 h-4 text-purple-600" />
-                    Domains Accessing This Script
+                    <ExternalLink className="w-4 h-4 text-blue-600" />
+                    Access Logs - Click delete to remove specific logs
                   </Label>
-                  {scriptAnalyticsData.domains.length === 0 ? (
+                  {scriptAnalyticsData.logs.length === 0 ? (
                     <div className="text-center py-6 border border-dashed rounded-lg">
                       <Activity className="w-6 h-6 text-muted-foreground mx-auto mb-2" strokeWidth={1.5} />
                       <p className="text-sm text-muted-foreground">
@@ -989,33 +989,80 @@ function ScriptsTab({ projectId, scripts, onRefresh, getEmbedUrl, copied, copyTo
                     </div>
                   ) : (
                     <div className="overflow-x-auto border border-border rounded-lg">
-                      <table className="w-full text-sm" data-testid="script-domains-table">
+                      <table className="w-full text-sm" data-testid="script-logs-table">
                         <thead>
                           <tr className="border-b border-border bg-slate-50/80">
-                            <th className="text-left px-3 py-2 table-header text-xs">Domain</th>
+                            <th className="text-left px-3 py-2 table-header text-xs">Source URL</th>
+                            <th className="text-left px-3 py-2 table-header text-xs">Link Script</th>
                             <th className="text-left px-3 py-2 table-header text-xs">Status</th>
                             <th className="text-left px-3 py-2 table-header text-xs">Requests</th>
                             <th className="text-left px-3 py-2 table-header text-xs">Last Access</th>
+                            <th className="text-center px-3 py-2 table-header text-xs">Action</th>
                           </tr>
                         </thead>
                         <tbody>
-                          {scriptAnalyticsData.domains.map((item, idx) => (
-                            <tr key={idx} className={`border-b border-border/50 transition-colors ${item.status === 'allowed' ? 'bg-green-50/30' : 'bg-red-50/30'}`}>
-                              <td className="px-3 py-2 font-mono text-xs" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
-                                {item.domain}
+                          {scriptAnalyticsData.logs.map((log) => (
+                            <tr 
+                              key={log.id} 
+                              className={`border-b border-border/50 transition-colors ${log.status === 'allowed' ? 'bg-green-50/50' : 'bg-red-50/50'}`}
+                              data-testid={`script-log-row-${log.id}`}
+                            >
+                              <td className="px-3 py-2 max-w-[180px]">
+                                {log.referer_url && log.referer_url.startsWith('http') ? (
+                                  <a 
+                                    href={log.referer_url} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="text-xs font-mono text-blue-600 hover:text-blue-800 underline truncate block"
+                                    style={{ fontFamily: 'JetBrains Mono, monospace' }}
+                                    title={log.referer_url}
+                                  >
+                                    {log.referer_url}
+                                  </a>
+                                ) : (
+                                  <span className="text-xs text-muted-foreground font-mono" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
+                                    {log.referer_url}
+                                  </span>
+                                )}
+                              </td>
+                              <td className="px-3 py-2 max-w-[180px]">
+                                <a 
+                                  href={`${BACKEND_URL}${log.script_url}`} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="text-xs font-mono text-blue-600 hover:text-blue-800 underline truncate block"
+                                  style={{ fontFamily: 'JetBrains Mono, monospace' }}
+                                  title={`${BACKEND_URL}${log.script_url}`}
+                                >
+                                  {`${BACKEND_URL}${log.script_url}`}
+                                </a>
                               </td>
                               <td className="px-3 py-2">
-                                <span className={`px-2 py-0.5 rounded text-xs font-medium ${item.status === 'allowed' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                                  {item.status === 'allowed' ? 'Allowed' : 'Denied'}
+                                <span className={`px-2 py-0.5 rounded text-xs font-medium ${log.status === 'allowed' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                                  {log.status === 'allowed' ? 'Allowed' : 'Denied'}
                                 </span>
                               </td>
                               <td className="px-3 py-2 font-mono text-xs" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
-                                <span className={item.status === 'allowed' ? 'text-green-700' : 'text-red-700'}>
-                                  {item.request_count}
-                                </span>
+                                {log.requests}
                               </td>
                               <td className="px-3 py-2 text-xs text-muted-foreground">
-                                {item.last_access ? new Date(item.last_access).toLocaleString() : '—'}
+                                {log.last_access ? new Date(log.last_access).toLocaleString() : '—'}
+                              </td>
+                              <td className="px-3 py-2 text-center">
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  className="text-destructive hover:bg-destructive/10 h-7 w-7 p-0"
+                                  onClick={() => handleDeleteScriptLog(log.id)}
+                                  disabled={deletingLogId === log.id}
+                                  data-testid={`delete-script-log-${log.id}`}
+                                >
+                                  {deletingLogId === log.id ? (
+                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600" />
+                                  ) : (
+                                    <Trash2 className="w-4 h-4" />
+                                  )}
+                                </Button>
                               </td>
                             </tr>
                           ))}
@@ -1024,58 +1071,6 @@ function ScriptsTab({ projectId, scripts, onRefresh, getEmbedUrl, copied, copyTo
                     </div>
                   )}
                 </div>
-
-                {/* Full Source URLs Table */}
-                {scriptAnalyticsData.referer_urls && scriptAnalyticsData.referer_urls.length > 0 && (
-                  <div className="mt-4">
-                    <Label className="label-caps flex items-center gap-2 mb-3">
-                      <ExternalLink className="w-4 h-4 text-blue-600" />
-                      Full Source URLs
-                    </Label>
-                    <div className="overflow-x-auto border border-border rounded-lg">
-                      <table className="w-full text-sm" data-testid="script-referer-urls-table">
-                        <thead>
-                          <tr className="border-b border-border bg-slate-50/80">
-                            <th className="text-left px-3 py-2 table-header text-xs">Source URL</th>
-                            <th className="text-left px-3 py-2 table-header text-xs">Status</th>
-                            <th className="text-left px-3 py-2 table-header text-xs">Requests</th>
-                            <th className="text-left px-3 py-2 table-header text-xs">Last Access</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {scriptAnalyticsData.referer_urls.map((item, idx) => (
-                            <tr key={idx} className={`border-b border-border/50 transition-colors ${item.status === 'allowed' ? 'bg-green-50/30' : 'bg-red-50/30'}`}>
-                              <td className="px-3 py-2 max-w-[250px]">
-                                <a 
-                                  href={item.referer_url} 
-                                  target="_blank" 
-                                  rel="noopener noreferrer"
-                                  className="text-xs font-mono text-blue-600 hover:text-blue-800 underline break-all block"
-                                  style={{ fontFamily: 'JetBrains Mono, monospace' }}
-                                >
-                                  {item.referer_url}
-                                </a>
-                              </td>
-                              <td className="px-3 py-2">
-                                <span className={`px-2 py-0.5 rounded text-xs font-medium ${item.status === 'allowed' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                                  {item.status === 'allowed' ? 'Allowed' : 'Denied'}
-                                </span>
-                              </td>
-                              <td className="px-3 py-2 font-mono text-xs" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
-                                <span className={item.status === 'allowed' ? 'text-green-700' : 'text-red-700'}>
-                                  {item.request_count}
-                                </span>
-                              </td>
-                              <td className="px-3 py-2 text-xs text-muted-foreground">
-                                {item.last_access ? new Date(item.last_access).toLocaleString() : '—'}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                )}
               </>
             ) : (
               <div className="text-center py-6">
@@ -1089,12 +1084,12 @@ function ScriptsTab({ projectId, scripts, onRefresh, getEmbedUrl, copied, copyTo
                 variant="destructive" 
                 size="sm"
                 onClick={async () => {
-                  if (window.confirm(`Are you sure you want to clear all logs for "${analyticsScript?.name}"?`)) {
+                  if (window.confirm(`Are you sure you want to clear ALL logs for "${analyticsScript?.name}"?`)) {
                     try {
                       await scriptAPI.clearLogs(projectId, analyticsScript.id);
-                      toast.success('Logs cleared successfully');
-                      // Refresh analytics
-                      const { data } = await scriptAPI.analytics(projectId, analyticsScript.id);
+                      toast.success('All logs cleared successfully');
+                      // Refresh data
+                      const { data } = await scriptAPI.logs(projectId, analyticsScript.id);
                       setScriptAnalyticsData(data);
                     } catch (err) {
                       toast.error('Failed to clear logs');
@@ -1103,7 +1098,7 @@ function ScriptsTab({ projectId, scripts, onRefresh, getEmbedUrl, copied, copyTo
                 }}
                 data-testid="clear-script-logs-btn"
               >
-                <Trash2 className="w-4 h-4 mr-1" /> Clear Logs
+                <Trash2 className="w-4 h-4 mr-1" /> Clear All Logs
               </Button>
             )}
             <Button variant="outline" onClick={() => setShowScriptAnalytics(false)}>Close</Button>
