@@ -49,6 +49,7 @@ class Project(Base):
     name = Column(String(255), nullable=False)
     slug = Column(String(255), unique=True, nullable=False, index=True)
     status = Column(Enum('active', 'paused', name='project_status'), default='active', nullable=False)
+    secondary_script = Column(Text, nullable=True)  # Fallback JS for non-whitelisted domains
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
 
     user = relationship('User', back_populates='projects')
