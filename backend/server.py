@@ -768,7 +768,11 @@ async def clear_access_logs(project_id: int, db: AsyncSession = Depends(get_db),
 # ─── Analytics ───
 @api_router.get("/projects/{project_id}/analytics")
 async def get_analytics(project_id: int, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
-    await get_user_project(db, project_id, current_user['user_id'])
+    project = await get_user_project(db, project_id, current_user['user_id'])
+
+    # Get scripts for URL mapping
+    scripts_result = await db.execute(select(Script).where(Script.project_id == project_id))
+    scripts = {s.id: s for s in scripts_result.scalars().all()}
 
     # Overall stats
     total = await db.execute(select(func.count(AccessLog.id)).where(AccessLog.project_id == project_id))
@@ -806,10 +810,37 @@ async def get_analytics(project_id: int, db: AsyncSession = Depends(get_db), cur
     )
     domain_data = [{"domain": row.ref_domain, "count": row.count, "allowed": int(row.allowed or 0), "denied": int(row.denied or 0)} for row in domain_result]
 
+    # Analytics by script (which script URL was used)
+    script_result = await db.execute(
+        select(
+            AccessLog.script_id,
+            func.count(AccessLog.id).label('count'),
+            func.sum(case((AccessLog.allowed == True, 1), else_=0)).label('allowed'),
+            func.sum(case((AccessLog.allowed == False, 1), else_=0)).label('denied'),
+        )
+        .where(and_(AccessLog.project_id == project_id, AccessLog.script_id != None))
+        .group_by(AccessLog.script_id)
+        .order_by(desc(func.count(AccessLog.id)))
+    )
+    script_data = []
+    for row in script_result:
+        script = scripts.get(row.script_id)
+        if script:
+            script_url = f"/api/js/{project.slug}/{script.slug}.js"
+            script_data.append({
+                "script_id": row.script_id,
+                "script_name": script.name,
+                "script_url": script_url,
+                "count": row.count,
+                "allowed": int(row.allowed or 0),
+                "denied": int(row.denied or 0)
+            })
+
     return {
         "summary": {"total": total_val, "allowed": allowed_val, "denied": total_val - allowed_val},
         "daily": daily_data,
         "top_domains": domain_data,
+        "by_script": script_data,
     }
 
 
