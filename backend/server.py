@@ -1,5 +1,6 @@
 from fastapi import FastAPI, APIRouter, Depends, HTTPException, Request, Response, status
-from fastapi.responses import PlainTextResponse
+from fastapi.responses import PlainTextResponse, HTMLResponse
+from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from sqlalchemy.ext.asyncio import AsyncSession
