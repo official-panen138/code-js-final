@@ -1000,7 +1000,7 @@ async def deliver_popunder_js(campaign_file: str, request: Request, db: AsyncSes
         "id": campaign.id,
         "urls": urls,
         "timer": settings.get("timer", 0),
-        "interval": settings.get("interval", 24),
+        "freq": settings.get("frequency", 1),
         "devices": settings.get("devices", ["desktop", "mobile", "tablet"]),
         "countries": settings.get("countries", []),
         "banner": settings.get("floating_banner", ""),
