@@ -977,12 +977,19 @@ async def deliver_popunder_js(campaign_file: str, request: Request, db: AsyncSes
     # Build configuration from campaign settings
     settings = campaign.settings or {}
     
+    # Parse URL list (newline separated)
+    url_list_str = settings.get("url_list", "")
+    urls = [u.strip() for u in url_list_str.split('\n') if u.strip()]
+    
     config = {
         "id": campaign.id,
-        "url": settings.get("direct_link", ""),
+        "urls": urls,
         "timer": settings.get("timer", 0),
         "interval": settings.get("interval", 24),
         "devices": settings.get("devices", ["desktop", "mobile", "tablet"]),
+        "countries": settings.get("countries", []),
+        "banner": settings.get("floating_banner", ""),
+        "html": settings.get("html_body", ""),
     }
 
     js_code = POPUNDER_ENGINE_TEMPLATE.replace('__CONFIG__', json.dumps(config))
