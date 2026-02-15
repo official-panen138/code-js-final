@@ -139,7 +139,7 @@ export default function PopunderDetailPage() {
         settings: {
           url_list: editForm.url_list.trim(),
           timer: parseInt(editForm.timer) || 0,
-          interval: parseInt(editForm.interval) || 24,
+          frequency: parseInt(editForm.frequency) || 1,
           devices: editForm.devices || ['desktop', 'mobile', 'tablet'],
           countries: editForm.countries || [],
           floating_banner: editForm.floating_banner || '',
