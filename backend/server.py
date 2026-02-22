@@ -2228,6 +2228,25 @@ async def update_user(user_id: int, data: UserUpdate, db: AsyncSession = Depends
 
 # ─── Custom Domains ───
 import socket
+import subprocess
+
+# Known Cloudflare IP ranges (partial list - most common ranges)
+CLOUDFLARE_IP_RANGES = [
+    "103.21.244.", "103.22.200.", "103.31.4.", "104.16.", "104.17.", "104.18.", "104.19.", 
+    "104.20.", "104.21.", "104.22.", "104.23.", "104.24.", "104.25.", "104.26.", "104.27.",
+    "108.162.", "131.0.72.", "141.101.", "162.158.", "172.64.", "172.65.", "172.66.", 
+    "172.67.", "173.245.", "188.114.", "190.93.", "197.234.", "198.41.", "184.21.", "184.72."
+]
+
+def is_cloudflare_ip(ip: str) -> bool:
+    """Check if an IP belongs to Cloudflare."""
+    if not ip:
+        return False
+    for cf_range in CLOUDFLARE_IP_RANGES:
+        if ip.startswith(cf_range):
+            return True
+    return False
+
 
 def resolve_domain_ip(domain: str) -> str:
     """Resolve a domain to its A record IP address."""
@@ -2238,6 +2257,61 @@ def resolve_domain_ip(domain: str) -> str:
     except (socket.gaierror, socket.herror, OSError):
         pass
     return None
+
+
+def resolve_domain_cname(domain: str) -> str:
+    """Try to resolve CNAME record for a domain."""
+    try:
+        result = subprocess.run(
+            ['dig', '+short', 'CNAME', domain],
+            capture_output=True, text=True, timeout=10
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            return result.stdout.strip().rstrip('.')
+    except Exception:
+        pass
+    return None
+
+
+def verify_domain_via_http(domain: str, platform_domain: str) -> bool:
+    """
+    Verify domain by making an HTTP request to check if traffic routes correctly.
+    This works for Cloudflare-proxied domains.
+    """
+    import urllib.request
+    import ssl
+    
+    try:
+        # Create an SSL context that doesn't verify certificates (for testing)
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+        
+        # Try to access a health endpoint on the custom domain
+        url = f"https://{domain}/api/health"
+        req = urllib.request.Request(url, headers={'Host': domain})
+        
+        response = urllib.request.urlopen(req, timeout=10, context=ctx)
+        data = response.read().decode('utf-8')
+        
+        # Check if response contains expected data
+        if 'status' in data.lower() or 'ok' in data.lower():
+            return True
+    except Exception:
+        pass
+    
+    try:
+        # Try HTTP as fallback
+        url = f"http://{domain}/api/health"
+        req = urllib.request.Request(url, headers={'Host': domain})
+        response = urllib.request.urlopen(req, timeout=10)
+        data = response.read().decode('utf-8')
+        if 'status' in data.lower() or 'ok' in data.lower():
+            return True
+    except Exception:
+        pass
+    
+    return False
 
 
 def get_platform_ip() -> str:
