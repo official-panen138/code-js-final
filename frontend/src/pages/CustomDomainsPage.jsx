@@ -262,6 +262,30 @@ export default function CustomDomainsPage() {
                             Verified: {new Date(domain.verified_at).toLocaleString()}
                           </p>
                         )}
+
+                        {/* Cloudflare Detection Info */}
+                        {(domain.status === 'cloudflare_pending' || domain.status === 'failed') && lastVerification?.domainId === domain.id && lastVerification?.is_cloudflare && (
+                          <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mt-3">
+                            <div className="flex items-start gap-3">
+                              <Cloud className="w-5 h-5 text-orange-600 flex-shrink-0 mt-0.5" />
+                              <div className="space-y-2 flex-1">
+                                <p className="text-sm font-medium text-orange-800">Cloudflare Proxy Detected</p>
+                                <p className="text-xs text-orange-700">
+                                  Your domain is using Cloudflare proxy. To complete verification:
+                                </p>
+                                <ol className="text-xs text-orange-700 list-decimal list-inside space-y-1">
+                                  <li>Go to Cloudflare dashboard → DNS settings</li>
+                                  <li>Make sure your domain has a <strong>CNAME</strong> or <strong>A</strong> record configured</li>
+                                  <li>Ensure traffic is proxied (orange cloud enabled)</li>
+                                  <li>Set origin server to point to this platform</li>
+                                </ol>
+                                <p className="text-xs text-orange-600 mt-2">
+                                  Or click <strong>"Force Activate"</strong> if you're sure Cloudflare is configured correctly.
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
 
                       {/* Actions */}
@@ -275,6 +299,21 @@ export default function CustomDomainsPage() {
                           <RefreshCw className={`w-4 h-4 mr-1.5 ${verifying === domain.id ? 'animate-spin' : ''}`} />
                           {verifying === domain.id ? 'Verifying...' : 'Verify DNS'}
                         </Button>
+                        
+                        {/* Force Activate for Cloudflare/Failed domains */}
+                        {(domain.status === 'cloudflare_pending' || domain.status === 'failed') && (
+                          <Button
+                            variant="outline" size="sm"
+                            className="border-orange-300 text-orange-700 hover:bg-orange-50"
+                            onClick={() => handleForceActivate(domain.id)}
+                            disabled={forceActivating === domain.id}
+                            data-testid={`force-activate-domain-${domain.id}`}
+                          >
+                            <ShieldCheck className={`w-4 h-4 mr-1.5 ${forceActivating === domain.id ? 'animate-pulse' : ''}`} />
+                            {forceActivating === domain.id ? 'Activating...' : 'Force Activate'}
+                          </Button>
+                        )}
+                        
                         {domain.status === 'verified' && (
                           <Switch
                             checked={domain.is_active}
