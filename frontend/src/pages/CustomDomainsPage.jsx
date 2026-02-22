@@ -58,16 +58,33 @@ export default function CustomDomainsPage() {
     try {
       const res = await customDomainAPI.verify(id);
       const v = res.data.verification;
+      setLastVerification({ domainId: id, ...v });
+      
       if (v.match) {
-        toast.success('DNS verified! Domain is now active.');
+        toast.success(v.message || 'DNS verified! Domain is now active.');
+      } else if (v.is_cloudflare) {
+        toast.warning('Cloudflare detected! See instructions below to complete setup.', { duration: 6000 });
       } else {
-        toast.error(`DNS mismatch. Expected IP: ${v.platform_ip || 'unknown'}, Got: ${v.resolved_ip || 'no record found'}`);
+        toast.error(v.message || `DNS mismatch. Expected IP: ${v.platform_ip || 'unknown'}, Got: ${v.resolved_ip || 'no record found'}`);
       }
       loadDomains();
     } catch (err) {
       toast.error(err.response?.data?.detail || 'Verification failed');
     } finally {
       setVerifying(null);
+    }
+  };
+
+  const handleForceActivate = async (id) => {
+    setForceActivating(id);
+    try {
+      await customDomainAPI.forceActivate(id);
+      toast.success('Domain force-activated! You can now use it for JS delivery.');
+      loadDomains();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Force activation failed');
+    } finally {
+      setForceActivating(null);
     }
   };
 
