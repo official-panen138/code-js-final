@@ -121,6 +121,7 @@ export default function CustomDomainsPage() {
     pending: { color: 'bg-yellow-50 text-yellow-700 border-yellow-200', icon: AlertCircle, label: 'Pending' },
     verified: { color: 'bg-green-50 text-green-700 border-green-200', icon: CheckCircle, label: 'Verified' },
     failed: { color: 'bg-red-50 text-red-700 border-red-200', icon: XCircle, label: 'Failed' },
+    cloudflare_pending: { color: 'bg-orange-50 text-orange-700 border-orange-200', icon: Cloud, label: 'Cloudflare Detected' },
   };
 
   if (loading) {
