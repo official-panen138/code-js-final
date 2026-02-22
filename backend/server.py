@@ -2510,13 +2510,49 @@ async def update_custom_domain(domain_id: int, data: CustomDomainUpdate, db: Asy
         raise HTTPException(status_code=404, detail="Domain not found")
 
     if data.is_active is not None:
-        if data.is_active and entry.status != 'verified':
+        # Allow activation for verified domains OR cloudflare_pending domains (manual override)
+        if data.is_active and entry.status not in ['verified', 'cloudflare_pending']:
             raise HTTPException(status_code=400, detail="Cannot activate unverified domain. Verify DNS first.")
         entry.is_active = data.is_active
+        
+        # If activating a cloudflare_pending domain, mark it as verified (manual override)
+        if data.is_active and entry.status == 'cloudflare_pending':
+            entry.status = 'verified'
+            entry.verified_at = datetime.now(timezone.utc)
 
     await db.commit()
     await db.refresh(entry)
     return {"domain": custom_domain_to_dict(entry)}
+
+
+@api_router.post("/custom-domains/{domain_id}/force-activate")
+async def force_activate_domain(domain_id: int, db: AsyncSession = Depends(get_db), current_user: dict = Depends(require_permission('custom_domains'))):
+    """
+    Force activate a domain (admin override).
+    Useful for Cloudflare-proxied domains where automatic verification may fail.
+    """
+    result = await db.execute(select(CustomDomain).where(CustomDomain.id == domain_id))
+    entry = result.scalar_one_or_none()
+    if not entry:
+        raise HTTPException(status_code=404, detail="Domain not found")
+    
+    # Check if user is admin
+    user_id = current_user['user_id']
+    is_admin = await is_user_admin(db, user_id)
+    
+    if not is_admin:
+        raise HTTPException(status_code=403, detail="Only admins can force-activate domains")
+    
+    entry.status = 'verified'
+    entry.is_active = True
+    entry.verified_at = datetime.now(timezone.utc)
+    
+    await db.commit()
+    await db.refresh(entry)
+    return {
+        "domain": custom_domain_to_dict(entry),
+        "message": "Domain force-activated by admin"
+    }
 
 
 @api_router.delete("/custom-domains/{domain_id}")
