@@ -106,6 +106,7 @@ export const customDomainAPI = {
   verify: (id) => api.post(`/custom-domains/${id}/verify`),
   update: (id, data) => api.patch(`/custom-domains/${id}`, data),
   delete: (id) => api.delete(`/custom-domains/${id}`),
+  forceActivate: (id) => api.post(`/custom-domains/${id}/force-activate`),
 };
 
 // Popunder Campaigns (standalone)
