@@ -2409,28 +2409,97 @@ async def verify_custom_domain(domain_id: int, db: AsyncSession = Depends(get_db
     # Resolve domain A record
     resolved_ip = resolve_domain_ip(entry.domain)
     platform_ip = get_platform_ip()
+    
+    # Get platform hostname for CNAME verification
+    backend_url = os.environ.get('REACT_APP_BACKEND_URL', '')
+    platform_hostname = None
+    if backend_url:
+        from urllib.parse import urlparse
+        platform_hostname = urlparse(backend_url).hostname
 
     entry.resolved_ip = resolved_ip
     entry.platform_ip = platform_ip
-
+    
+    verification_method = "ip_match"
+    is_verified = False
+    is_cloudflare = False
+    cname_target = None
+    
+    # Method 1: Direct IP match
     if resolved_ip and platform_ip and resolved_ip == platform_ip:
+        is_verified = True
+        verification_method = "ip_match"
+    
+    # Method 2: Check if using Cloudflare proxy
+    elif resolved_ip and is_cloudflare_ip(resolved_ip):
+        is_cloudflare = True
+        
+        # Check CNAME record
+        cname_target = resolve_domain_cname(entry.domain)
+        
+        # If CNAME points to our platform domain, consider it valid
+        if cname_target and platform_hostname and platform_hostname in cname_target:
+            is_verified = True
+            verification_method = "cname_match"
+        else:
+            # Try HTTP verification (domain routes traffic to us via Cloudflare)
+            if verify_domain_via_http(entry.domain, platform_hostname):
+                is_verified = True
+                verification_method = "http_verify"
+            else:
+                # Cloudflare detected but not properly configured
+                # We'll allow it if user has set up Cloudflare to proxy to us
+                # Mark as "cloudflare_pending" for manual verification
+                entry.status = 'cloudflare_pending'
+                verification_method = "cloudflare_detected"
+    
+    # Method 3: CNAME verification for non-Cloudflare CDNs
+    elif not is_verified:
+        cname_target = resolve_domain_cname(entry.domain)
+        if cname_target and platform_hostname and platform_hostname in cname_target:
+            is_verified = True
+            verification_method = "cname_match"
+    
+    if is_verified:
         entry.status = 'verified'
         entry.is_active = True
         entry.verified_at = datetime.now(timezone.utc)
-    else:
+    elif entry.status != 'cloudflare_pending':
         entry.status = 'failed'
         entry.is_active = False
 
     await db.commit()
     await db.refresh(entry)
+    
     return {
         "domain": custom_domain_to_dict(entry),
         "verification": {
             "platform_ip": platform_ip,
             "resolved_ip": resolved_ip,
-            "match": resolved_ip == platform_ip if (resolved_ip and platform_ip) else False,
+            "cname_target": cname_target,
+            "is_cloudflare": is_cloudflare,
+            "verification_method": verification_method,
+            "match": is_verified,
+            "message": get_verification_message(is_verified, is_cloudflare, verification_method, platform_hostname, platform_ip)
         }
     }
+
+
+def get_verification_message(is_verified: bool, is_cloudflare: bool, method: str, platform_hostname: str, platform_ip: str) -> str:
+    """Generate a helpful message based on verification result."""
+    if is_verified:
+        if method == "ip_match":
+            return "DNS verified! Your domain points directly to the platform IP."
+        elif method == "cname_match":
+            return "DNS verified via CNAME! Your domain correctly points to the platform."
+        elif method == "http_verify":
+            return "Verified via Cloudflare! Traffic is correctly routed through Cloudflare to the platform."
+        return "Domain verified successfully!"
+    
+    if is_cloudflare:
+        return f"Cloudflare proxy detected. Please configure Cloudflare to proxy traffic to: {platform_hostname or platform_ip}. You can either: 1) Create a CNAME record pointing to {platform_hostname}, or 2) In Cloudflare, set the origin server to {platform_ip}"
+    
+    return f"DNS verification failed. Please point your domain's A record to {platform_ip} or create a CNAME to {platform_hostname}"
 
 
 @api_router.patch("/custom-domains/{domain_id}")
