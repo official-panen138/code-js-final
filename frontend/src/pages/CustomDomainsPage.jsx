@@ -9,7 +9,7 @@ import { Badge } from '../components/ui/badge';
 import { Switch } from '../components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../components/ui/dialog';
 import { Separator } from '../components/ui/separator';
-import { Globe, Plus, Trash2, RefreshCw, AlertCircle, CheckCircle, XCircle, Copy, Check, Server } from 'lucide-react';
+import { Globe, Plus, Trash2, RefreshCw, AlertCircle, CheckCircle, XCircle, Copy, Check, Server, Cloud, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function CustomDomainsPage() {
@@ -19,8 +19,10 @@ export default function CustomDomainsPage() {
   const [newDomain, setNewDomain] = useState('');
   const [adding, setAdding] = useState(false);
   const [verifying, setVerifying] = useState(null);
+  const [forceActivating, setForceActivating] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [copied, setCopied] = useState(null);
+  const [lastVerification, setLastVerification] = useState(null);
 
   const loadDomains = useCallback(async () => {
     try {
