@@ -166,6 +166,18 @@ Build a platform that allows users to create projects, add JavaScript scripts, c
   - "Clear all filters" link when no results match
 - [x] **Responsive Layout**: Search and filter side-by-side on desktop, stacked on mobile
 
+### Phase 14 - Domain Selector for Scripts (Feb 23, 2026)
+- [x] **Custom Domain Selector**: Choose which domain to use for script URLs
+  - Dropdown on Scripts tab in Project Detail page
+  - Shows "Default (Main Platform)" and all verified/active custom domains
+  - Selecting a domain updates all embed URLs instantly
+  - Also available on Embed tab
+- [x] **Cloudflare Domain Support**: Enhanced DNS verification for Cloudflare-proxied domains
+  - Detects Cloudflare IP ranges automatically
+  - Supports CNAME verification for CDN domains
+  - "Force Activate" button for admin override
+  - Status `cloudflare_pending` with setup instructions
+
 ## Database Schema
 
 ### Tables
