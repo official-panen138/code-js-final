@@ -1,6 +1,6 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Code2, LayoutDashboard, FolderKanban, LogOut, ChevronLeft, ChevronRight, Settings, Users, Globe, Layers } from 'lucide-react';
+import { Code2, LayoutDashboard, FolderKanban, LogOut, ChevronLeft, ChevronRight, Settings, Users, Globe, Layers, BookOpen } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Separator } from '../components/ui/separator';
 import { useState } from 'react';
@@ -12,6 +12,7 @@ const ALL_LINKS = [
   { to: '/settings', icon: Settings, label: 'Settings', permission: 'settings' },
   { to: '/domains', icon: Globe, label: 'Domains', permission: 'custom_domains' },
   { to: '/users', icon: Users, label: 'Users', permission: 'user_management' },
+  { to: '/guide', icon: BookOpen, label: 'User Guide', permission: null }, // Available to all users
 ];
 
 function Sidebar() {
