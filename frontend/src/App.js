@@ -11,6 +11,7 @@ import PopunderDetailPage from "./pages/PopunderDetailPage";
 import SettingsPage from "./pages/SettingsPage";
 import UserManagementPage from "./pages/UserManagementPage";
 import CustomDomainsPage from "./pages/CustomDomainsPage";
+import UserGuidePage from "./pages/UserGuidePage";
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth();
