@@ -47,6 +47,7 @@ function App() {
           <Route path="/settings" element={<PermissionRoute permission="settings"><SettingsPage /></PermissionRoute>} />
           <Route path="/users" element={<PermissionRoute permission="user_management"><UserManagementPage /></PermissionRoute>} />
           <Route path="/domains" element={<PermissionRoute permission="custom_domains"><CustomDomainsPage /></PermissionRoute>} />
+          <Route path="/guide" element={<PrivateRoute><UserGuidePage /></PrivateRoute>} />
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
