@@ -525,13 +525,40 @@ function ScriptsTab({ projectId, scripts, onRefresh, getEmbedUrl, copied, copyTo
         <h2 className="text-xl font-medium tracking-tight" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
           Scripts ({scripts.length})
         </h2>
-        <Button
-          onClick={() => { resetForm(); setShowCreate(true); }}
-          className="bg-[#0F172A] hover:bg-[#1E293B] text-white active:scale-95 transition-transform"
-          data-testid="add-script-btn"
-        >
-          <Plus className="w-4 h-4 mr-2" /> Add Script
-        </Button>
+        <div className="flex items-center gap-3">
+          {/* CDN Domain Selector */}
+          {cdnDomains && cdnDomains.length > 0 && (
+            <div className="flex items-center gap-2">
+              <Label className="text-xs text-muted-foreground whitespace-nowrap">Domain:</Label>
+              <Select value={selectedCdn} onValueChange={setSelectedCdn}>
+                <SelectTrigger className="w-[180px] h-9" data-testid="script-cdn-selector">
+                  <SelectValue placeholder="Select domain" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="default">
+                    <span className="flex items-center gap-2">
+                      <Globe className="w-3 h-3" /> Default
+                    </span>
+                  </SelectItem>
+                  {cdnDomains.map((cdn) => (
+                    <SelectItem key={cdn.id} value={cdn.id.toString()}>
+                      <span className="flex items-center gap-2">
+                        <Globe className="w-3 h-3 text-green-600" /> {cdn.domain}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+          <Button
+            onClick={() => { resetForm(); setShowCreate(true); }}
+            className="bg-[#0F172A] hover:bg-[#1E293B] text-white active:scale-95 transition-transform"
+            data-testid="add-script-btn"
+          >
+            <Plus className="w-4 h-4 mr-2" /> Add Script
+          </Button>
+        </div>
       </div>
 
       {scripts.length === 0 ? (
