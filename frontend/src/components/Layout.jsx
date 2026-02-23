@@ -26,7 +26,7 @@ function Sidebar() {
   };
 
   // Filter links based on user permissions
-  const links = ALL_LINKS.filter(link => hasPermission(link.permission));
+  const links = ALL_LINKS.filter(link => link.permission === null || hasPermission(link.permission));
 
   return (
     <aside
