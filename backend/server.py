@@ -44,40 +44,113 @@ JS_CACHE_HEADERS = {
 async def cdn_domain_middleware(request: Request, call_next):
     """
     Detect if request is coming from a configured CDN domain.
-    CDN domains should only serve /api/js/* endpoints - all other paths return 404.
+    CDN domains should only serve /api/js/* endpoints - all other paths return a CDN info page.
     This allows separation of: Main App (login, dashboard) vs CDN (script delivery only).
     """
     host = request.headers.get("host", "").split(":")[0].lower()  # Remove port if present
     path = request.url.path
     
-    # Skip middleware for internal requests and health checks
-    if path in ["/", "/api/", "/health"] or not host:
+    # Skip for empty host
+    if not host:
         return await call_next(request)
     
     # Check if this is a CDN domain (not the main app domain)
-    async with async_session_maker() as db:
-        result = await db.execute(
-            select(CustomDomain).where(
-                and_(
-                    CustomDomain.domain == host,
-                    CustomDomain.is_active == True,
-                    CustomDomain.status == 'verified'
+    try:
+        async with async_session_maker() as db:
+            result = await db.execute(
+                select(CustomDomain).where(
+                    and_(
+                        CustomDomain.domain == host,
+                        CustomDomain.is_active == True,
+                        CustomDomain.status == 'verified'
+                    )
                 )
             )
-        )
-        cdn_domain = result.scalar_one_or_none()
-        
-        if cdn_domain:
-            # This is a CDN domain - only allow /api/js/* paths
-            if path.startswith("/api/js/"):
-                # Allow JS delivery
-                return await call_next(request)
-            else:
-                # Block all other paths on CDN domains (no login page, no dashboard)
-                return PlainTextResponse(
-                    content="CDN domain - only script delivery is available at /api/js/",
-                    status_code=404
-                )
+            cdn_domain = result.scalar_one_or_none()
+            
+            if cdn_domain:
+                # This is a CDN domain - only allow /api/js/* paths
+                if path.startswith("/api/js/"):
+                    # Allow JS delivery
+                    return await call_next(request)
+                else:
+                    # Return a nice CDN info page for all other paths
+                    cdn_html = f'''<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CDN - {host}</title>
+    <style>
+        * {{ margin: 0; padding: 0; box-sizing: border-box; }}
+        body {{
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #e2e8f0;
+        }}
+        .container {{
+            text-align: center;
+            padding: 40px;
+            max-width: 500px;
+        }}
+        .icon {{
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 24px;
+            font-size: 36px;
+        }}
+        h1 {{
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: #f8fafc;
+        }}
+        p {{
+            color: #94a3b8;
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 24px;
+        }}
+        .domain {{
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            color: #60a5fa;
+        }}
+        .note {{
+            margin-top: 24px;
+            font-size: 12px;
+            color: #64748b;
+        }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="icon">⚡</div>
+        <h1>CDN Endpoint</h1>
+        <p>This domain is configured as a CDN endpoint for JavaScript delivery only.</p>
+        <div class="domain">{host}</div>
+        <p class="note">Scripts are available at: /api/js/[project]/[script].js</p>
+    </div>
+</body>
+</html>'''
+                    return HTMLResponse(content=cdn_html, status_code=200)
+    except Exception as e:
+        # If database error, proceed normally
+        logger.error(f"CDN middleware error: {e}")
+        pass
     
     # Not a CDN domain - proceed normally (full app access)
     return await call_next(request)
