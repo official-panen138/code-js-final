@@ -140,6 +140,9 @@ export default function ProjectDetailPage() {
               getEmbedUrl={getEmbedUrl}
               copied={copied}
               copyToClipboard={copyToClipboard}
+              cdnDomains={cdnDomains}
+              selectedCdn={selectedCdn}
+              setSelectedCdn={setSelectedCdn}
             />
           </TabsContent>
 
