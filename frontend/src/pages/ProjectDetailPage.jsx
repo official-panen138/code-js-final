@@ -234,7 +234,7 @@ function ProjectSettings({ project, onUpdate }) {
 
 
 /* ─── Scripts Tab ─── */
-function ScriptsTab({ projectId, scripts, onRefresh, getEmbedUrl, copied, copyToClipboard }) {
+function ScriptsTab({ projectId, scripts, onRefresh, getEmbedUrl, copied, copyToClipboard, cdnDomains, selectedCdn, setSelectedCdn }) {
   const [showCreate, setShowCreate] = useState(false);
   const [editScript, setEditScript] = useState(null);
   const [form, setForm] = useState({ name: '', js_code: '', secondary_script_mode: 'js', secondary_script: '', secondary_script_links: [] });
