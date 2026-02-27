@@ -163,20 +163,18 @@ Create Nginx config:
 ```bash
 sudo nano /etc/nginx/sites-available/jshost
 ```
+
+**Konfigurasi Nginx (Support Multi CDN Domain Otomatis):**
 ```nginx
+# ============================================
+# SERVER BLOCK UTAMA - yourdomain.com
+# Full access (login, dashboard, API)
+# ============================================
 server {
-    listen 80;
     server_name yourdomain.com www.yourdomain.com;
 
-    # Frontend
-    location / {
-        root /var/www/jshost/frontend/build;
-        index index.html;
-        try_files $uri $uri/ /index.html;
-    }
-
-    # Backend API
-    location /api/ {
+    # Backend API - PENTING: gunakan ^~ untuk prioritas tinggi
+    location ^~ /api/ {
         proxy_pass http://127.0.0.1:8001;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
@@ -188,11 +186,69 @@ server {
         proxy_read_timeout 300;
     }
 
-    # Cache static files
-    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2)$ {
+    # Frontend (React build)
+    location / {
+        root /var/www/jshost/frontend/build;
+        index index.html;
+        try_files $uri $uri/ /index.html;
+    }
+
+    # Static files caching - EXCLUDE /api/ paths
+    location ~* ^(?!/api/).*\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2)$ {
         root /var/www/jshost/frontend/build;
         expires 30d;
         add_header Cache-Control "public, immutable";
+    }
+
+    listen 80;
+}
+
+# ============================================
+# CATCH-ALL SERVER BLOCK - Semua CDN Domains
+# Domain baru otomatis berfungsi tanpa edit nginx!
+# ============================================
+server {
+    listen 80 default_server;
+    listen 443 ssl default_server;
+    server_name _;
+
+    # SSL - akan diupdate setelah certbot
+    ssl_certificate /etc/ssl/certs/ssl-cert-snakeoil.pem;
+    ssl_certificate_key /etc/ssl/private/ssl-cert-snakeoil.key;
+
+    # HANYA izinkan /api/js/ untuk CDN domains
+    location ^~ /api/js/ {
+        proxy_pass http://127.0.0.1:8001;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 300;
+
+        # CORS untuk cross-domain script loading
+        add_header Access-Control-Allow-Origin "*" always;
+        add_header Access-Control-Allow-Methods "GET, OPTIONS" always;
+    }
+
+    # Analytics tracking endpoint
+    location = /api/popunder-analytics {
+        proxy_pass http://127.0.0.1:8001;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        
+        add_header Access-Control-Allow-Origin "*" always;
+        add_header Access-Control-Allow-Methods "POST, OPTIONS" always;
+        add_header Access-Control-Allow-Headers "Content-Type" always;
+    }
+
+    # Semua path lain - tampilkan halaman CDN info
+    location / {
+        default_type text/html;
+        return 200 '<!DOCTYPE html><html><head><title>CDN Endpoint</title><style>body{font-family:sans-serif;display:flex;justify-content:center;align-items:center;height:100vh;background:#0f172a;color:#fff;margin:0;}.c{text-align:center;}h1{margin-bottom:10px;}code{background:rgba(59,130,246,0.2);padding:8px 16px;border-radius:6px;}</style></head><body><div class="c"><h1>CDN Endpoint</h1><p>JavaScript delivery only</p><code>/api/js/{project}/{script}.js</code></div></body></html>';
     }
 }
 ```
@@ -203,6 +259,14 @@ sudo ln -s /etc/nginx/sites-available/jshost /etc/nginx/sites-enabled/
 sudo rm -f /etc/nginx/sites-enabled/default
 sudo nginx -t
 sudo systemctl reload nginx
+```
+
+**Setelah SSL (Certbot), update ssl_certificate di catch-all block:**
+```bash
+sudo nano /etc/nginx/sites-available/jshost
+# Ganti ssl_certificate dengan:
+ssl_certificate /etc/letsencrypt/live/yourdomain.com/fullchain.pem;
+ssl_certificate_key /etc/letsencrypt/live/yourdomain.com/privkey.pem;
 ```
 
 ### Step 12: Create Systemd Service
