@@ -1776,8 +1776,13 @@ async def get_popunder_test_page(campaign_slug: str, request: Request, db: Async
     if not campaign:
         raise HTTPException(status_code=404, detail="Campaign not found")
     
-    # Get API base URL from request
-    api_base = f"{request.base_url.scheme}://{request.headers.get('host', 'localhost')}"
+    # Get API base URL from request - always use HTTPS for security
+    host = request.headers.get('host', 'localhost')
+    # Use X-Forwarded-Proto if behind proxy, otherwise check original scheme
+    proto = request.headers.get('x-forwarded-proto', request.base_url.scheme)
+    if proto != 'https' and 'localhost' not in host:
+        proto = 'https'  # Force HTTPS for non-localhost
+    api_base = f"{proto}://{host}"
     
     html_content = f'''<!DOCTYPE html>
 <html lang="en">
