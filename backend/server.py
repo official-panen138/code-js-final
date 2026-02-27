@@ -1599,103 +1599,81 @@ function checkCountry(callback) {
 }
 
 // True popunder - opens behind the current window
-// The popup opens as a new tab, positioned before current tab, user stays on main tab
+// The popup opens as a new tab, user stays on main tab
+// Uses user interaction to avoid popup blockers
 function openPopunder() {
     var url = getUrl();
     if (!url) return;
     if (!checkFrequency()) return;
     if (!checkDevice()) return;
     
+    // Only works with real user interaction (click/touch)
+    // Modern browsers block window.open() without user gesture
+    
     try {
-        // Technique: Use link click simulation for natural popup behavior
-        // This avoids popup blockers because it's triggered by user interaction
-        
-        // Method 1: Create and simulate link click (most reliable)
-        var link = document.createElement('a');
-        link.href = url;
-        link.target = '_blank';
-        link.rel = 'noopener noreferrer';
-        link.style.cssText = 'position:fixed;left:-9999px;top:-9999px;opacity:0;pointer-events:none;';
-        document.body.appendChild(link);
-        
-        // Store reference to check if popup opened
-        var popupOpened = false;
-        
-        // Try different methods
-        
-        // Method 1: window.open with minimal features (opens as tab)
+        // Method: Direct window.open (works when called from click handler)
         var popup = window.open(url, '_blank');
         
         if (popup && !popup.closed) {
-            popupOpened = true;
+            // Success - now try to keep main tab focused
             
-            // Immediately blur popup and focus main window
-            try {
-                popup.blur();
-            } catch(e) {}
+            // Blur popup window
+            try { popup.blur(); } catch(e) {}
             
-            // Focus techniques to keep main tab active
+            // Focus main window
             window.focus();
+            self.focus();
             
-            // Create invisible element and focus it
-            var ghost = document.createElement('input');
-            ghost.type = 'text';
-            ghost.style.cssText = 'position:fixed;left:-9999px;top:-9999px;width:1px;height:1px;opacity:0;';
-            document.body.appendChild(ghost);
-            ghost.focus();
-            ghost.blur();
+            // Create temporary input to capture focus
+            var tempEl = document.createElement('input');
+            tempEl.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0;pointer-events:none;';
+            document.body.appendChild(tempEl);
+            tempEl.focus();
             
-            // Focus window again
-            window.focus();
-            
-            // Multiple async attempts to maintain focus
-            var focusAttempts = [0, 1, 5, 10, 20, 50, 100, 200];
-            focusAttempts.forEach(function(delay) {
+            // Async focus attempts with increasing delays
+            [0, 10, 50, 100, 200, 500].forEach(function(delay) {
                 setTimeout(function() {
-                    try {
-                        window.focus();
-                        if (popup && !popup.closed) {
-                            popup.blur();
-                        }
-                    } catch(e) {}
+                    window.focus();
+                    try { popup.blur(); } catch(e) {}
                 }, delay);
             });
             
-            // Clean up ghost element
+            // Cleanup
             setTimeout(function() {
-                try { document.body.removeChild(ghost); } catch(e) {}
-            }, 300);
+                try { document.body.removeChild(tempEl); } catch(e) {}
+            }, 600);
             
-            // Self focus for some browsers
-            self.focus();
-            
-            // If in frame, focus parent
-            if (window.self !== window.top) {
+            // If we're in an iframe, try to focus parent
+            if (window.parent && window.parent !== window) {
+                try { window.parent.focus(); } catch(e) {}
+            }
+            if (window.top && window.top !== window) {
                 try { window.top.focus(); } catch(e) {}
             }
-        }
-        
-        // Clean up link
-        setTimeout(function() {
-            try { document.body.removeChild(link); } catch(e) {}
-        }, 100);
-        
-        if (popupOpened) {
+            
             markShown();
             trackEvent('click', url);
+            return;
         }
         
+        // If popup was blocked, try alternative method with link click
+        var link = document.createElement('a');
+        link.href = url;
+        link.target = '_blank';
+        link.rel = 'noopener';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // Focus back to main window
+        setTimeout(function() { window.focus(); }, 0);
+        setTimeout(function() { window.focus(); }, 100);
+        
+        markShown();
+        trackEvent('click', url);
+        
     } catch(e) {
-        // Fallback: Simple window.open
-        try {
-            var pop = window.open(url, '_blank');
-            if (pop) {
-                pop.blur();
-                window.focus();
-                markShown();
-                trackEvent('click', url);
-            }
-        } catch(e2) {}
+        console.log('Popunder error:', e);
     }
 }
 
