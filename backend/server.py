@@ -35,6 +35,9 @@ NOOP_JS = "/* unauthorized or inactive */\n/* noop */"
 JS_CACHE_HEADERS = {
     "Cache-Control": "public, max-age=60",
     "Vary": "Origin, Referer",
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "GET, OPTIONS",
+    "X-Content-Type-Options": "nosniff",
 }
 
 
