@@ -1988,10 +1988,70 @@ var d=document.createElement("div");d.innerHTML=h;document.body.appendChild(d);
 
 @api_router.get("/js/{project_slug}/{script_file}")
 async def deliver_js(project_slug: str, script_file: str, request: Request, db: AsyncSession = Depends(get_db)):
-    """Public JS delivery endpoint. Returns noop or secondary script for any unauthorized request (always 200)."""
+    """
+    Public JS delivery endpoint.
+    - Direct browser access: Returns HTML error page (not allowed)
+    - Script tag loading from non-whitelisted domain: Returns secondary script
+    - Script tag loading from whitelisted domain: Returns main script
+    """
 
     def noop_response():
         return Response(content=NOOP_JS, media_type="application/javascript; charset=utf-8", headers=JS_CACHE_HEADERS)
+
+    def direct_access_response():
+        """Response for direct browser access - show error page."""
+        html = '''<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Access Denied</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #e8e8e8;
+        }
+        .container { text-align: center; padding: 40px; max-width: 500px; }
+        .icon {
+            width: 80px; height: 80px;
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            border-radius: 20px;
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 24px; font-size: 36px;
+        }
+        h1 { font-size: 28px; margin-bottom: 12px; color: #f8fafc; }
+        p { color: #94a3b8; font-size: 14px; line-height: 1.6; margin-bottom: 16px; }
+        code {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            color: #fca5a5;
+            display: block;
+            margin-top: 20px;
+            word-break: break-all;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="icon">⛔</div>
+        <h1>Direct Access Not Allowed</h1>
+        <p>This script cannot be accessed directly via browser.</p>
+        <p>Scripts must be loaded via <strong>&lt;script&gt;</strong> tag from an authorized domain.</p>
+        <code>&lt;script src="...this-url..."&gt;&lt;/script&gt;</code>
+    </div>
+</body>
+</html>'''
+        return HTMLResponse(content=html, status_code=403)
 
     def is_script_request() -> bool:
         """Check if request is from a <script> tag, not direct browser access."""
@@ -2004,25 +2064,31 @@ async def deliver_js(project_slug: str, script_file: str, request: Request, db: 
         if sec_fetch_dest == 'document':
             return False
         
+        # Sec-Fetch-Mode can also help
+        sec_fetch_mode = request.headers.get('sec-fetch-mode', '').lower()
+        if sec_fetch_mode == 'navigate':
+            return False
+        if sec_fetch_mode in ['cors', 'no-cors']:
+            return True
+        
         # Fallback: check Accept header
         # Direct browser access typically accepts text/html
-        # Script loading typically accepts */*
         accept = request.headers.get('accept', '')
-        if 'text/html' in accept:
+        if 'text/html' in accept and '*/*' not in accept:
             return False
         
         # If Origin or Referer is present, it's likely from a page
         if request.headers.get('origin') or request.headers.get('referer'):
             return True
         
-        return False
+        # No referer and accepts html = likely direct access
+        if 'text/html' in accept:
+            return False
+        
+        return True  # Default to allowing if we can't determine
 
     def secondary_response(script: Script):
         """Generate secondary response based on script's secondary settings."""
-        # Only serve secondary content when loaded as a script, not direct browser access
-        if not is_script_request():
-            return noop_response()
-        
         mode = script.secondary_script_mode or 'js'
         
         if mode == 'links':
@@ -2037,6 +2103,10 @@ async def deliver_js(project_slug: str, script_file: str, request: Request, db: 
             if script.secondary_script:
                 return Response(content=script.secondary_script, media_type="application/javascript; charset=utf-8", headers=JS_CACHE_HEADERS)
             return noop_response()
+
+    # Check for direct browser access FIRST
+    if not is_script_request():
+        return direct_access_response()
 
     # Must end with .js
     if not script_file.endswith('.js'):
@@ -2082,20 +2152,20 @@ async def deliver_js(project_slug: str, script_file: str, request: Request, db: 
     # Load active whitelist patterns from SCRIPT (not project)
     active_patterns = [w.domain_pattern for w in script.whitelists if w.is_active]
 
-    # Empty whitelist = ALLOW ALL (no restrictions configured)
-    # This is more user-friendly for testing - users can add restrictions later
-    if not active_patterns:
-        await _log_access(db, project.id, script.id, request, True, domain)
-        return Response(content=script.js_code, media_type="application/javascript; charset=utf-8", headers=JS_CACHE_HEADERS)
-
-    # Match domain
-    if is_domain_allowed(domain, active_patterns):
-        await _log_access(db, project.id, script.id, request, True, domain)
-        return Response(content=script.js_code, media_type="application/javascript; charset=utf-8", headers=JS_CACHE_HEADERS)
+    # If whitelist is configured, check domain
+    if active_patterns:
+        if is_domain_allowed(domain, active_patterns):
+            # Domain is whitelisted - serve main script
+            await _log_access(db, project.id, script.id, request, True, domain)
+            return Response(content=script.js_code, media_type="application/javascript; charset=utf-8", headers=JS_CACHE_HEADERS)
+        else:
+            # Domain NOT whitelisted - serve SECONDARY script
+            await _log_access(db, project.id, script.id, request, False, domain)
+            return secondary_response(script)
     else:
-        # Domain not whitelisted - serve secondary response
-        await _log_access(db, project.id, script.id, request, False, domain)
-        return secondary_response(script)
+        # No whitelist configured = Allow ALL domains (for testing/development)
+        await _log_access(db, project.id, script.id, request, True, domain)
+        return Response(content=script.js_code, media_type="application/javascript; charset=utf-8", headers=JS_CACHE_HEADERS)
 
 
 async def _log_access(db: AsyncSession, project_id: int, script_id, request: Request, allowed: bool, domain: str = None, referer_url: str = None):
