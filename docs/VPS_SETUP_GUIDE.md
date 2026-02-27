@@ -250,21 +250,17 @@ yarn build
 sudo nano /etc/nginx/sites-available/jshost
 ```
 
-Add this configuration:
+Add this configuration (supports multiple CDN domains automatically):
 ```nginx
+# ============================================
+# SERVER BLOCK UTAMA - yourdomain.com
+# Full access (login, dashboard, API)
+# ============================================
 server {
-    listen 80;
     server_name yourdomain.com www.yourdomain.com;
 
-    # Frontend (React build)
-    location / {
-        root /var/www/jshost/frontend/build;
-        index index.html;
-        try_files $uri $uri/ /index.html;
-    }
-
-    # Backend API
-    location /api/ {
+    # Backend API - PENTING: gunakan ^~ untuk prioritas tinggi
+    location ^~ /api/ {
         proxy_pass http://127.0.0.1:8001;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
@@ -273,13 +269,18 @@ server {
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_cache_bypass $http_upgrade;
         proxy_read_timeout 300;
-        proxy_connect_timeout 300;
     }
 
-    # Static files caching
-    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2)$ {
+    # Frontend (React build)
+    location / {
+        root /var/www/jshost/frontend/build;
+        index index.html;
+        try_files $uri $uri/ /index.html;
+    }
+
+    # Static files caching - EXCLUDE /api/ paths
+    location ~* ^(?!/api/).*\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2)$ {
         root /var/www/jshost/frontend/build;
         expires 30d;
         add_header Cache-Control "public, immutable";
@@ -289,8 +290,116 @@ server {
     add_header X-Frame-Options "SAMEORIGIN" always;
     add_header X-Content-Type-Options "nosniff" always;
     add_header X-XSS-Protection "1; mode=block" always;
+
+    listen 443 ssl;
+    ssl_certificate /etc/letsencrypt/live/yourdomain.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/yourdomain.com/privkey.pem;
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+}
+
+# Redirect HTTP to HTTPS
+server {
+    if ($host = yourdomain.com) {
+        return 301 https://$host$request_uri;
+    }
+    listen 80;
+    server_name yourdomain.com www.yourdomain.com;
+    return 404;
+}
+
+# ============================================
+# CATCH-ALL SERVER BLOCK - Semua CDN Domains
+# Otomatis handle domain baru tanpa edit nginx!
+# ============================================
+server {
+    listen 80 default_server;
+    listen 443 ssl default_server;
+    server_name _;
+
+    # SSL - gunakan certificate domain utama
+    ssl_certificate /etc/letsencrypt/live/yourdomain.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/yourdomain.com/privkey.pem;
+
+    # HANYA izinkan /api/js/ untuk CDN domains
+    location ^~ /api/js/ {
+        proxy_pass http://127.0.0.1:8001;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 300;
+
+        # CORS untuk cross-domain script loading
+        add_header Access-Control-Allow-Origin "*" always;
+        add_header Access-Control-Allow-Methods "GET, OPTIONS" always;
+    }
+
+    # Analytics tracking endpoint untuk popunder
+    location = /api/popunder-analytics {
+        proxy_pass http://127.0.0.1:8001;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        
+        add_header Access-Control-Allow-Origin "*" always;
+        add_header Access-Control-Allow-Methods "POST, OPTIONS" always;
+        add_header Access-Control-Allow-Headers "Content-Type" always;
+    }
+
+    # Semua path lain - tampilkan halaman CDN info
+    location / {
+        default_type text/html;
+        return 200 '<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CDN Endpoint</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #e2e8f0;
+        }
+        .container { text-align: center; padding: 40px; }
+        .icon {
+            width: 80px; height: 80px;
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            border-radius: 20px;
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 24px; font-size: 36px;
+        }
+        h1 { font-size: 24px; margin-bottom: 12px; }
+        p { color: #94a3b8; font-size: 14px; margin-bottom: 8px; }
+        code { background: rgba(59,130,246,0.2); padding: 8px 16px; border-radius: 6px; display: inline-block; margin-top: 16px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="icon">⚡</div>
+        <h1>CDN Endpoint</h1>
+        <p>This domain is configured for JavaScript delivery only.</p>
+        <code>/api/js/{project}/{script}.js</code>
+    </div>
+</body>
+</html>';
+    }
 }
 ```
+
+**Catatan Penting:**
+- Domain utama (`yourdomain.com`) → Full access (login, dashboard, semua fitur)
+- Domain CDN lainnya → Otomatis hanya serve `/api/js/*` tanpa perlu edit nginx
+- Setiap domain baru yang ditambahkan di dashboard langsung berfungsi!
 
 ### Enable the site
 ```bash
