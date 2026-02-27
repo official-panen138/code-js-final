@@ -1596,7 +1596,7 @@ function checkCountry(callback) {
 }
 
 // True popunder - opens behind the current window
-// The popup opens first, but the main tab stays on screen (popup goes behind)
+// The popup opens as a new tab, positioned before current tab, user stays on main tab
 function openPopunder() {
     var url = getUrl();
     if (!url) return;
@@ -1604,89 +1604,91 @@ function openPopunder() {
     if (!checkDevice()) return;
     
     try {
-        // Enhanced popunder technique
-        // Step 1: Calculate window position (same as current window)
-        var w = window.innerWidth || document.documentElement.clientWidth || screen.width;
-        var h = window.innerHeight || document.documentElement.clientHeight || screen.height;
-        var left = (screen.width - w) / 2;
-        var top = (screen.height - h) / 2;
+        // Technique: Use link click simulation for natural popup behavior
+        // This avoids popup blockers because it's triggered by user interaction
         
-        // Step 2: Window features - open as a normal window, not a tab
-        var features = 'width=' + w + ',height=' + h + ',left=' + left + ',top=' + top;
-        features += ',toolbar=yes,location=yes,directories=yes,status=yes,menubar=yes,scrollbars=yes,resizable=yes';
+        // Method 1: Create and simulate link click (most reliable)
+        var link = document.createElement('a');
+        link.href = url;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        link.style.cssText = 'position:fixed;left:-9999px;top:-9999px;opacity:0;pointer-events:none;';
+        document.body.appendChild(link);
         
-        // Step 3: Open the popunder window
-        var popunder = window.open(url, '_blank', features);
+        // Store reference to check if popup opened
+        var popupOpened = false;
         
-        if (popunder) {
-            // Step 4: Immediately blur the popup
-            popunder.blur();
+        // Try different methods
+        
+        // Method 1: window.open with minimal features (opens as tab)
+        var popup = window.open(url, '_blank');
+        
+        if (popup && !popup.closed) {
+            popupOpened = true;
             
-            // Step 5: Focus back to main window using multiple techniques
+            // Immediately blur popup and focus main window
+            try {
+                popup.blur();
+            } catch(e) {}
+            
+            // Focus techniques to keep main tab active
             window.focus();
             
-            // Technique 1: Click simulation to regain focus
-            if (document.body) {
-                var clickEvent = document.createEvent('MouseEvents');
-                clickEvent.initMouseEvent('click', true, true, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
-                document.body.dispatchEvent(clickEvent);
-            }
+            // Create invisible element and focus it
+            var ghost = document.createElement('input');
+            ghost.type = 'text';
+            ghost.style.cssText = 'position:fixed;left:-9999px;top:-9999px;width:1px;height:1px;opacity:0;';
+            document.body.appendChild(ghost);
+            ghost.focus();
+            ghost.blur();
             
-            // Technique 2: Use self.focus() for some browsers
+            // Focus window again
+            window.focus();
+            
+            // Multiple async attempts to maintain focus
+            var focusAttempts = [0, 1, 5, 10, 20, 50, 100, 200];
+            focusAttempts.forEach(function(delay) {
+                setTimeout(function() {
+                    try {
+                        window.focus();
+                        if (popup && !popup.closed) {
+                            popup.blur();
+                        }
+                    } catch(e) {}
+                }, delay);
+            });
+            
+            // Clean up ghost element
+            setTimeout(function() {
+                try { document.body.removeChild(ghost); } catch(e) {}
+            }, 300);
+            
+            // Self focus for some browsers
             self.focus();
             
-            // Technique 3: Focus an input element temporarily
-            var tempInput = document.createElement('input');
-            tempInput.style.cssText = 'position:fixed;left:-9999px;top:-9999px;opacity:0;';
-            document.body.appendChild(tempInput);
-            tempInput.focus();
-            setTimeout(function() {
-                document.body.removeChild(tempInput);
-            }, 10);
-            
-            // Technique 4: Use opener reference if in frame
-            if (window.opener && window.opener !== window) {
-                window.opener.focus();
-            }
-            
-            // Technique 5: Async focus with multiple timeouts
-            setTimeout(function() { window.focus(); }, 0);
-            setTimeout(function() { window.focus(); }, 1);
-            setTimeout(function() { 
-                window.focus();
-                // Re-blur the popunder in case it got focus back
-                try { popunder.blur(); } catch(e) {}
-            }, 10);
-            setTimeout(function() { 
-                window.focus();
-                self.focus();
-            }, 50);
-            setTimeout(function() { 
-                window.focus();
-                // Final attempt to push popunder back
-                try { popunder.blur(); } catch(e) {}
-            }, 100);
-            
-            // Technique 6: Use window.top if in iframe
+            // If in frame, focus parent
             if (window.self !== window.top) {
                 try { window.top.focus(); } catch(e) {}
             }
-            
+        }
+        
+        // Clean up link
+        setTimeout(function() {
+            try { document.body.removeChild(link); } catch(e) {}
+        }, 100);
+        
+        if (popupOpened) {
             markShown();
             trackEvent('click', url);
         }
+        
     } catch(e) {
-        // Fallback method: open about:blank first then redirect
+        // Fallback: Simple window.open
         try {
-            var features2 = 'width=' + (screen.width/2) + ',height=' + (screen.height/2);
-            var pop = window.open('about:blank', '_blank', features2);
+            var pop = window.open(url, '_blank');
             if (pop) {
                 pop.blur();
                 window.focus();
-                self.focus();
-                pop.location.href = url;
-                setTimeout(function() { window.focus(); }, 0);
-                setTimeout(function() { window.focus(); pop.blur(); }, 10);
                 markShown();
                 trackEvent('click', url);
             }
