@@ -2109,16 +2109,20 @@ async def deliver_js(project_slug: str, script_file: str, request: Request, db: 
 
 
 async def _log_access(db: AsyncSession, project_id: int, script_id, request: Request, allowed: bool, domain: str = None, referer_url: str = None):
-    """Log access attempt with full referrer URL."""
+    """Log access attempt with full referrer URL and CDN domain."""
     try:
         # Get full referrer URL from request headers
         full_referer = referer_url or request.headers.get('referer', '') or request.headers.get('origin', '')
+        
+        # Get CDN domain from Host header (the domain used to access the script)
+        cdn_domain = request.headers.get('host', '').split(':')[0]  # Remove port if present
         
         log = AccessLog(
             project_id=project_id,
             script_id=script_id,
             ref_domain=domain or normalize_domain(full_referer),
             referer_url=full_referer[:2048] if full_referer else None,  # Truncate to column max length
+            cdn_domain=cdn_domain if cdn_domain else None,
             allowed=allowed,
             ip=request.client.host if request.client else None,
             user_agent=request.headers.get('user-agent', '')
