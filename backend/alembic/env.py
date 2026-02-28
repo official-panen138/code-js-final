@@ -18,7 +18,7 @@ if config.config_file_name is not None:
 # for 'autogenerate' support
 import sys
 sys.path.insert(0, '/app/backend')
-from models import User, Category, Project, ProjectWhitelist, Script, AccessLog
+from models import User, Category, Project, ScriptWhitelist, Script, AccessLog
 from database import Base
 target_metadata = Base.metadata
 
