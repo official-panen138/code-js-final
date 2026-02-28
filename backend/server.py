@@ -298,7 +298,18 @@ def script_to_dict(s: Script, include_whitelists: bool = False) -> dict:
     return d
 
 def log_to_dict(l: AccessLog) -> dict:
-    return {"id": l.id, "project_id": l.project_id, "script_id": l.script_id, "ref_domain": l.ref_domain, "referer_url": l.referer_url, "allowed": l.allowed, "ip": l.ip, "user_agent": l.user_agent, "created_at": l.created_at.isoformat() if l.created_at else None}
+    return {
+        "id": l.id, 
+        "project_id": l.project_id, 
+        "script_id": l.script_id, 
+        "ref_domain": l.ref_domain, 
+        "referer_url": l.referer_url, 
+        "cdn_domain": l.cdn_domain,
+        "allowed": l.allowed, 
+        "ip": l.ip, 
+        "user_agent": l.user_agent, 
+        "created_at": l.created_at.isoformat() if l.created_at else None
+    }
 
 def role_to_dict(r: Role) -> dict:
     return {"id": r.id, "name": r.name, "description": r.description, "is_system": r.is_system, "permissions": r.permissions or [], "created_at": r.created_at.isoformat() if r.created_at else None}
