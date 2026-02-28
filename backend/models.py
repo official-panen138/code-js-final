@@ -100,6 +100,7 @@ class AccessLog(Base):
     script_id = Column(Integer, ForeignKey('scripts.id', ondelete='SET NULL'), nullable=True)
     ref_domain = Column(String(255), nullable=True)
     referer_url = Column(String(2048), nullable=True)  # Full referrer URL (e.g., https://example.com/page.html)
+    cdn_domain = Column(String(255), nullable=True)  # CDN domain used to access the script
     allowed = Column(Boolean, nullable=False)
     ip = Column(String(45), nullable=True)
     user_agent = Column(Text, nullable=True)
