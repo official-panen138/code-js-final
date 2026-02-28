@@ -1084,6 +1084,7 @@ async def get_analytics(project_id: int, db: AsyncSession = Depends(get_db), cur
         select(
             AccessLog.script_id,
             AccessLog.ref_domain,
+            AccessLog.cdn_domain,
             AccessLog.allowed,
             func.count(AccessLog.id).label('request_count'),
             func.max(AccessLog.created_at).label('last_access'),
@@ -1094,7 +1095,7 @@ async def get_analytics(project_id: int, db: AsyncSession = Depends(get_db), cur
             AccessLog.ref_domain != None,
             AccessLog.ref_domain != ''
         ))
-        .group_by(AccessLog.script_id, AccessLog.ref_domain, AccessLog.allowed)
+        .group_by(AccessLog.script_id, AccessLog.ref_domain, AccessLog.cdn_domain, AccessLog.allowed)
         .order_by(desc(func.count(AccessLog.id)))
         .limit(50)
     )
@@ -1102,11 +1103,17 @@ async def get_analytics(project_id: int, db: AsyncSession = Depends(get_db), cur
     for row in script_domain_result:
         script = scripts.get(row.script_id)
         if script:
-            script_url = f"/api/js/{project.slug}/{script.slug}.js"
+            # Use cdn_domain if available
+            cdn_host = row.cdn_domain if row.cdn_domain else None
+            if cdn_host:
+                script_url = f"https://{cdn_host}/api/js/{project.slug}/{script.slug}.js"
+            else:
+                script_url = f"/api/js/{project.slug}/{script.slug}.js"
             script_domain_data.append({
                 "script_id": row.script_id,
                 "script_name": script.name,
                 "script_url": script_url,
+                "cdn_domain": cdn_host,
                 "domain": row.ref_domain,
                 "status": "allowed" if row.allowed else "denied",
                 "request_count": row.request_count,
