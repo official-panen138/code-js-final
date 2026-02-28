@@ -32,8 +32,11 @@ logger = logging.getLogger(__name__)
 
 NOOP_JS = "/* unauthorized or inactive */\n/* noop */"
 
-JS_CACHE_HEADERS = {
-    "Cache-Control": "public, max-age=60",
+# No cache headers - script changes are immediately visible
+JS_NO_CACHE_HEADERS = {
+    "Cache-Control": "no-cache, no-store, must-revalidate, max-age=0",
+    "Pragma": "no-cache",
+    "Expires": "0",
     "Vary": "Origin, Referer",
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "GET, OPTIONS",
