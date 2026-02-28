@@ -85,7 +85,7 @@ server {
     ssl_certificate /etc/letsencrypt/live/js.yourdomain.com/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/js.yourdomain.com/privkey.pem;
 
-    # HANYA izinkan /api/js/ untuk CDN domains
+    # HANYA izinkan /api/js/ untuk CDN domains - NO CACHE
     location ^~ /api/js/ {
         proxy_pass http://127.0.0.1:8001;
         proxy_http_version 1.1;
@@ -95,9 +95,18 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_read_timeout 300;
 
+        # NO CACHE - script changes are immediately visible
+        add_header Cache-Control "no-cache, no-store, must-revalidate" always;
+        add_header Pragma "no-cache" always;
+        add_header Expires "0" always;
+        
         # CORS untuk cross-domain script loading
         add_header Access-Control-Allow-Origin "*" always;
         add_header Access-Control-Allow-Methods "GET, OPTIONS" always;
+        
+        # Disable nginx proxy cache
+        proxy_no_cache 1;
+        proxy_cache_bypass 1;
     }
 
     # Popunder JS endpoint
