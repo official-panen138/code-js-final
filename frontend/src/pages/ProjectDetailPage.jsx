@@ -1424,14 +1424,14 @@ function AnalyticsLogsTab({ projectId }) {
                       <td className="px-4 py-3 max-w-[200px]">
                         {log.script_url ? (
                           <a 
-                            href={`${BACKEND_URL}${log.script_url}`} 
+                            href={log.script_url.startsWith('http') ? log.script_url : `${BACKEND_URL}${log.script_url}`} 
                             target="_blank" 
                             rel="noopener noreferrer"
                             className="text-sm text-blue-600 hover:text-blue-800 underline font-mono truncate block"
                             style={{ fontFamily: 'JetBrains Mono, monospace' }}
-                            title={`${BACKEND_URL}${log.script_url}`}
+                            title={log.script_url.startsWith('http') ? log.script_url : `${BACKEND_URL}${log.script_url}`}
                           >
-                            {`${BACKEND_URL}${log.script_url}`}
+                            {log.script_url.startsWith('http') ? log.script_url : `${BACKEND_URL}${log.script_url}`}
                           </a>
                         ) : (
                           <span className="text-sm text-muted-foreground">—</span>
