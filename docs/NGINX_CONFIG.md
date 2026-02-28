@@ -231,3 +231,36 @@ Pastikan menggunakan regex `^(?!/api/)` untuk exclude `/api/` dari static file c
 CDN domain menggunakan SSL certificate domain utama. Jika error:
 - Gunakan Cloudflare proxy (mereka handle SSL)
 - Atau generate wildcard certificate
+
+---
+
+## Disable Cache (Cloudflare)
+
+Jika menggunakan Cloudflare dan script masih di-cache, lakukan konfigurasi berikut:
+
+### Option 1: Page Rules
+1. Cloudflare Dashboard → Rules → Page Rules
+2. Create Page Rule:
+   - URL: `*cdn.yourdomain.com/api/js/*`
+   - Setting: Cache Level → **Bypass**
+3. Save and Deploy
+
+### Option 2: Cache Rules (Recommended)
+1. Cloudflare Dashboard → Caching → Cache Rules
+2. Create Rule:
+   - Name: "Bypass JS API Cache"
+   - Expression: `(http.host contains "cdn" and starts_with(http.request.uri.path, "/api/js/"))`
+   - Action: **Bypass cache**
+3. Save
+
+### Option 3: Browser Cache TTL
+1. Cloudflare Dashboard → Caching → Configuration
+2. Browser Cache TTL → **Respect Existing Headers**
+
+### Verify No Cache
+```bash
+curl -sI "https://cdn.yourdomain.com/api/js/project/script.js" | grep -i cache
+# Should show:
+# cache-control: no-cache, no-store, must-revalidate
+# cf-cache-status: DYNAMIC atau BYPASS
+```
