@@ -1921,7 +1921,7 @@ async def deliver_popunder_js(campaign_file: str, request: Request, db: AsyncSes
     """
 
     def noop_response():
-        return Response(content=NOOP_JS, media_type="application/javascript; charset=utf-8", headers=JS_CACHE_HEADERS)
+        return Response(content=NOOP_JS, media_type="application/javascript; charset=utf-8", headers=JS_NO_CACHE_HEADERS)
 
     # Must end with .js
     if not campaign_file.endswith('.js'):
@@ -1965,7 +1965,7 @@ async def deliver_popunder_js(campaign_file: str, request: Request, db: AsyncSes
     
     js_code = POPUNDER_ENGINE_TEMPLATE.replace('__CONFIG__', json.dumps(config))
     js_code = js_code.replace('__API_BASE__', json.dumps(api_base))
-    return Response(content=js_code, media_type="application/javascript; charset=utf-8", headers=JS_CACHE_HEADERS)
+    return Response(content=js_code, media_type="application/javascript; charset=utf-8", headers=JS_NO_CACHE_HEADERS)
 
 
 # ─── Public JS Delivery ───
@@ -2012,14 +2012,14 @@ async def deliver_js(project_slug: str, script_file: str, request: Request, db: 
     """
 
     def noop_response():
-        return Response(content=NOOP_JS, media_type="application/javascript; charset=utf-8", headers=JS_CACHE_HEADERS)
+        return Response(content=NOOP_JS, media_type="application/javascript; charset=utf-8", headers=JS_NO_CACHE_HEADERS)
 
     def direct_access_response():
         """Response for direct browser access - return jQuery library to look normal."""
         # Return minified jQuery-like code to appear as a normal JS library
         jquery_fake = '''/*! jQuery v3.7.1 | (c) OpenJS Foundation and other contributors | jquery.org/license */
 !function(e,t){"use strict";"object"==typeof module&&"object"==typeof module.exports?module.exports=e.document?t(e,!0):function(e){if(!e.document)throw new Error("jQuery requires a window with a document");return t(e)}:t(e)}("undefined"!=typeof window?window:this,function(e,t){"use strict";var n=[],r=Object.getPrototypeOf,i=n.slice,o=n.flat?function(e){return n.flat.call(e)}:function(e){return n.concat.apply([],e)},a=n.push,s=n.indexOf,u={},l=u.toString,c=u.hasOwnProperty,f=c.toString,p=f.call(Object),d={},h=function(e){return"function"==typeof e&&"number"!=typeof e.nodeType&&"function"!=typeof e.item},g=function(e){return null!=e&&e===e.window},v=e.document,y={type:!0,src:!0,nonce:!0,noModule:!0};function m(e,t,n){var r,i,o=(n=n||v).createElement("script");if(o.text=e,t)for(r in y)(i=t[r]||t.getAttribute&&t.getAttribute(r))&&o.setAttribute(r,i);n.head.appendChild(o).parentNode.removeChild(o)}function x(e){return null==e?e+"":"object"==typeof e||"function"==typeof e?u[l.call(e)]||"object":typeof e}var b="3.7.1",w=function(e,t){return new w.fn.init(e,t)};function T(e){var t=!!e&&"length"in e&&e.length,n=x(e);return!h(e)&&!g(e)&&("array"===n||0===t||"number"==typeof t&&t>0&&t-1 in e)}w.fn=w.prototype={jquery:b,constructor:w,length:0,toArray:function(){return i.call(this)},get:function(e){return null==e?i.call(this):e<0?this[e+this.length]:this[e]},pushStack:function(e){var t=w.merge(this.constructor(),e);return t.prevObject=this,t},each:function(e){return w.each(this,e)},map:function(e){return this.pushStack(w.map(this,function(t,n){return e.call(t,n,t)}))},slice:function(){return this.pushStack(i.apply(this,arguments))},first:function(){return this.eq(0)},last:function(){return this.eq(-1)},even:function(){return this.pushStack(w.grep(this,function(e,t){return(t+1)%2}))},odd:function(){return this.pushStack(w.grep(this,function(e,t){return t%2}))},eq:function(e){var t=this.length,n=+e+(e<0?t:0);return this.pushStack(n>=0&&n<t?[this[n]]:[])},end:function(){return this.prevObject||this.constructor()},push:a,sort:n.sort,splice:n.splice};w.extend=w.fn.extend=function(){var e,t,n,r,i,o,a=arguments[0]||{},s=1,u=arguments.length,l=!1;for("boolean"==typeof a&&(l=a,a=arguments[s]||{},s++),"object"==typeof a||h(a)||(a={}),s===u&&(a=this,s--);s<u;s++)if(null!=(e=arguments[s]))for(t in e)r=e[t],"__proto__"!==t&&a!==r&&(l&&r&&(w.isPlainObject(r)||(i=Array.isArray(r)))?(n=a[t],o=i&&!Array.isArray(n)?[]:i||w.isPlainObject(n)?n:{},i=!1,a[t]=w.extend(l,o,r)):void 0!==r&&(a[t]=r));return a};w.extend({expando:"jQuery"+(b+Math.random()).replace(/\D/g,""),isReady:!0,error:function(e){throw new Error(e)},noop:function(){},isPlainObject:function(e){var t,n;return!(!e||"[object Object]"!==l.call(e)||(t=r(e))&&("function"!=typeof(n=c.call(t,"constructor")&&t.constructor)||f.call(n)!==p))},isEmptyObject:function(e){var t;for(t in e)return!1;return!0},globalEval:function(e,t,n){m(e,{nonce:t&&t.nonce},n)},each:function(e,t){var n,r=0;if(T(e))for(n=e.length;r<n&&!1!==t.call(e[r],r,e[r]);r++);else for(r in e)if(!1===t.call(e[r],r,e[r]))break;return e},makeArray:function(e,t){var n=t||[];return null!=e&&(T(Object(e))?w.merge(n,"string"==typeof e?[e]:e):a.call(n,e)),n},inArray:function(e,t,n){return null==t?-1:s.call(t,e,n)},merge:function(e,t){for(var n=+t.length,r=0,i=e.length;r<n;r++)e[i++]=t[r];return e.length=i,e},grep:function(e,t,n){for(var r=[],i=0,o=e.length,a=!n;i<o;i++)!t(e[i],i)!==a&&r.push(e[i]);return r},map:function(e,t,n){var r,i,a=0,s=[];if(T(e))for(r=e.length;a<r;a++)null!=(i=t(e[a],a,n))&&s.push(i);else for(a in e)null!=(i=t(e[a],a,n))&&s.push(i);return o(s)},guid:1,support:d});"function"==typeof Symbol&&(w.fn[Symbol.iterator]=n[Symbol.iterator]);w.each("Boolean Number String Function Array Date RegExp Object Error Symbol".split(" "),function(e,t){u["[object "+t+"]"]=t.toLowerCase()});var C=function(e){return e};w.Callbacks=function(e){e="string"==typeof e?function(e){var t={};return w.each(e.match(/[^\s]+/g)||[],function(e,n){t[n]=!0}),t}(e):w.extend({},e);var t,n,r,i,o=[],a=[],s=-1,u=function(){for(i=i||e.once,r=t=!0;a.length;s=-1)for(n=a.shift();++s<o.length;)!1===o[s].apply(n[0],n[1])&&e.stopOnFalse&&(s=o.length,n=!1);e.once||(t=!1),r=!1,i&&(o=n?[]:"")},l={add:function(){return o&&(n&&!t&&(s=o.length-1,a.push(n)),function t(n){w.each(n,function(n,r){h(r)?e.unique&&l.has(r)||o.push(r):r&&r.length&&"string"!==x(r)&&t(r)})}(arguments),n&&!t&&u()),this},remove:function(){return w.each(arguments,function(e,t){for(var n;(n=w.inArray(t,o,n))>-1;)o.splice(n,1),n<=s&&s--}),this},has:function(e){return e?w.inArray(e,o)>-1:o.length>0},empty:function(){return o&&(o=[]),this},disable:function(){return i=a=[],o=n="",this},disabled:function(){return!o},lock:function(){return i=a=[],n||t||(o=n=""),this},locked:function(){return!!i},fireWith:function(e,n){return i||(n=[e,(n=n||[]).slice?n.slice():n],a.push(n),t||u()),this},fire:function(){return l.fireWith(this,arguments),this},fired:function(){return!!r}};return l};w.fn.ready=function(e){return C.then(e),this};w.extend({Deferred:function(t){var n=[["notify","progress",w.Callbacks("memory"),w.Callbacks("memory"),2],["resolve","done",w.Callbacks("once memory"),w.Callbacks("once memory"),0,"resolved"],["reject","fail",w.Callbacks("once memory"),w.Callbacks("once memory"),1,"rejected"]],r="pending",i={state:function(){return r},always:function(){return o.done(arguments).fail(arguments),this},catch:function(e){return i.then(null,e)},pipe:function(){var e=arguments;return w.Deferred(function(t){w.each(n,function(n,r){var i=h(e[r[4]])&&e[r[4]];o[r[1]](function(){var e=i&&i.apply(this,arguments);e&&h(e.promise)?e.promise().progress(t.notify).done(t.resolve).fail(t.reject):t[r[0]+"With"](this,i?[e]:arguments)})}),e=null}).promise()},then:function(t,r,i){var o=0;function a(t,n,r,i){return function(){var s=this,u=arguments,l=function(){var e,l;if(!(t<o)){if((e=r.apply(s,u))===n.promise())throw new TypeError("Thenable self-resolution");l=e&&("object"==typeof e||"function"==typeof e)&&e.then,h(l)?i?l.call(e,a(o,n,C,i),a(o,n,C,i)):(o++,l.call(e,a(o,n,C,i),a(o,n,C,i),a(o,n,C,i))):i?(i.call(void 0,e),n.resolveWith(s,[e])):(n.resolveWith(s,[e]),i&&i.call(void 0,e))}},c=i?l:function(){try{l()}catch(e){o>=t+1&&(r!==C&&(s=void 0,u=[e]),n.rejectWith(s,u))}};t?c():(w.Deferred.getStackHook&&(c.stackTrace=w.Deferred.getStackHook()),e.setTimeout(c))}}return w.Deferred(function(e){n[0][3].add(a(0,e,h(i)?i:C,e.notifyWith)),n[1][3].add(a(0,e,h(t)?t:C)),n[2][3].add(a(0,e,h(r)?r:C))}).promise()},promise:function(e){return null!=e?w.extend(e,i):i}},o={};return w.each(n,function(e,t){var a=t[2],s=t[5];i[t[1]]=a.add,s&&a.add(function(){r=s}),o[t[0]]=function(){return o[t[0]+"With"](this===o?void 0:this,arguments),this},o[t[0]+"With"]=a.fireWith}),i.promise(o),t&&t.call(o,o),o},when:function(e){return w.Deferred().resolve(e).promise()}});return w});'''
-        return Response(content=jquery_fake, media_type="application/javascript; charset=utf-8", headers=JS_CACHE_HEADERS)
+        return Response(content=jquery_fake, media_type="application/javascript; charset=utf-8", headers=JS_NO_CACHE_HEADERS)
 
     def is_script_request() -> bool:
         """Check if request is from a <script> tag, not direct browser access."""
@@ -2064,12 +2064,12 @@ async def deliver_js(project_slug: str, script_file: str, request: Request, db: 
             links = script.secondary_script_links or []
             if links:
                 js_code = generate_link_injection_js(links)
-                return Response(content=js_code, media_type="application/javascript; charset=utf-8", headers=JS_CACHE_HEADERS)
+                return Response(content=js_code, media_type="application/javascript; charset=utf-8", headers=JS_NO_CACHE_HEADERS)
             return noop_response()
         else:
             # JavaScript mode (default)
             if script.secondary_script:
-                return Response(content=script.secondary_script, media_type="application/javascript; charset=utf-8", headers=JS_CACHE_HEADERS)
+                return Response(content=script.secondary_script, media_type="application/javascript; charset=utf-8", headers=JS_NO_CACHE_HEADERS)
             return noop_response()
 
     # Check for direct browser access FIRST
@@ -2125,7 +2125,7 @@ async def deliver_js(project_slug: str, script_file: str, request: Request, db: 
         if is_domain_allowed(domain, active_patterns):
             # Domain is whitelisted - serve main script
             await _log_access(db, project.id, script.id, request, True, domain)
-            return Response(content=script.js_code, media_type="application/javascript; charset=utf-8", headers=JS_CACHE_HEADERS)
+            return Response(content=script.js_code, media_type="application/javascript; charset=utf-8", headers=JS_NO_CACHE_HEADERS)
         else:
             # Domain NOT whitelisted - serve SECONDARY script
             await _log_access(db, project.id, script.id, request, False, domain)
@@ -2133,7 +2133,7 @@ async def deliver_js(project_slug: str, script_file: str, request: Request, db: 
     else:
         # No whitelist configured = Allow ALL domains (for testing/development)
         await _log_access(db, project.id, script.id, request, True, domain)
-        return Response(content=script.js_code, media_type="application/javascript; charset=utf-8", headers=JS_CACHE_HEADERS)
+        return Response(content=script.js_code, media_type="application/javascript; charset=utf-8", headers=JS_NO_CACHE_HEADERS)
 
 
 async def _log_access(db: AsyncSession, project_id: int, script_id, request: Request, allowed: bool, domain: str = None, referer_url: str = None):
